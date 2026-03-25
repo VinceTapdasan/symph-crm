@@ -9,7 +9,7 @@ COPY packages/database/package.json ./packages/database/
 COPY apps/api/package.json ./apps/api/
 
 # Install all dependencies (needed to resolve workspace packages)
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Copy source
 COPY packages ./packages
