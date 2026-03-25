@@ -15,22 +15,27 @@ RUN pnpm install --frozen-lockfile
 COPY packages ./packages
 COPY apps/api ./apps/api
 
-# Build NestJS (webpack bundles workspace deps into dist/main.js)
+# Build NestJS
 WORKDIR /app/apps/api
 RUN pnpm build
+
+# pnpm deploy creates a flat, symlink-free node_modules for production.
+# This is required in pnpm monorepos because copying node_modules between
+# Docker stages breaks the virtual store symlinks (.pnpm/).
+WORKDIR /app
+RUN pnpm deploy --filter @symph-crm/api --prod /app/deploy
 
 # ---- Production Stage ----
 FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 
-# NestJS webpack output is self-contained — just needs node_modules for
-# external runtime packages (postgres, drizzle-orm, reflect-metadata, etc.)
+# NestJS dist output
 COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/apps/api/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-# Preserve pnpm workspace symlink target for @symph-crm/database
-COPY --from=builder /app/packages ./packages
+
+# Flat node_modules from pnpm deploy (fully resolved, no broken symlinks)
+# pnpm deploy also inlines workspace packages like @symph-crm/database
+COPY --from=builder /app/deploy/node_modules ./node_modules
 
 EXPOSE 4000
 CMD ["node", "dist/main"]
