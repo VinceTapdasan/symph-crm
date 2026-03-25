@@ -36,6 +36,8 @@ steps:
       - build
       - -f
       - Dockerfile.web
+      - --build-arg
+      - API_URL=$_API_URL
       - -t
       - asia-docker.pkg.dev/$PROJECT_ID/symph-crm/web:$SHORT_SHA
       - -t
