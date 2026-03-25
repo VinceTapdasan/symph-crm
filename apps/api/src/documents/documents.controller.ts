@@ -1,0 +1,48 @@
+import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common'
+import { DocumentsService } from './documents.service'
+import { documents } from '@symph-crm/database'
+
+@Controller('documents')
+export class DocumentsController {
+  constructor(private readonly documentsService: DocumentsService) {}
+
+  @Get()
+  find(@Query('dealId') dealId?: string, @Query('companyId') companyId?: string) {
+    if (dealId) return this.documentsService.findByDeal(dealId)
+    if (companyId) return this.documentsService.findByCompany(companyId)
+    return []
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.documentsService.findOne(id)
+  }
+
+  @Get(':id/content')
+  readContent(@Param('id') id: string) {
+    return this.documentsService.readContent(id).then(content => ({ content }))
+  }
+
+  @Post()
+  create(
+    @Body() data: Omit<typeof documents.$inferInsert, 'storagePath' | 'excerpt' | 'wordCount'> & {
+      storagePath?: string
+      content?: string
+    },
+  ) {
+    return this.documentsService.create(data)
+  }
+
+  @Put(':id')
+  update(
+    @Param('id') id: string,
+    @Body() data: Partial<typeof documents.$inferInsert> & { content?: string },
+  ) {
+    return this.documentsService.update(id, data)
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.documentsService.remove(id)
+  }
+}

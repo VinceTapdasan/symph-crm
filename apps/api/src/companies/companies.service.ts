@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, ilike, or } from 'drizzle-orm'
 import { companies } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
@@ -17,13 +17,48 @@ export class CompaniesService {
     return company
   }
 
+  /** Fuzzy search by name or domain — used by the AI agent's search_companies tool. */
+  async search(query: string) {
+    const pattern = `%${query}%`
+    return this.db
+      .select()
+      .from(companies)
+      .where(or(ilike(companies.name, pattern), ilike(companies.domain, pattern)))
+      .orderBy(desc(companies.createdAt))
+      .limit(20)
+  }
+
+  /**
+   * Find by exact domain, or create if absent.
+   * Used by the AI agent when a new deal is mentioned for an unknown company.
+   */
+  async findOrCreate(
+    data: Pick<typeof companies.$inferInsert, 'name' | 'domain' | 'workspaceId' | 'createdBy'> &
+      Partial<typeof companies.$inferInsert>,
+  ) {
+    if (data.domain) {
+      const [existing] = await this.db
+        .select()
+        .from(companies)
+        .where(eq(companies.domain, data.domain))
+        .limit(1)
+      if (existing) return { company: existing, created: false }
+    }
+    const [company] = await this.db.insert(companies).values(data).returning()
+    return { company, created: true }
+  }
+
   async create(data: typeof companies.$inferInsert) {
     const [company] = await this.db.insert(companies).values(data).returning()
     return company
   }
 
   async update(id: string, data: Partial<typeof companies.$inferInsert>) {
-    const [company] = await this.db.update(companies).set(data).where(eq(companies.id, id)).returning()
+    const [company] = await this.db
+      .update(companies)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(companies.id, id))
+      .returning()
     return company
   }
 

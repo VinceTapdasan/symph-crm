@@ -10,10 +10,11 @@
     "lint": "eslint \"{src,test}/**/*.ts\""
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@nestjs/common": "^11.0.0",
+    "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
-    "@nestjs/config": "^4.0.0",
     "@supabase/supabase-js": "^2.49.0",
     "@symph-crm/database": "workspace:*",
     "drizzle-orm": "^0.39.0",
@@ -27,7 +28,7 @@
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
     "ts-loader": "^9.5.0",
-    "webpack-node-externals": "^3.0.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "webpack-node-externals": "^3.0.0"
   }
 }
