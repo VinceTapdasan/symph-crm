@@ -1,0 +1,34 @@
+import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common'
+import { ContactsService } from './contacts.service'
+import { contacts } from '@symph-crm/database'
+
+@Controller('contacts')
+export class ContactsController {
+  constructor(private readonly contactsService: ContactsService) {}
+
+  @Get()
+  findAll(@Query('companyId') companyId?: string) {
+    if (companyId) return this.contactsService.findByCompany(companyId)
+    return this.contactsService.findAll()
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.contactsService.findOne(id)
+  }
+
+  @Post()
+  create(@Body() data: typeof contacts.$inferInsert) {
+    return this.contactsService.create(data)
+  }
+
+  @Put(':id')
+  update(@Param('id') id: string, @Body() data: Partial<typeof contacts.$inferInsert>) {
+    return this.contactsService.update(id, data)
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.contactsService.remove(id)
+  }
+}

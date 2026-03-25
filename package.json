@@ -1,0 +1,19 @@
+{
+  "name": "symph-crm",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel -r run dev",
+    "dev:web": "pnpm --filter @symph-crm/web dev",
+    "dev:api": "pnpm --filter @symph-crm/api dev",
+    "build": "pnpm -r run build",
+    "build:web": "pnpm --filter @symph-crm/web build",
+    "build:api": "pnpm --filter @symph-crm/api build",
+    "lint": "pnpm -r run lint",
+    "db:generate": "pnpm --filter @symph-crm/database generate",
+    "db:migrate": "pnpm --filter @symph-crm/database migrate",
+    "db:studio": "pnpm --filter @symph-crm/database studio"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
