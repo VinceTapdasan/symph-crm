@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
+import imageCompression from 'browser-image-compression'
 import { cn } from '@/lib/utils'
 
 // Default workspace — the single Symph workspace seeded at setup
 const DEFAULT_WORKSPACE_ID = '60f84f03-283e-4c1a-8c88-b8330dc71d32'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type ActionRecord = {
   tool: string
@@ -18,7 +21,23 @@ type ChatMessage = {
   role: 'user' | 'assistant'
   content: string
   actionsTaken?: ActionRecord[]
+  attachment?: PendingAttachment
 }
+
+type AttachmentType = 'file' | 'image' | 'voice'
+
+interface PendingAttachment {
+  type: AttachmentType
+  filename: string
+  blob: Blob
+  mimetype: string
+  // For image previews
+  previewUrl?: string
+  // For voice: duration in seconds
+  duration?: number
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getGreeting() {
   const h = new Date().getHours()
@@ -27,6 +46,49 @@ function getGreeting() {
   return 'Good evening'
 }
 
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
+function getAudioMimeType(): string {
+  const types = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4',
+    'audio/ogg;codecs=opus',
+    'audio/ogg',
+  ]
+  return types.find(t => MediaRecorder.isTypeSupported(t)) ?? 'audio/webm'
+}
+
+function mimeToExt(mimetype: string): string {
+  const base = mimetype.split(';')[0]
+  const map: Record<string, string> = {
+    'audio/webm': 'webm',
+    'audio/mp4': 'm4a',
+    'audio/ogg': 'ogg',
+    'audio/mpeg': 'mp3',
+    'audio/wav': 'wav',
+  }
+  return map[base] ?? 'webm'
+}
+
+const ACCEPTED_FILE_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain',
+  'text/csv',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+].join(',')
+
+// ─── Suggested prompts ────────────────────────────────────────────────────────
+
 const SUGGESTED_PROMPTS = [
   { label: 'Pipeline summary', prompt: 'Give me a pipeline summary' },
   { label: 'Log a call', prompt: 'I just had a call with a prospect — help me log it' },
@@ -34,7 +96,8 @@ const SUGGESTED_PROMPTS = [
   { label: 'Draft email', prompt: 'Draft a follow-up email for a prospect' },
 ]
 
-// Map tool names to human-friendly labels for the action pill
+// ─── Tool labels ──────────────────────────────────────────────────────────────
+
 const TOOL_LABELS: Record<string, string> = {
   search_companies: 'Searched companies',
   create_company: 'Created company',
@@ -48,6 +111,8 @@ const TOOL_LABELS: Record<string, string> = {
   log_activity: 'Logged activity',
   add_contact: 'Added contact',
 }
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function ActionPills({ actions }: { actions: ActionRecord[] }) {
   if (!actions.length) return null
@@ -64,6 +129,118 @@ function ActionPills({ actions }: { actions: ActionRecord[] }) {
           {TOOL_LABELS[a.tool] ?? a.tool}
         </span>
       ))}
+    </div>
+  )
+}
+
+function AttachmentBubble({ attachment }: { attachment: PendingAttachment }) {
+  if (attachment.type === 'image' && attachment.previewUrl) {
+    return (
+      <div className="flex justify-end mb-1">
+        <img
+          src={attachment.previewUrl}
+          alt={attachment.filename}
+          className="max-w-[200px] max-h-[150px] rounded-xl border border-black/[.08] object-cover"
+        />
+      </div>
+    )
+  }
+
+  const icon =
+    attachment.type === 'voice' ? (
+      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+    ) : (
+      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+        <polyline points="13 2 13 9 20 9"/>
+      </svg>
+    )
+
+  const label =
+    attachment.type === 'voice' && attachment.duration
+      ? `Voice note · ${formatDuration(attachment.duration)}`
+      : attachment.filename
+
+  return (
+    <div className="flex justify-end mb-1">
+      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[rgba(108,99,255,0.08)] border border-[rgba(108,99,255,0.12)] text-[12px] text-slate-600">
+        {icon}
+        <span className="max-w-[160px] truncate">{label}</span>
+      </div>
+    </div>
+  )
+}
+
+function AttachmentPreview({
+  attachment,
+  onRemove,
+}: {
+  attachment: PendingAttachment
+  onRemove: () => void
+}) {
+  return (
+    <div className="px-4 pt-2 pb-1 flex items-center gap-2">
+      {attachment.type === 'image' && attachment.previewUrl ? (
+        <img
+          src={attachment.previewUrl}
+          alt={attachment.filename}
+          className="w-10 h-10 rounded-lg object-cover border border-black/[.08] shrink-0"
+        />
+      ) : (
+        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+          {attachment.type === 'voice' ? (
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#6c63ff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+            </svg>
+          ) : (
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#6c63ff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+              <polyline points="13 2 13 9 20 9"/>
+            </svg>
+          )}
+        </div>
+      )}
+
+      <div className="flex-1 min-w-0">
+        <p className="text-[12px] font-medium text-slate-700 truncate">{attachment.filename}</p>
+        <p className="text-[11px] text-slate-400 capitalize">
+          {attachment.type === 'voice' && attachment.duration
+            ? `Voice · ${formatDuration(attachment.duration)}`
+            : attachment.type}
+        </p>
+      </div>
+
+      <button
+        onClick={onRemove}
+        className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
+      >
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  )
+}
+
+function RecordingIndicator({ elapsed, onStop }: { elapsed: number; onStop: () => void }) {
+  return (
+    <div className="px-4 pt-2 pb-1 flex items-center gap-2">
+      <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+      <span className="text-[12px] text-slate-600 flex-1">Recording · {formatDuration(elapsed)}</span>
+      <button
+        onClick={onStop}
+        className="px-2.5 py-1 rounded-lg bg-red-50 border border-red-200 text-[11px] font-medium text-red-600 hover:bg-red-100 transition-colors"
+      >
+        Stop
+      </button>
     </div>
   )
 }
@@ -103,6 +280,8 @@ function TypingIndicator() {
   )
 }
 
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export function Chat({ dealId }: { dealId?: string }) {
   const { data: session } = useSession()
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -111,8 +290,20 @@ export function Chat({ dealId }: { dealId?: string }) {
   const [typing, setTyping] = useState(false)
   const [focused, setFocused] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
+
+  // Attachment state
+  const [pendingAttachment, setPendingAttachment] = useState<PendingAttachment | null>(null)
+  const [recording, setRecording] = useState(false)
+  const [recordingElapsed, setRecordingElapsed] = useState(0)
+
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const recordingStartRef = useRef<number>(0)
 
   const userName = session?.user?.name?.split(' ')[0] || 'there'
   const userId = (session?.user as { id?: string })?.id || 'anonymous'
@@ -133,34 +324,190 @@ export function Chat({ dealId }: { dealId?: string }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, typing])
 
-  async function sendMessage(text: string) {
-    const userMsg: ChatMessage = { id: `u-${Date.now()}`, role: 'user', content: text }
+  // ── Image compression ────────────────────────────────────────────────────
+
+  const compressImage = useCallback(async (file: File): Promise<File> => {
+    try {
+      return await imageCompression(file, {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      })
+    } catch {
+      return file // if compression fails, use original
+    }
+  }, [])
+
+  // ── Attachment helpers ───────────────────────────────────────────────────
+
+  const setImageAttachment = useCallback(async (file: File) => {
+    const compressed = await compressImage(file)
+    const previewUrl = URL.createObjectURL(compressed)
+    setPendingAttachment({
+      type: 'image',
+      filename: compressed.name || file.name,
+      blob: compressed,
+      mimetype: compressed.type || file.type,
+      previewUrl,
+    })
+  }, [compressImage])
+
+  const handleFileSelected = useCallback(async (file: File) => {
+    const isImage = file.type.startsWith('image/')
+    if (isImage) {
+      await setImageAttachment(file)
+    } else {
+      setPendingAttachment({
+        type: 'file',
+        filename: file.name,
+        blob: file,
+        mimetype: file.type,
+      })
+    }
+  }, [setImageAttachment])
+
+  // ── Paste handler (detect clipboard images) ──────────────────────────────
+
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+    const items = Array.from(e.clipboardData.items)
+    const imageItem = items.find(item => item.type.startsWith('image/'))
+    if (!imageItem) return
+
+    e.preventDefault()
+    const file = imageItem.getAsFile()
+    if (!file) return
+
+    const filename = `screenshot-${Date.now()}.${file.type.split('/')[1] || 'png'}`
+    const namedFile = new File([file], filename, { type: file.type })
+    await setImageAttachment(namedFile)
+  }, [setImageAttachment])
+
+  // ── Voice recording ──────────────────────────────────────────────────────
+
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mimeType = getAudioMimeType()
+      const recorder = new MediaRecorder(stream, { mimeType })
+
+      audioChunksRef.current = []
+      recorder.ondataavailable = e => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+      }
+
+      recorder.onstop = () => {
+        stream.getTracks().forEach(t => t.stop())
+        const blob = new Blob(audioChunksRef.current, { type: mimeType })
+        const ext = mimeToExt(mimeType)
+        const duration = (Date.now() - recordingStartRef.current) / 1000
+        setPendingAttachment({
+          type: 'voice',
+          filename: `voice-${Date.now()}.${ext}`,
+          blob,
+          mimetype: mimeType,
+          duration,
+        })
+        setRecording(false)
+        setRecordingElapsed(0)
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
+      }
+
+      mediaRecorderRef.current = recorder
+      recordingStartRef.current = Date.now()
+      recorder.start(200) // collect in 200ms chunks
+      setRecording(true)
+      setRecordingElapsed(0)
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingElapsed(Math.floor((Date.now() - recordingStartRef.current) / 1000))
+      }, 1000)
+    } catch {
+      // Microphone permission denied or not available
+    }
+  }, [])
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop()
+    }
+  }, [])
+
+  const toggleRecording = useCallback(() => {
+    if (recording) stopRecording()
+    else startRecording()
+  }, [recording, startRecording, stopRecording])
+
+  const clearAttachment = useCallback(() => {
+    if (pendingAttachment?.previewUrl) {
+      URL.revokeObjectURL(pendingAttachment.previewUrl)
+    }
+    setPendingAttachment(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }, [pendingAttachment])
+
+  // ── Send message ─────────────────────────────────────────────────────────
+
+  async function sendMessage(text: string, attachment?: PendingAttachment) {
+    const userMsg: ChatMessage = {
+      id: `u-${Date.now()}`,
+      role: 'user',
+      content: text,
+      attachment,
+    }
     setMessages(prev => [...prev, userMsg])
     setInput('')
+    setPendingAttachment(null)
+    if (attachment?.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
     setTyping(true)
     setApiError(null)
 
     try {
-      const res = await fetch('/api/chat/message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          dealId,
-          workspaceId: DEFAULT_WORKSPACE_ID,
-          userId,
-          content: text,
-        }),
-      })
+      let data: { sessionId: string; messageId: string; reply: string; actionsTaken?: ActionRecord[] }
 
-      if (!res.ok) {
-        const errText = await res.text()
-        throw new Error(`API error ${res.status}: ${errText}`)
+      if (attachment) {
+        // Multipart upload
+        const form = new FormData()
+        if (sessionId) form.append('sessionId', sessionId)
+        if (dealId) form.append('dealId', dealId)
+        form.append('workspaceId', DEFAULT_WORKSPACE_ID)
+        form.append('userId', userId)
+        form.append('content', text)
+        form.append('attachment', attachment.blob, attachment.filename)
+
+        const res = await fetch('/api/chat/upload', {
+          method: 'POST',
+          body: form,
+        })
+
+        if (!res.ok) {
+          const errText = await res.text()
+          throw new Error(`API error ${res.status}: ${errText}`)
+        }
+
+        data = await res.json()
+      } else {
+        // Text-only JSON
+        const res = await fetch('/api/chat/message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            dealId,
+            workspaceId: DEFAULT_WORKSPACE_ID,
+            userId,
+            content: text,
+          }),
+        })
+
+        if (!res.ok) {
+          const errText = await res.text()
+          throw new Error(`API error ${res.status}: ${errText}`)
+        }
+
+        data = await res.json()
       }
 
-      const data = await res.json()
       setSessionId(data.sessionId)
-
       setMessages(prev => [
         ...prev,
         {
@@ -184,8 +531,8 @@ export function Chat({ dealId }: { dealId?: string }) {
 
   function handleSubmit() {
     const trimmed = input.trim()
-    if (!trimmed || typing) return
-    sendMessage(trimmed)
+    if ((!trimmed && !pendingAttachment) || typing) return
+    sendMessage(trimmed, pendingAttachment ?? undefined)
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -195,7 +542,9 @@ export function Chat({ dealId }: { dealId?: string }) {
     }
   }
 
-  const isEmpty = messages.length === 0 && !typing
+  const canSubmit = (input.trim() || pendingAttachment) && !typing
+
+  // ── Input box ────────────────────────────────────────────────────────────
 
   const inputBox = (
     <div className="max-w-[680px] w-full mx-auto">
@@ -207,7 +556,17 @@ export function Chat({ dealId }: { dealId?: string }) {
             : 'border border-black/[.08] shadow-[var(--shadow-card)]'
         )}
       >
-        <div className="px-4 pt-4 pb-2">
+        {/* Recording indicator */}
+        {recording && (
+          <RecordingIndicator elapsed={recordingElapsed} onStop={stopRecording} />
+        )}
+
+        {/* Attachment preview */}
+        {pendingAttachment && !recording && (
+          <AttachmentPreview attachment={pendingAttachment} onRemove={clearAttachment} />
+        )}
+
+        <div className={cn('px-4 pt-4 pb-2', (pendingAttachment || recording) && 'pt-2')}>
           <textarea
             ref={inputRef}
             value={input}
@@ -215,7 +574,14 @@ export function Chat({ dealId }: { dealId?: string }) {
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             onKeyDown={handleKeyDown}
-            placeholder="How can I help you today?"
+            onPaste={handlePaste}
+            placeholder={
+              pendingAttachment
+                ? 'Add a message, or just send the attachment…'
+                : recording
+                ? 'Recording… press Stop when done'
+                : 'How can I help you today?'
+            }
             disabled={typing}
             rows={1}
             className={cn(
@@ -227,10 +593,48 @@ export function Chat({ dealId }: { dealId?: string }) {
         </div>
 
         <div className="flex items-center gap-1.5 px-3 pb-3 pt-1">
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors duration-150">
+          {/* File picker */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPTED_FILE_TYPES}
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleFileSelected(file)
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={typing || recording}
+            title="Attach file or image"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
             <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+
+          {/* Voice record */}
+          <button
+            type="button"
+            onClick={toggleRecording}
+            disabled={typing || !!pendingAttachment}
+            title={recording ? 'Stop recording' : 'Record voice note'}
+            className={cn(
+              'w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed',
+              recording
+                ? 'text-red-500 bg-red-50 hover:bg-red-100'
+                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+            )}
+          >
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
           </button>
 
@@ -245,15 +649,15 @@ export function Chat({ dealId }: { dealId?: string }) {
 
           <button
             onClick={handleSubmit}
-            disabled={typing || !input.trim()}
+            disabled={!canSubmit}
             className={cn(
               'w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 active:scale-[0.94]',
-              input.trim() && !typing
+              canSubmit
                 ? 'bg-[#6c63ff] hover:bg-[#5b52e8] cursor-pointer'
                 : 'bg-slate-100 cursor-default'
             )}
           >
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={input.trim() && !typing ? '#fff' : '#94a3b8'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={canSubmit ? '#fff' : '#94a3b8'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="19" x2="12" y2="5" />
               <polyline points="5 12 12 5 19 12" />
             </svg>
@@ -263,11 +667,17 @@ export function Chat({ dealId }: { dealId?: string }) {
     </div>
   )
 
+  // ── Empty state ──────────────────────────────────────────────────────────
+
+  const isEmpty = messages.length === 0 && !typing
+
   if (isEmpty) {
     return (
-      <div className="h-full flex flex-col items-center justify-center px-6">
+      <div
+        ref={containerRef}
+        className="h-full flex flex-col items-center justify-center px-6"
+      >
         <div className="flex flex-col items-center gap-6 max-w-[680px] w-full">
-          {/* Greeting */}
           <div className="flex items-center gap-3 mb-2">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-[15px] shrink-0"
@@ -282,7 +692,6 @@ export function Chat({ dealId }: { dealId?: string }) {
 
           {inputBox}
 
-          {/* Suggestion chips */}
           <div className="flex flex-wrap gap-2 justify-center">
             {SUGGESTED_PROMPTS.map((p) => (
               <button
@@ -299,18 +708,24 @@ export function Chat({ dealId }: { dealId?: string }) {
     )
   }
 
+  // ── Active chat ──────────────────────────────────────────────────────────
+
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      {/* Messages */}
+    <div ref={containerRef} className="h-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-[680px] w-full mx-auto px-6 pt-8 pb-4 flex flex-col gap-5">
           {messages.map((msg) => (
             <div key={msg.id}>
               {msg.role === 'user' ? (
-                <div className="flex justify-end">
-                  <div className="max-w-[78%] px-4 py-3 rounded-2xl bg-[rgba(108,99,255,0.08)] border border-[rgba(108,99,255,0.12)] text-[13px] text-slate-900 leading-[1.6]">
-                    {msg.content}
-                  </div>
+                <div>
+                  {msg.attachment && <AttachmentBubble attachment={msg.attachment} />}
+                  {msg.content && (
+                    <div className="flex justify-end">
+                      <div className="max-w-[78%] px-4 py-3 rounded-2xl bg-[rgba(108,99,255,0.08)] border border-[rgba(108,99,255,0.12)] text-[13px] text-slate-900 leading-[1.6]">
+                        {msg.content}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div>
@@ -329,8 +744,10 @@ export function Chat({ dealId }: { dealId?: string }) {
         </div>
       </div>
 
-      {/* Input */}
       <div className="shrink-0 px-6 pb-5 pt-3 border-t border-black/[.06]">
+        {apiError && (
+          <p className="text-[11px] text-red-500 mb-2 text-center">{apiError}</p>
+        )}
         {inputBox}
       </div>
     </div>

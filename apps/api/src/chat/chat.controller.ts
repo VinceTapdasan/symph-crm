@@ -1,13 +1,30 @@
-import { Controller, Post, Get, Param, Body } from '@nestjs/common'
-import { ChatService, ChatMessageDto } from './chat.service'
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+} from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { memoryStorage } from 'multer'
+import { ChatService, ChatMessageDto, AttachmentContext } from './chat.service'
+import { FileParserService } from '../file-parser/file-parser.service'
+import { VoiceService } from '../voice/voice.service'
 
 @Controller('chat')
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly fileParser: FileParserService,
+    private readonly voice: VoiceService,
+  ) {}
 
   /**
    * POST /api/chat/message
-   * Main endpoint: send a message to the AI, get a reply + list of actions taken.
+   * Text-only JSON endpoint — existing flow unchanged.
    */
   @Post('message')
   sendMessage(@Body() dto: ChatMessageDto) {
@@ -15,8 +32,70 @@ export class ChatController {
   }
 
   /**
+   * POST /api/chat/upload
+   * Multipart endpoint for file / image / voice attachments.
+   * Form fields mirror ChatMessageDto. The file field is "attachment".
+   */
+  @Post('upload')
+  @UseInterceptors(
+    FileInterceptor('attachment', {
+      storage: memoryStorage(),
+      limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB hard cap
+    }),
+  )
+  async uploadAndChat(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body() body: ChatMessageDto,
+  ) {
+    let attachmentContext: AttachmentContext | undefined
+
+    if (file) {
+      const { mimetype, originalname, buffer } = file
+      const baseMime = mimetype.split(';')[0].trim()
+
+      if (this.voice.canTranscribe(mimetype)) {
+        // ── Voice ──────────────────────────────────────────────
+        if (!this.voice.isConfigured) {
+          throw new BadRequestException(
+            'Voice transcription is not yet configured on this server. Add GROQ_API_KEY.',
+          )
+        }
+        const text = await this.voice.transcribe(buffer, mimetype, originalname)
+        attachmentContext = { type: 'voice', filename: originalname, text }
+      } else if (baseMime.startsWith('image/')) {
+        // ── Image ──────────────────────────────────────────────
+        // Pass raw bytes to Claude vision — no server-side analysis needed
+        const supportedMediaTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+        const mediaType = supportedMediaTypes.includes(baseMime)
+          ? (baseMime as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp')
+          : 'image/jpeg'
+
+        attachmentContext = {
+          type: 'image',
+          filename: originalname,
+          imageData: {
+            base64: buffer.toString('base64'),
+            mediaType,
+          },
+        }
+      } else if (this.fileParser.canParse(mimetype)) {
+        // ── Document ───────────────────────────────────────────
+        const parsed = await this.fileParser.parse(buffer, mimetype, originalname)
+        attachmentContext = {
+          type: 'file',
+          filename: originalname,
+          text: parsed.text,
+        }
+      } else {
+        throw new BadRequestException(`Unsupported file type: ${mimetype}`)
+      }
+    }
+
+    return this.chatService.sendMessage({ ...body, attachmentContext })
+  }
+
+  /**
    * GET /api/chat/sessions/:sessionId/history
-   * Returns the full message history for a session.
    */
   @Get('sessions/:sessionId/history')
   getHistory(@Param('sessionId') sessionId: string) {

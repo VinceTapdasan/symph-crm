@@ -18,6 +18,18 @@ import { DocumentsService } from '../documents/documents.service'
 
 export type MessageRole = 'user' | 'assistant'
 
+export interface AttachmentContext {
+  type: 'file' | 'image' | 'voice'
+  filename: string
+  // For file and voice: extracted text content
+  text?: string
+  // For image: raw bytes for Claude vision (passed as base64 content block)
+  imageData?: {
+    base64: string
+    mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+  }
+}
+
 export interface ChatMessageDto {
   sessionId?: string
   dealId?: string
@@ -25,6 +37,8 @@ export interface ChatMessageDto {
   userId: string
   content: string
   role?: MessageRole
+  // Set by ChatController after pre-processing any uploaded attachment
+  attachmentContext?: AttachmentContext
 }
 
 export interface ChatResponseDto {
@@ -319,7 +333,41 @@ export class ChatService {
         role: m.role as 'user' | 'assistant',
         content: m.content,
       }))
-    anthropicMessages.push({ role: 'user', content: dto.content })
+
+    // Build the user turn — multimodal when an image is attached
+    const att = dto.attachmentContext
+    if (att?.type === 'image' && att.imageData) {
+      // Pass image directly to Claude as a vision content block
+      const fallbackText = dto.content?.trim() || 'What do you see in this image? Is there anything useful for our CRM (contacts, company info, deal details)?'
+      anthropicMessages.push({
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: att.imageData.mediaType,
+              data: att.imageData.base64,
+            },
+          },
+          { type: 'text', text: fallbackText },
+        ],
+      })
+    } else if (att?.type === 'voice' && att.text) {
+      // Inject transcript as labelled context block
+      const userText = dto.content?.trim()
+      const voiceBlock = `[Voice note transcribed]\n<transcript>\n${att.text}\n</transcript>`
+      const combined = userText ? `${userText}\n\n${voiceBlock}` : voiceBlock
+      anthropicMessages.push({ role: 'user', content: combined })
+    } else if (att?.type === 'file' && att.text) {
+      // Inject extracted file text as labelled context block (truncated to 4000 chars to respect context limits)
+      const userText = dto.content?.trim()
+      const fileBlock = `[Attached file: ${att.filename}]\n<file_content>\n${att.text.slice(0, 4000)}\n</file_content>`
+      const combined = userText ? `${userText}\n\n${fileBlock}` : fileBlock
+      anthropicMessages.push({ role: 'user', content: combined })
+    } else {
+      anthropicMessages.push({ role: 'user', content: dto.content })
+    }
 
     // Build system prompt with context
     // contextId holds the deal UUID when contextType === 'deal'

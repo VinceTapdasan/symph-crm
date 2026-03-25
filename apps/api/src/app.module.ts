@@ -7,6 +7,8 @@ import { CompaniesModule } from './companies/companies.module'
 import { ContactsModule } from './contacts/contacts.module'
 import { DocumentsModule } from './documents/documents.module'
 import { ActivitiesModule } from './activities/activities.module'
+import { FileParserModule } from './file-parser/file-parser.module'
+import { VoiceModule } from './voice/voice.module'
 import { ChatModule } from './chat/chat.module'
 
 @Module({
@@ -19,6 +21,8 @@ import { ChatModule } from './chat/chat.module'
     ContactsModule,
     DocumentsModule,
     ActivitiesModule,
+    FileParserModule,
+    VoiceModule,
     ChatModule,
   ],
 })
