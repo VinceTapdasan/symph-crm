@@ -8,6 +8,17 @@ import { Avatar } from './Avatar'
 import { cn } from '@/lib/utils'
 import { LogOut } from 'lucide-react'
 
+function LogoutOverlay() {
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', backgroundColor: 'rgba(255,255,255,0.6)' }}>
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 rounded-full border-2 border-[#6c63ff]/20 border-t-[#6c63ff] animate-spin" />
+        <p className="text-[13px] font-medium text-slate-500">Signing out…</p>
+      </div>
+    </div>
+  )
+}
+
 type SidebarProps = {
   isOpen?: boolean
   onClose?: () => void
@@ -63,10 +74,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
   const { data: session } = useSession()
   const [hoveredPath, setHoveredPath] = useState<string | null>(null)
+  const [signingOut, setSigningOut] = useState(false)
   const user = session?.user
+
+  async function handleSignOut() {
+    setSigningOut(true)
+    await signOut({ callbackUrl: '/login' })
+  }
 
   return (
     <>
+      {signingOut && <LogoutOverlay />}
       {/* Mobile overlay */}
       {isOpen && (
         <div
@@ -153,8 +171,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className="text-[10px] text-slate-400 truncate">{user?.email || ''}</div>
           </div>
           <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors shrink-0 cursor-pointer"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors shrink-0 cursor-pointer disabled:opacity-40"
             title="Sign out"
           >
             <LogOut size={14} />
