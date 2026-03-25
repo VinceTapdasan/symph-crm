@@ -15,10 +15,19 @@ export function MetricCard({ label, value, trend, trendUp, accentColor }: Metric
         {label}
       </div>
       <div
-        className="text-[26px] font-bold leading-none tracking-tight tabular-nums"
+        className="text-[26px] font-bold leading-none tracking-tight"
         style={{ color: accentColor || '#0f172a' }}
       >
-        {value.startsWith('-') ? value : `\u20B1${value}`}
+        {value.startsWith('-') ? (
+          <span className="tabular-nums">{value}</span>
+        ) : (
+          <>
+            {/* Peso sign in a separate span without tabular-nums so it renders
+                in the app's main font (Inter) rather than a system fallback */}
+            <span className="text-[20px]">₱</span>
+            <span className="tabular-nums">{value}</span>
+          </>
+        )}
       </div>
       <div className={`text-[11px] font-medium mt-2 ${trendUp ? 'text-[#16a34a]' : 'text-[#dc2626]'}`}>
         {trend}

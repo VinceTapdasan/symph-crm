@@ -111,7 +111,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                 <div className="px-3.5 py-3 shrink-0 border-b border-black/[.06] bg-white/60">
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: stage.color }} />
-                    <span className="text-[15px] font-bold text-slate-900 flex-1 leading-none">{stage.label}</span>
+                    <span className="text-[12.5px] font-semibold text-slate-700 flex-1 leading-none">{stage.label}</span>
                     <span className="bg-white border border-black/[.07] text-slate-500 text-[11px] font-semibold tabular-nums px-2 py-0.5 rounded-full">
                       {stageDeals.length}
                     </span>
