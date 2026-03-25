@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import type { Deal } from '@/lib/constants'
-import { STAGES, DEALS } from '@/lib/constants'
+import { STAGES } from '@/lib/constants'
 import { formatPeso } from '@/lib/utils'
 import { Avatar } from './Avatar'
 
@@ -73,7 +73,9 @@ function DealCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
 }
 
 export function Pipeline({ onOpenDeal }: PipelineProps) {
-  const activeDeals = DEALS.filter(d => d.stage !== 'lost')
+  // Will be replaced with real data from API
+  const deals: Deal[] = []
+  const activeDeals = deals.filter(d => d.stage !== 'lost')
   const totalValue = activeDeals.reduce((s, d) => s + d.size, 0)
 
   return (
@@ -81,7 +83,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
       {/* Stats + actions */}
       <div className="flex items-center justify-between px-4 py-2.5 shrink-0">
         <span className="text-[13px] font-medium text-slate-900">
-          {activeDeals.length} active deals · {'\u20B1'}{(totalValue / 1_000_000).toFixed(1)}M
+          {activeDeals.length} active deals {totalValue > 0 ? `· ${'\u20B1'}${(totalValue / 1_000_000).toFixed(1)}M` : ''}
         </span>
         <div className="flex gap-2">
           <button className="bg-white border border-black/[.08] rounded-lg px-3 py-[5px] text-[12px] font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150 active:scale-[0.98]">
@@ -97,7 +99,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
       <div className="flex-1 overflow-x-auto overflow-y-hidden">
         <div className="flex gap-2.5 h-full px-4 pb-4" style={{ minWidth: 'max-content' }}>
           {STAGES.map(stage => {
-            const stageDeals = DEALS.filter(d => d.stage === stage.id)
+            const stageDeals = deals.filter(d => d.stage === stage.id)
             const total = stageDeals.reduce((a, d) => a + d.size, 0)
 
             return (

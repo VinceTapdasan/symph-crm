@@ -1,42 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useSession } from 'next-auth/react'
 import { cn } from '@/lib/utils'
 
 type ChatMessage = {
   id: string
   role: 'user' | 'assistant'
   content: string
-}
-
-const MOCK_RESPONSES: { pattern: RegExp; response: string }[] = [
-  {
-    pattern: /follow.?up|dormant|unreplied/i,
-    response: 'Based on your pipeline, 2 deals need attention this week:\n\n1. **Mlhuillier KP Division App** — last activity 3 days ago. Gee should send the separate scope proposal Sir Ricky requested.\n\n2. **PenBrothers Staff Augmentation** — lead captured 6 days ago, still in Lead stage. Vince should schedule an intro call.\n\nBoth are past the 3-day follow-up threshold. Want me to draft follow-up messages for either?',
-  },
-  {
-    pattern: /mlhuillier|asys/i,
-    response: 'Here is the Mlhuillier pipeline summary:\n\n**Asys Digital Platform** — Demo + Proposal stage, P2.5M\n- AM: Gee\n- Sir Ricky loved the demo (9/10)\n- Waiting on board approval (Mar 24 deadline)\n- Proposal and credential deck sent\n\n**KP Division App** — Assessment stage, P800K\n- AM: Gee\n- Sir Ricky requested a separate proposal for this division\n- 9 days in current stage\n\nTotal Mlhuillier exposure: P3.3M across 2 active deals.',
-  },
-  {
-    pattern: /win rate|performance|leaderboard/i,
-    response: 'AM performance breakdown:\n\n| AM | Win Rate | Pipeline |\n|---|---|---|\n| Vince | 100% | P1.4M |\n| Mary | 75% | P5.7M |\n| Gee | 68% | P8.2M |\n| Lyra | 50% | P3.1M |\n\nVince has the highest win rate at 100%, but with only 1 deal. Mary leads in efficiency with 75% across 4 deals. Gee carries the largest pipeline at P8.2M.',
-  },
-  {
-    pattern: /draft|email|message/i,
-    response: 'Here is a draft follow-up for NCC:\n\n---\n\nHi Grace,\n\nFollowing up on our earlier conversation about the Phase 1 scope. I have attached the detailed scope document clarifying the mobile component (responsive web in Phase 1, native in Phase 2).\n\nWould you be available for a quick call this week to walk through the requirements? Happy to align on any open questions before we finalize the proposal.\n\nBest,\nLyra\n\n---\n\nWant me to adjust the tone or add anything?',
-  },
-  {
-    pattern: /pipeline|total|overview|summary/i,
-    response: 'Pipeline overview as of today:\n\n- **Total Pipeline:** P18.4M across 12 active deals\n- **Win Rate:** 68% (+5% vs last quarter)\n- **Avg Deal Size:** P1.5M\n\nStage distribution:\n- Lead: 1 deal (PenBrothers)\n- Discovery: 2 deals (NCC, Jollibee)\n- Assessment: 1 deal (Mlhuillier KP)\n- Demo + Proposal: 1 deal (Mlhuillier Asys)\n- Won: 1 deal (RCBC at P3.2M)\n\nBiggest opportunity: Jollibee Delivery Platform v2 at P5.5M, currently in Discovery.',
-  },
-]
-
-function getMockResponse(input: string): string {
-  for (const mock of MOCK_RESPONSES) {
-    if (mock.pattern.test(input)) return mock.response
-  }
-  return 'I looked at your current pipeline data. You have 12 active deals worth P18.4M total. The most urgent items are the Mlhuillier board review this week and the PenBrothers intro call that needs scheduling.\n\nIs there a specific deal or metric you want to dig into?'
 }
 
 function getGreeting() {
@@ -48,9 +19,9 @@ function getGreeting() {
 
 const SUGGESTED_PROMPTS = [
   { label: 'Follow-up deals', prompt: 'What deals need follow-up this week?' },
-  { label: 'Mlhuillier pipeline', prompt: 'Summarize the Mlhuillier Asys pipeline' },
+  { label: 'Pipeline summary', prompt: 'Give me a pipeline summary' },
   { label: 'AM performance', prompt: 'Which AMs have the highest win rate?' },
-  { label: 'Draft email for NCC', prompt: 'Draft a follow-up email for NCC' },
+  { label: 'Draft email', prompt: 'Draft a follow-up email for a prospect' },
 ]
 
 function renderContent(text: string) {
@@ -89,12 +60,15 @@ function TypingIndicator() {
 }
 
 export function Chat() {
+  const { data: session } = useSession()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
   const [focused, setFocused] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  const userName = session?.user?.name?.split(' ')[0] || 'there'
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 300)
@@ -117,12 +91,17 @@ export function Chat() {
     setMessages(prev => [...prev, userMsg])
     setInput('')
     setTyping(true)
+
+    // TODO: Connect to real AI backend via API
     setTimeout(() => {
-      const response = getMockResponse(text)
-      const assistantMsg: ChatMessage = { id: `a-${Date.now()}`, role: 'assistant', content: response }
+      const assistantMsg: ChatMessage = {
+        id: `a-${Date.now()}`,
+        role: 'assistant',
+        content: 'AI chat is not connected yet. This will be powered by the Symph CRM API once the backend integration is complete.',
+      }
       setMessages(prev => [...prev, assistantMsg])
       setTyping(false)
-    }, 800 + Math.random() * 400)
+    }, 600)
   }
 
   function handleSubmit() {
@@ -228,7 +207,7 @@ export function Chat() {
               S
             </div>
             <h1 className="text-[28px] font-bold text-slate-900 tracking-tight leading-none">
-              {getGreeting()}, Gee
+              {getGreeting()}, {userName}
             </h1>
           </div>
 

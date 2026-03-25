@@ -1,14 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { DEALS } from '@/lib/constants'
-import { formatPeso } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 
 type ProposalForm = {
-  dealId: number
   brand: string
   dealName: string
   industry: string
@@ -21,21 +18,17 @@ type ProposalForm = {
   pricing: string
 }
 
-function getDefaultForm(): ProposalForm {
-  const d = DEALS[0]
-  return {
-    dealId: d.id,
-    brand: d.brand,
-    dealName: d.name,
-    industry: d.industry,
-    size: formatPeso(d.size),
-    services: d.services.join(', '),
-    problem: "Mlhuillier's loyalty system runs on legacy Oracle infrastructure with no mobile experience. Customer engagement is declining and the competition has launched modern digital loyalty programs.",
-    solution: 'We propose building a full loyalty platform replacement with mobile-first design, real-time rewards tracking, and API-driven architecture that integrates with existing POS and payment systems.',
-    timeline: '5 months',
-    pricingType: 'Fixed',
-    pricing: 'Discovery + Design: \u20B1300,000\nDevelopment Phase 1: \u20B11,200,000\nDevelopment Phase 2: \u20B1700,000\nTesting + Launch: \u20B1300,000\nTotal: \u20B12,500,000',
-  }
+const EMPTY_FORM: ProposalForm = {
+  brand: '',
+  dealName: '',
+  industry: '',
+  size: '',
+  services: '',
+  problem: '',
+  solution: '',
+  timeline: '',
+  pricingType: 'Fixed',
+  pricing: '',
 }
 
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
@@ -59,24 +52,10 @@ function SectionCard({ title, children }: { title: string; children: React.React
 }
 
 export function ProposalBuilder() {
-  const [form, setForm] = useState<ProposalForm>(getDefaultForm)
+  const [form, setForm] = useState<ProposalForm>(EMPTY_FORM)
 
   function updateField(key: keyof ProposalForm, value: string) {
     setForm(prev => ({ ...prev, [key]: value }))
-  }
-
-  function selectDeal(id: string) {
-    const d = DEALS.find(x => x.id === parseInt(id))
-    if (!d) return
-    setForm(prev => ({
-      ...prev,
-      dealId: d.id,
-      brand: d.brand,
-      dealName: d.name,
-      industry: d.industry,
-      size: formatPeso(d.size),
-      services: d.services.join(', '),
-    }))
   }
 
   return (
@@ -100,36 +79,24 @@ export function ProposalBuilder() {
         <div className="overflow-y-auto flex flex-col gap-3.5">
           <SectionCard title="Deal Details">
             <div className="flex flex-col gap-2.5">
-              <FormField label="Select Deal">
-                <Select value={String(form.dealId)} onValueChange={selectDeal}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DEALS.map(d => (
-                      <SelectItem key={d.id} value={String(d.id)}>{d.brand} — {d.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormField>
               <div className="grid grid-cols-2 gap-2.5">
                 <FormField label="Client Brand">
-                  <Input value={form.brand} onChange={e => updateField('brand', e.target.value)} />
+                  <Input value={form.brand} onChange={e => updateField('brand', e.target.value)} placeholder="e.g. Acme Corp" />
                 </FormField>
                 <FormField label="Deal Name">
-                  <Input value={form.dealName} onChange={e => updateField('dealName', e.target.value)} />
+                  <Input value={form.dealName} onChange={e => updateField('dealName', e.target.value)} placeholder="e.g. Platform Rebuild" />
                 </FormField>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
                 <FormField label="Industry">
-                  <Input value={form.industry} onChange={e => updateField('industry', e.target.value)} />
+                  <Input value={form.industry} onChange={e => updateField('industry', e.target.value)} placeholder="e.g. Financial Services" />
                 </FormField>
                 <FormField label="Deal Size">
-                  <Input value={form.size} onChange={e => updateField('size', e.target.value)} />
+                  <Input value={form.size} onChange={e => updateField('size', e.target.value)} placeholder="e.g. P2,500,000" />
                 </FormField>
               </div>
               <FormField label="Services Offered">
-                <Input value={form.services} onChange={e => updateField('services', e.target.value)} />
+                <Input value={form.services} onChange={e => updateField('services', e.target.value)} placeholder="e.g. The Agency, Consulting" />
               </FormField>
             </div>
           </SectionCard>
@@ -138,6 +105,7 @@ export function ProposalBuilder() {
             <Textarea
               value={form.problem}
               onChange={e => updateField('problem', e.target.value)}
+              placeholder="Describe the client's problem or pain point..."
               className="min-h-[80px] leading-relaxed text-[13px]"
             />
           </SectionCard>
@@ -146,6 +114,7 @@ export function ProposalBuilder() {
             <Textarea
               value={form.solution}
               onChange={e => updateField('solution', e.target.value)}
+              placeholder="Describe the proposed solution..."
               className="min-h-[80px] leading-relaxed text-[13px]"
             />
           </SectionCard>
@@ -154,7 +123,7 @@ export function ProposalBuilder() {
             <div className="flex flex-col gap-2.5">
               <div className="grid grid-cols-2 gap-2.5">
                 <FormField label="Timeline">
-                  <Input value={form.timeline} onChange={e => updateField('timeline', e.target.value)} />
+                  <Input value={form.timeline} onChange={e => updateField('timeline', e.target.value)} placeholder="e.g. 5 months" />
                 </FormField>
                 <FormField label="Pricing Type">
                   <Select value={form.pricingType} onValueChange={(v) => updateField('pricingType', v)}>
@@ -173,6 +142,7 @@ export function ProposalBuilder() {
                 <Textarea
                   value={form.pricing}
                   onChange={e => updateField('pricing', e.target.value)}
+                  placeholder="Break down the pricing..."
                   className="min-h-[80px] leading-relaxed text-[13px]"
                 />
               </FormField>
@@ -191,15 +161,19 @@ export function ProposalBuilder() {
               >
                 S
               </div>
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight mb-1">Proposal for {form.brand}</h1>
-              <p className="text-[12px] text-slate-400">{form.dealName} — Prepared by Symph — March 2026</p>
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight mb-1">
+                {form.brand ? `Proposal for ${form.brand}` : 'New Proposal'}
+              </h1>
+              <p className="text-[12px] text-slate-400">
+                {form.dealName ? `${form.dealName} — ` : ''}Prepared by Symph
+              </p>
             </div>
 
             {/* Sections */}
             {[
               { title: 'About Symph', content: 'Symph is an AI-native software engineering and product agency based in Cebu, Philippines. We build production-grade software with modern stacks and ship fast.' },
-              { title: 'The Problem', content: form.problem },
-              { title: 'Our Solution', content: form.solution },
+              { title: 'The Problem', content: form.problem || 'Fill in the problem statement to preview...' },
+              { title: 'Our Solution', content: form.solution || 'Fill in the proposed solution to preview...' },
             ].map(sec => (
               <div key={sec.title} className="mb-5 pb-4 border-b border-black/[.06]">
                 <h3 className="text-[13px] font-bold text-slate-900 mb-2">{sec.title}</h3>
@@ -208,36 +182,42 @@ export function ProposalBuilder() {
             ))}
 
             {/* Services */}
-            <div className="mb-5 pb-4 border-b border-black/[.06]">
-              <h3 className="text-[13px] font-bold text-slate-900 mb-2">Services</h3>
-              <div className="flex gap-1.5 flex-wrap">
-                {form.services.split(',').map(s => (
-                  <span
-                    key={s.trim()}
-                    className="text-[11px] font-medium px-2.5 py-[3px] rounded-full bg-[rgba(108,99,255,0.08)] text-[#6c63ff]"
-                  >
-                    {s.trim()}
-                  </span>
-                ))}
+            {form.services && (
+              <div className="mb-5 pb-4 border-b border-black/[.06]">
+                <h3 className="text-[13px] font-bold text-slate-900 mb-2">Services</h3>
+                <div className="flex gap-1.5 flex-wrap">
+                  {form.services.split(',').map(s => (
+                    <span
+                      key={s.trim()}
+                      className="text-[11px] font-medium px-2.5 py-[3px] rounded-full bg-[rgba(108,99,255,0.08)] text-[#6c63ff]"
+                    >
+                      {s.trim()}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Timeline */}
-            <div className="mb-5 pb-4 border-b border-black/[.06]">
-              <h3 className="text-[13px] font-bold text-slate-900 mb-2">Timeline</h3>
-              <p className="text-[12px] text-slate-600">{form.timeline}</p>
-            </div>
+            {form.timeline && (
+              <div className="mb-5 pb-4 border-b border-black/[.06]">
+                <h3 className="text-[13px] font-bold text-slate-900 mb-2">Timeline</h3>
+                <p className="text-[12px] text-slate-600">{form.timeline}</p>
+              </div>
+            )}
 
             {/* Investment */}
             <div className="mb-6">
               <h3 className="text-[13px] font-bold text-slate-900 mb-2">Investment</h3>
-              <p className="text-[18px] font-bold text-[#6c63ff] mb-2">{form.size}</p>
-              <p className="text-[11px] text-slate-600 whitespace-pre-line leading-relaxed">{form.pricing}</p>
+              <p className="text-[18px] font-bold text-[#6c63ff] mb-2">{form.size || '--'}</p>
+              {form.pricing && (
+                <p className="text-[11px] text-slate-600 whitespace-pre-line leading-relaxed">{form.pricing}</p>
+              )}
             </div>
 
             {/* Footer */}
             <div className="text-center pt-5 border-t border-black/[.06]">
-              <p className="text-[11px] text-slate-400 mb-1">Let's build something great together.</p>
+              <p className="text-[11px] text-slate-400 mb-1">Let&apos;s build something great together.</p>
               <p className="text-[12px] text-[#6c63ff] font-semibold">gee@symph.co — symph.co</p>
             </div>
           </div>

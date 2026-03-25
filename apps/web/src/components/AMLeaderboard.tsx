@@ -1,6 +1,7 @@
 'use client'
 
 import { Avatar } from './Avatar'
+import { EmptyState } from './EmptyState'
 
 type AMEntry = {
   name: string
@@ -17,24 +18,33 @@ export function AMLeaderboard({ entries }: AMLeaderboardProps) {
     <div>
       <div className="text-[13px] font-semibold text-slate-900 mb-3.5">AM Leaderboard</div>
 
-      <div className="flex flex-col gap-1">
-        {entries.map((entry, i) => (
-          <div
-            key={entry.name}
-            className="grid grid-cols-[20px_26px_1fr_auto] items-center gap-2.5 py-2 px-1 rounded"
-          >
-            <div className={`text-[11px] font-bold font-mono tabular-nums text-center ${i === 0 ? 'text-[#6c63ff]' : 'text-slate-400'}`}>
-              {i + 1}
+      {entries.length === 0 ? (
+        <EmptyState
+          icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+          title="No activity yet"
+          description="AM rankings will appear once deals are tracked"
+          compact
+        />
+      ) : (
+        <div className="flex flex-col gap-1">
+          {entries.map((entry, i) => (
+            <div
+              key={entry.name}
+              className="grid grid-cols-[20px_26px_1fr_auto] items-center gap-2.5 py-2 px-1 rounded"
+            >
+              <div className={`text-[11px] font-bold font-mono tabular-nums text-center ${i === 0 ? 'text-[#6c63ff]' : 'text-slate-400'}`}>
+                {i + 1}
+              </div>
+              <Avatar name={entry.name} size={26} />
+              <div>
+                <div className="text-xs font-semibold text-slate-900">{entry.name}</div>
+                <div className="text-[10px] text-slate-400">{entry.deals}</div>
+              </div>
+              <div className="text-xs font-semibold text-slate-900 tabular-nums">{entry.value}</div>
             </div>
-            <Avatar name={entry.name} size={26} />
-            <div>
-              <div className="text-xs font-semibold text-slate-900">{entry.name}</div>
-              <div className="text-[10px] text-slate-400">{entry.deals}</div>
-            </div>
-            <div className="text-xs font-semibold text-slate-900 tabular-nums">{entry.value}</div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

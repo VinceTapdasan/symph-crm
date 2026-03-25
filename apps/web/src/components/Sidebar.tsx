@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useSession, signOut } from 'next-auth/react'
 import { Avatar } from './Avatar'
 import { cn } from '@/lib/utils'
+import { LogOut } from 'lucide-react'
 
 type SidebarProps = {
   isOpen?: boolean
@@ -29,8 +31,8 @@ const NAV_SECTIONS: NavSection[] = [
     title: 'Main',
     items: [
       { path: '/', label: 'Dashboard', icon: 'M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z' },
-      { path: '/pipeline', label: 'Pipeline', badge: 12, badgeColor: '#6c63ff', icon: 'M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2' },
-      { path: '/inbox', label: 'Inbox', badge: 5, badgeColor: '#dc2626', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+      { path: '/pipeline', label: 'Pipeline', icon: 'M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2' },
+      { path: '/inbox', label: 'Inbox', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
     ],
   },
   {
@@ -59,7 +61,9 @@ function isActive(itemPath: string, pathname: string): boolean {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const { data: session } = useSession()
   const [hoveredPath, setHoveredPath] = useState<string | null>(null)
+  const user = session?.user
 
   return (
     <>
@@ -139,11 +143,22 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* User profile */}
         <div className="px-[14px] py-3 border-t border-black/[.06] flex items-center gap-[9px]">
-          <Avatar name="Gee" size={28} />
-          <div>
-            <div className="text-[12px] font-semibold text-slate-900">Gee</div>
-            <div className="text-[10px] text-slate-400">CRSO</div>
+          {user?.image ? (
+            <img src={user.image} alt="" className="w-7 h-7 rounded-full" />
+          ) : (
+            <Avatar name={user?.name || '?'} size={28} />
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="text-[12px] font-semibold text-slate-900 truncate">{user?.name || 'User'}</div>
+            <div className="text-[10px] text-slate-400 truncate">{user?.email || ''}</div>
           </div>
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors shrink-0 cursor-pointer"
+            title="Sign out"
+          >
+            <LogOut size={14} />
+          </button>
         </div>
       </aside>
     </>
