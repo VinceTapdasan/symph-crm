@@ -76,7 +76,7 @@ steps:
       - --platform=managed
       - --allow-unauthenticated
       - --port=4000
-      - --set-secrets=DATABASE_URL=symph-crm-db-url:latest,ANTHROPIC_API_KEY=symph-crm-anthropic-key:latest,CRON_SECRET=symph-crm-cron-secret:latest
+      - --set-secrets=DATABASE_URL=symph-crm-db-url:latest,ANTHROPIC_API_KEY=symph-crm-anthropic-key:latest,CRON_SECRET=symph-crm-cron-secret:latest,SUPABASE_URL=symph-crm-supabase-url:latest
       - --set-env-vars=NODE_ENV=production,NEXT_PUBLIC_APP_URL=https://crm.symph.co
 
   # ── Step 3b: Deploy web to Cloud Run (after web push)
