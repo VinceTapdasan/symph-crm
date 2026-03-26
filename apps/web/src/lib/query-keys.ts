@@ -44,4 +44,9 @@ export const queryKeys = {
     byDeal: (dealId: string) => ['activities', 'deal', dealId] as const,
     byCompany: (companyId: string) => ['activities', 'company', companyId] as const,
   },
+  calendar: {
+    status: ['calendar', 'status'] as const,
+    events: (params: { from?: string; to?: string; dealId?: string }) =>
+      ['calendar', 'events', params] as const,
+  },
 } as const
