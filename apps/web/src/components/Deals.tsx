@@ -8,6 +8,9 @@ import { Avatar } from './Avatar'
 import { EmptyState } from './EmptyState'
 import { CreateBrandModal } from './CreateBrandModal'
 import { CreateDealModal } from './CreateDealModal'
+import { DealsGraph } from './DealsGraph'
+
+type ViewMode = 'list' | 'graph'
 
 // --- API types (matching DB schema) ---
 
@@ -251,6 +254,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
   const [search, setSearch] = useState('')
   const [showCreateBrand, setShowCreateBrand] = useState(false)
   const [showCreateDeal, setShowCreateDeal] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
 
   const qc = useQueryClient()
 
@@ -367,33 +371,63 @@ export function Deals({ onOpenDeal }: DealsProps) {
           </div>
 
           <div className="sm:ml-auto flex flex-wrap gap-2 items-center">
-            {/* Search */}
-            <div className="flex items-center gap-1.5 bg-slate-50 border border-black/[.06] rounded-lg px-2.5 py-[5px] flex-1 sm:flex-none sm:w-[200px] min-w-[140px]">
-              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="text-slate-400 shrink-0" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <Input
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search deals…"
-                className="border-none bg-transparent outline-none text-[12.5px] text-slate-900 w-full placeholder:text-slate-400 focus:ring-0 px-0 py-0 rounded-none h-auto shadow-none"
-              />
+            {/* View toggle */}
+            <div className="flex items-center bg-slate-100 rounded-lg p-0.5 gap-0.5">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`h-[26px] px-2.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 ${viewMode === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+                  <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+                  <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+                </svg>
+                List
+              </button>
+              <button
+                onClick={() => setViewMode('graph')}
+                className={`h-[26px] px-2.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 ${viewMode === 'graph' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+                  <circle cx="5" cy="12" r="2" /><circle cx="19" cy="5" r="2" /><circle cx="19" cy="19" r="2" /><circle cx="12" cy="12" r="2" />
+                  <line x1="7" y1="12" x2="10" y2="12" /><line x1="13.4" y1="10.6" x2="17" y2="6.9" /><line x1="13.4" y1="13.4" x2="17" y2="17.1" />
+                </svg>
+                Graph
+              </button>
             </div>
 
-            {/* Expand/Collapse */}
-            <button
-              onClick={expandAll}
-              className="h-[30px] px-3 rounded-lg border border-black/[.08] text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              Expand all
-            </button>
-            <button
-              onClick={collapseAll}
-              className="h-[30px] px-3 rounded-lg border border-black/[.08] text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              Collapse all
-            </button>
+            {/* Search (list mode only) */}
+            {viewMode === 'list' && (
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-black/[.06] rounded-lg px-2.5 py-[5px] flex-1 sm:flex-none sm:w-[200px] min-w-[140px]">
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="text-slate-400 shrink-0" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round">
+                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <Input
+                  type="text"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search deals…"
+                  className="border-none bg-transparent outline-none text-[12.5px] text-slate-900 w-full placeholder:text-slate-400 focus:ring-0 px-0 py-0 rounded-none h-auto shadow-none"
+                />
+              </div>
+            )}
+
+            {/* Expand/Collapse (list mode only) */}
+            {viewMode === 'list' && (
+              <>
+                <button
+                  onClick={expandAll}
+                  className="h-[30px] px-3 rounded-lg border border-black/[.08] text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  Expand all
+                </button>
+                <button
+                  onClick={collapseAll}
+                  className="h-[30px] px-3 rounded-lg border border-black/[.08] text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  Collapse all
+                </button>
+              </>
+            )}
 
             {/* New Brand */}
             <button
@@ -440,8 +474,19 @@ export function Deals({ onOpenDeal }: DealsProps) {
           </div>
         )}
 
-        {/* List */}
-        {!isLoading && deals.length > 0 && (
+        {/* Graph view */}
+        {!isLoading && deals.length > 0 && viewMode === 'graph' && (
+          <div className="flex-1 rounded-xl overflow-hidden border border-black/[.06]">
+            <DealsGraph
+              companies={companies}
+              deals={deals}
+              onOpenDeal={onOpenDeal}
+            />
+          </div>
+        )}
+
+        {/* List view */}
+        {!isLoading && deals.length > 0 && viewMode === 'list' && (
           <div className="flex-1 overflow-y-auto bg-white border border-black/[.06] rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
             {filtered.length === 0 ? (
               <div className="p-10 text-center text-[13px] text-slate-400">
