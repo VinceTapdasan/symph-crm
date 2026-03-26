@@ -1,6 +1,6 @@
 import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common'
 import { eq } from 'drizzle-orm'
-import { google } from 'googleapis'
+import { google, type calendar_v3 } from 'googleapis'
 import { userCalendarConnections, calendarEvents } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
@@ -109,7 +109,7 @@ export class CalendarConnectionsService {
 
     try {
       // Incremental sync if we have a syncToken
-      const listParams: Parameters<typeof calendar.events.list>[0] = {
+      const listParams: calendar_v3.Params$Resource$Events$List = {
         calendarId: 'primary',
         singleEvents: true,
         ...(conn.syncToken
