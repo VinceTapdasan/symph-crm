@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import type { Request } from 'express'
 
 /**
  * InternalGuard — protects /api/internal/* endpoints from public access.
@@ -17,14 +18,15 @@ export class InternalGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>()
-    const secret = (request.headers as Record<string, string>)['x-internal-secret']
+    const secret = request.headers['x-internal-secret'] as string | string[] | undefined
+    const secretStr = Array.isArray(secret) ? secret[0] : secret
     const expected = this.config.get<string>('INTERNAL_SECRET')
 
     if (!expected) {
       throw new UnauthorizedException('INTERNAL_SECRET not configured')
     }
 
-    if (!secret || secret !== expected) {
+    if (!secretStr || secretStr !== expected) {
       throw new UnauthorizedException('Invalid internal secret')
     }
 

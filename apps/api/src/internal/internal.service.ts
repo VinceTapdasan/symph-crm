@@ -40,7 +40,7 @@ export class InternalService {
       RETURNING d.id, d.title, d.assigned_to
     `)
 
-    const rows = result.rows as Array<{ id: string; title: string; assigned_to: string | null }>
+    const rows = Array.from(result) as Array<{ id: string; title: string; assigned_to: string | null }>
     const dealIds = rows.map((r) => r.id)
 
     if (dealIds.length > 0) {
