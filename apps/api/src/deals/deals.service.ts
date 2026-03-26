@@ -69,4 +69,25 @@ export class DealsService {
   async remove(id: string) {
     await this.db.delete(deals).where(eq(deals.id, id))
   }
+
+  /**
+   * Touch lastActivityAt and clear dormancy flag in one atomic UPDATE.
+   * Call this from any service that records activity against a deal:
+   *   - chat message about a deal
+   *   - document created / updated
+   *   - file uploaded
+   *   - calendar event linked
+   *   - stage change (already handled in updateStage)
+   */
+  async updateLastActivity(id: string): Promise<void> {
+    await this.db
+      .update(deals)
+      .set({
+        lastActivityAt: new Date(),
+        isFlagged: false,
+        flagReason: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(deals.id, id))
+  }
 }

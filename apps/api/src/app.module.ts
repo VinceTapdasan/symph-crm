@@ -12,6 +12,7 @@ import { VoiceModule } from './voice/voice.module'
 import { ChatModule } from './chat/chat.module'
 import { ProductsModule } from './products/products.module'
 import { PipelineModule } from './pipeline/pipeline.module'
+import { InternalModule } from './internal/internal.module'
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { PipelineModule } from './pipeline/pipeline.module'
     ChatModule,
     ProductsModule,
     PipelineModule,
+    InternalModule,
   ],
 })
 export class AppModule {}
