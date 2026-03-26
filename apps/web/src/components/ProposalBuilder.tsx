@@ -1,228 +1,303 @@
 'use client'
 
-import { useState } from 'react'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+/**
+ * ProposalBuilder — proposal list + Tiptap editor container.
+ *
+ * Architecture:
+ *   ProposalBuilder (this file) — server-safe shell, handles list + selection
+ *     └── ProposalEditor (dynamic import, ssr:false) — Tiptap, browser-only
+ *
+ * Data flow:
+ *   List: GET /api/documents?dealId=&type=proposal (filter client-side by type)
+ *   Create: POST /api/documents → new proposal document row
+ *   Edit: ProposalEditor auto-saves to PUT /api/documents/:id every 2s
+ *   Version: POST /api/documents with parentId = current documentId
+ */
 
-type ProposalForm = {
-  brand: string
-  dealName: string
-  industry: string
-  size: string
-  services: string
-  problem: string
-  solution: string
-  timeline: string
-  pricingType: string
-  pricing: string
+import { useState, useMemo } from 'react'
+import dynamic from 'next/dynamic'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { cn } from '@/lib/utils'
+import { EmptyState } from './EmptyState'
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'
+const USER_ID = 'dev-user'
+
+// Dynamic import — Tiptap uses ProseMirror (browser DOM only, SSR breaks)
+const ProposalEditor = dynamic(() => import('./ProposalEditor'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-64 text-[13px] text-slate-400">
+      Loading editor...
+    </div>
+  ),
+})
+
+type ApiDocument = {
+  id: string
+  dealId: string | null
+  type: string
+  title: string
+  excerpt: string | null
+  wordCount: number | null
+  version: number | null
+  parentId: string | null
+  updatedAt: string
+  createdAt: string
 }
 
-const EMPTY_FORM: ProposalForm = {
-  brand: '',
-  dealName: '',
-  industry: '',
-  size: '',
-  services: '',
-  problem: '',
-  solution: '',
-  timeline: '',
-  pricingType: 'Fixed',
-  pricing: '',
-}
+// ─── New Proposal Modal ───────────────────────────────────────────────────────
 
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+function NewProposalModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void
+  onCreated: (doc: ApiDocument) => void
+}) {
+  const [title, setTitle] = useState('')
+  const [dealId, setDealId] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  const { data: deals = [] } = useQuery<{ id: string; title: string }[]>({
+    queryKey: ['deals'],
+    queryFn: () => fetch(`${API}/deals`).then(r => r.json()),
+  })
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${API}/documents`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': USER_ID },
+        body: JSON.stringify({
+          authorId: USER_ID,
+          dealId: dealId || null,
+          type: 'proposal',
+          title: title || 'Untitled Proposal',
+          content: '',
+          version: 1,
+        }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return res.json() as Promise<ApiDocument>
+    },
+    onSuccess: (doc) => { onCreated(doc); onClose() },
+    onError: (err: Error) => setError(err.message),
+  })
+
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
-        {label}
-      </label>
-      {children}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-[15px] font-semibold text-slate-900">New Proposal</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">x</button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-[12px] font-medium text-slate-600 mb-1">Title</label>
+            <input
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-slate-900"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="e.g. Jollibee HRIS Proposal"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium text-slate-600 mb-1">Deal (optional)</label>
+            <select
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
+              value={dealId}
+              onChange={e => setDealId(e.target.value)}
+            >
+              <option value="">None</option>
+              {deals.map(d => (
+                <option key={d.id} value={d.id}>{d.title}</option>
+              ))}
+            </select>
+          </div>
+          {error && <p className="text-[12px] text-red-500">{error}</p>}
+          <div className="flex justify-end gap-2 pt-1">
+            <button onClick={onClose} className="px-4 py-2 text-[13px] rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
+              Cancel
+            </button>
+            <button
+              onClick={() => mutation.mutate()}
+              disabled={mutation.isPending}
+              className="px-4 py-2 text-[13px] rounded-lg bg-slate-900 text-white font-medium disabled:opacity-40 hover:bg-slate-700"
+            >
+              {mutation.isPending ? 'Creating...' : 'Create'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-white border border-black/[.06] rounded-xl p-4 shadow-[var(--shadow-card)]">
-      <div className="text-[13px] font-semibold text-slate-900 mb-3">{title}</div>
-      {children}
-    </div>
-  )
-}
+// ─── Main ProposalBuilder ─────────────────────────────────────────────────────
 
 export function ProposalBuilder() {
-  const [form, setForm] = useState<ProposalForm>(EMPTY_FORM)
+  const qc = useQueryClient()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [showNewModal, setShowNewModal] = useState(false)
+  const [showVersions, setShowVersions] = useState(false)
 
-  function updateField(key: keyof ProposalForm, value: string) {
-    setForm(prev => ({ ...prev, [key]: value }))
-  }
+  // All proposals (type = 'proposal', no parentId = root versions only)
+  const { data: allDocs = [], isLoading } = useQuery<ApiDocument[]>({
+    queryKey: ['documents', 'proposals'],
+    queryFn: () =>
+      fetch(`${API}/documents`, { headers: { 'x-user-id': USER_ID } }).then(r => r.json()),
+  })
+
+  const proposals = useMemo(
+    () => allDocs.filter(d => d.type === 'proposal' && !d.parentId),
+    [allDocs],
+  )
+
+  const versions = useMemo(
+    () => allDocs.filter(d => d.type === 'proposal' && d.parentId === selectedId),
+    [allDocs, selectedId],
+  )
+
+  // Fetch content for selected proposal
+  const { data: contentData } = useQuery<{ content: string }>({
+    queryKey: ['document-content', selectedId],
+    queryFn: () =>
+      fetch(`${API}/documents/${selectedId}/content`).then(r => r.json()),
+    enabled: !!selectedId,
+  })
+
+  const selected = proposals.find(p => p.id === selectedId)
 
   return (
-    <div className="p-4 md:p-6 h-full flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-2.5 mb-3.5 shrink-0">
-        <div className="text-[13px] font-semibold text-slate-900">Proposal Builder</div>
-        <div className="ml-auto flex gap-1.5">
-          <button className="px-3 py-1.5 rounded-lg border border-black/[.08] text-[12px] font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150 active:scale-[0.98]">
-            Save Draft
+    <div className="h-full flex overflow-hidden">
+      {/* Sidebar — proposal list */}
+      <div className="w-64 shrink-0 border-r border-slate-200 bg-slate-50 flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+          <span className="text-[13px] font-semibold text-slate-900">Proposals</span>
+          <button
+            onClick={() => setShowNewModal(true)}
+            className="text-[12px] px-2 py-1 bg-slate-900 text-white rounded-md hover:bg-slate-700 font-medium"
+          >
+            + New
           </button>
-          <button className="px-3 py-1.5 rounded-lg bg-[#6c63ff] hover:bg-[#5b52e8] text-white text-[12px] font-semibold transition-colors duration-150 active:scale-[0.98]">
-            Export PDF
-          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto py-2">
+          {isLoading ? (
+            <div className="px-4 py-3 text-[12px] text-slate-400">Loading...</div>
+          ) : proposals.length === 0 ? (
+            <div className="px-4 py-6">
+              <EmptyState
+                icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                title="No proposals yet"
+                description="Create your first proposal"
+                compact
+              />
+            </div>
+          ) : (
+            proposals.map(doc => (
+              <button
+                key={doc.id}
+                onClick={() => setSelectedId(doc.id)}
+                className={cn(
+                  'w-full text-left px-4 py-3 hover:bg-slate-100 transition-colors border-l-2',
+                  selectedId === doc.id
+                    ? 'border-slate-900 bg-white'
+                    : 'border-transparent',
+                )}
+              >
+                <p className="text-[12px] font-semibold text-slate-800 truncate">{doc.title}</p>
+                {doc.excerpt && (
+                  <p className="text-[11px] text-slate-500 mt-0.5 truncate">{doc.excerpt}</p>
+                )}
+                <p className="text-[10px] text-slate-400 mt-1">
+                  {new Date(doc.updatedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
+                  {doc.wordCount ? ` · ${doc.wordCount} words` : ''}
+                </p>
+              </button>
+            ))
+          )}
         </div>
       </div>
 
-      {/* Form + Preview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 overflow-y-auto lg:overflow-hidden">
-        {/* Left: Form */}
-        <div className="overflow-y-auto flex flex-col gap-3.5">
-          <SectionCard title="Deal Details">
-            <div className="flex flex-col gap-2.5">
-              <div className="grid grid-cols-2 gap-2.5">
-                <FormField label="Client Brand">
-                  <Input value={form.brand} onChange={e => updateField('brand', e.target.value)} placeholder="e.g. Acme Corp" />
-                </FormField>
-                <FormField label="Deal Name">
-                  <Input value={form.dealName} onChange={e => updateField('dealName', e.target.value)} placeholder="e.g. Platform Rebuild" />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <FormField label="Industry">
-                  <Input value={form.industry} onChange={e => updateField('industry', e.target.value)} placeholder="e.g. Financial Services" />
-                </FormField>
-                <FormField label="Deal Size">
-                  <Input value={form.size} onChange={e => updateField('size', e.target.value)} placeholder="e.g. P2,500,000" />
-                </FormField>
-              </div>
-              <FormField label="Services Offered">
-                <Input value={form.services} onChange={e => updateField('services', e.target.value)} placeholder="e.g. The Agency, Consulting" />
-              </FormField>
-            </div>
-          </SectionCard>
-
-          <SectionCard title="Problem Statement">
-            <Textarea
-              value={form.problem}
-              onChange={e => updateField('problem', e.target.value)}
-              placeholder="Describe the client's problem or pain point..."
-              className="min-h-[80px] leading-relaxed text-[13px]"
+      {/* Main editor area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {!selectedId ? (
+          <div className="flex-1 flex items-center justify-center">
+            <EmptyState
+              icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              title="Select a proposal"
+              description="Choose from the list or create a new one"
             />
-          </SectionCard>
-
-          <SectionCard title="Proposed Solution">
-            <Textarea
-              value={form.solution}
-              onChange={e => updateField('solution', e.target.value)}
-              placeholder="Describe the proposed solution..."
-              className="min-h-[80px] leading-relaxed text-[13px]"
-            />
-          </SectionCard>
-
-          <SectionCard title="Timeline & Pricing">
-            <div className="flex flex-col gap-2.5">
-              <div className="grid grid-cols-2 gap-2.5">
-                <FormField label="Timeline">
-                  <Input value={form.timeline} onChange={e => updateField('timeline', e.target.value)} placeholder="e.g. 5 months" />
-                </FormField>
-                <FormField label="Pricing Type">
-                  <Select value={form.pricingType} onValueChange={(v) => updateField('pricingType', v)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {['Fixed', 'Range', 'Custom'].map(opt => (
-                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormField>
+          </div>
+        ) : (
+          <>
+            {/* Editor header */}
+            <div className="flex items-center px-6 py-3 border-b border-slate-200 bg-white gap-3">
+              <div className="min-w-0">
+                <p className="text-[14px] font-semibold text-slate-900 truncate">{selected?.title}</p>
+                {selected?.dealId && (
+                  <p className="text-[11px] text-slate-500">Linked to deal</p>
+                )}
               </div>
-              <FormField label="Pricing Details">
-                <Textarea
-                  value={form.pricing}
-                  onChange={e => updateField('pricing', e.target.value)}
-                  placeholder="Break down the pricing..."
-                  className="min-h-[80px] leading-relaxed text-[13px]"
-                />
-              </FormField>
-            </div>
-          </SectionCard>
-        </div>
-
-        {/* Right: Live Preview */}
-        <div className="overflow-y-auto">
-          <div className="bg-white border border-black/[.06] rounded-xl shadow-md px-7 py-8 min-h-[600px]">
-            {/* Logo */}
-            <div className="text-center mb-6">
-              <div
-                className="w-9 h-9 rounded-xl inline-flex items-center justify-center font-extrabold text-white text-sm mb-3"
-                style={{ background: '#6c63ff' }}
-              >
-                S
+              <div className="ml-auto flex items-center gap-2">
+                {versions.length > 0 && (
+                  <button
+                    onClick={() => setShowVersions(v => !v)}
+                    className="text-[12px] px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600"
+                  >
+                    {versions.length} version{versions.length !== 1 ? 's' : ''}
+                  </button>
+                )}
               </div>
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight mb-1">
-                {form.brand ? `Proposal for ${form.brand}` : 'New Proposal'}
-              </h1>
-              <p className="text-[12px] text-slate-400">
-                {form.dealName ? `${form.dealName} — ` : ''}Prepared by Symph
-              </p>
             </div>
 
-            {/* Sections */}
-            {[
-              { title: 'About Symph', content: 'Symph is an AI-native software engineering and product agency based in Cebu, Philippines. We build production-grade software with modern stacks and ship fast.' },
-              { title: 'The Problem', content: form.problem || 'Fill in the problem statement to preview...' },
-              { title: 'Our Solution', content: form.solution || 'Fill in the proposed solution to preview...' },
-            ].map(sec => (
-              <div key={sec.title} className="mb-5 pb-4 border-b border-black/[.06]">
-                <h3 className="text-[13px] font-bold text-slate-900 mb-2">{sec.title}</h3>
-                <p className="text-[12px] text-slate-600 leading-relaxed whitespace-pre-line">{sec.content}</p>
-              </div>
-            ))}
-
-            {/* Services */}
-            {form.services && (
-              <div className="mb-5 pb-4 border-b border-black/[.06]">
-                <h3 className="text-[13px] font-bold text-slate-900 mb-2">Services</h3>
-                <div className="flex gap-1.5 flex-wrap">
-                  {form.services.split(',').map(s => (
-                    <span
-                      key={s.trim()}
-                      className="text-[11px] font-medium px-2.5 py-[3px] rounded-full bg-[rgba(108,99,255,0.08)] text-[#6c63ff]"
+            {/* Version history panel */}
+            {showVersions && versions.length > 0 && (
+              <div className="border-b border-slate-200 bg-amber-50 px-6 py-3">
+                <p className="text-[12px] font-semibold text-amber-900 mb-2">Version History</p>
+                <div className="flex gap-2 flex-wrap">
+                  {versions.map(v => (
+                    <button
+                      key={v.id}
+                      onClick={() => setSelectedId(v.id)}
+                      className="text-[11px] px-2.5 py-1 border border-amber-300 rounded-md bg-white hover:bg-amber-50 text-amber-800"
                     >
-                      {s.trim()}
-                    </span>
+                      {v.title}
+                    </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Timeline */}
-            {form.timeline && (
-              <div className="mb-5 pb-4 border-b border-black/[.06]">
-                <h3 className="text-[13px] font-bold text-slate-900 mb-2">Timeline</h3>
-                <p className="text-[12px] text-slate-600">{form.timeline}</p>
-              </div>
-            )}
-
-            {/* Investment */}
-            <div className="mb-6">
-              <h3 className="text-[13px] font-bold text-slate-900 mb-2">Investment</h3>
-              <p className="text-[18px] font-bold text-[#6c63ff] mb-2">{form.size || '--'}</p>
-              {form.pricing && (
-                <p className="text-[11px] text-slate-600 whitespace-pre-line leading-relaxed">{form.pricing}</p>
-              )}
+            {/* Tiptap editor */}
+            <div className="flex-1 overflow-hidden">
+              <ProposalEditor
+                key={selectedId}
+                documentId={selectedId}
+                dealId={selected?.dealId ?? ''}
+                initialContent={contentData?.content ?? ''}
+                onVersionSaved={() => {
+                  qc.invalidateQueries({ queryKey: ['documents', 'proposals'] })
+                  setShowVersions(true)
+                }}
+              />
             </div>
-
-            {/* Footer */}
-            <div className="text-center pt-5 border-t border-black/[.06]">
-              <p className="text-[11px] text-slate-400 mb-1">Let&apos;s build something great together.</p>
-              <p className="text-[12px] text-[#6c63ff] font-semibold">gee@symph.co — symph.co</p>
-            </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
+
+      {showNewModal && (
+        <NewProposalModal
+          onClose={() => setShowNewModal(false)}
+          onCreated={(doc) => {
+            qc.invalidateQueries({ queryKey: ['documents', 'proposals'] })
+            setSelectedId(doc.id)
+          }}
+        />
+      )}
     </div>
   )
 }
