@@ -209,7 +209,11 @@ function CreateEventModal({
   )
 }
 
-export function Calendar() {
+type CalendarProps = {
+  onOpenDeal?: (id: string) => void
+}
+
+export function Calendar({ onOpenDeal }: CalendarProps = {}) {
   const { userId } = useUser()
   const now = new Date()
   const [month, setMonth] = useState(now.getMonth())
