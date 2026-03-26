@@ -6,6 +6,13 @@ import { cn } from '@/lib/utils'
 import { queryKeys } from '@/lib/query-keys'
 import { EmptyState } from './EmptyState'
 import { useUser } from '@/lib/hooks/use-user'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'
 
@@ -153,16 +160,20 @@ function CreateEventModal({
 
           <div>
             <label className="block text-[12px] font-medium text-slate-600 mb-1">Type</label>
-            <select
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-slate-900 bg-white"
+            <Select
               value={form.eventType}
-              onChange={e => set('eventType', e.target.value as CreateEventForm['eventType'])}
+              onValueChange={v => set('eventType', v as CreateEventForm['eventType'])}
             >
-              <option value="general">General</option>
-              <option value="demo">Demo</option>
-              <option value="discovery_call">Discovery Call</option>
-              <option value="followup">Follow-up</option>
-            </select>
+              <SelectTrigger className="w-full text-[13px] h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">General</SelectItem>
+                <SelectItem value="demo">Demo</SelectItem>
+                <SelectItem value="discovery_call">Discovery Call</SelectItem>
+                <SelectItem value="followup">Follow-up</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>

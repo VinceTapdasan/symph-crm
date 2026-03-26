@@ -20,6 +20,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { EmptyState } from './EmptyState'
 import { useUser } from '@/lib/hooks/use-user'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'
 
@@ -107,16 +114,20 @@ function NewProposalModal({
           </div>
           <div>
             <label className="block text-[12px] font-medium text-slate-600 mb-1">Deal (optional)</label>
-            <select
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
-              value={dealId}
-              onChange={e => setDealId(e.target.value)}
+            <Select
+              value={dealId || '__none__'}
+              onValueChange={v => setDealId(v === '__none__' ? '' : v)}
             >
-              <option value="">None</option>
-              {deals.map(d => (
-                <option key={d.id} value={d.id}>{d.title}</option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full text-[13px] h-9">
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">None</SelectItem>
+                {deals.map(d => (
+                  <SelectItem key={d.id} value={d.id}>{d.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           {error && <p className="text-[12px] text-red-500">{error}</p>}
           <div className="flex justify-end gap-2 pt-1">
@@ -146,11 +157,11 @@ export function ProposalBuilder() {
   const [showNewModal, setShowNewModal] = useState(false)
   const [showVersions, setShowVersions] = useState(false)
 
-  // All proposals (type = 'proposal', no parentId = root versions only)
+  // All proposals — filter by type=proposal at the API level
   const { data: allDocs = [], isLoading } = useQuery<ApiDocument[]>({
     queryKey: ['documents', 'proposals'],
     queryFn: () =>
-      fetch(`${API}/documents`, { headers: { 'x-user-id': userId ?? '' } }).then(r => r.json()),
+      fetch(`${API}/documents?type=proposal`, { headers: { 'x-user-id': userId ?? '' } }).then(r => r.json()),
     enabled: !!userId,
   })
 
@@ -190,7 +201,14 @@ export function ProposalBuilder() {
 
         <div className="flex-1 overflow-y-auto py-2">
           {isLoading ? (
-            <div className="px-4 py-3 text-[12px] text-slate-400">Loading...</div>
+            <div className="flex flex-col gap-2 p-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="rounded-lg px-4 py-3 bg-white border border-slate-100 animate-pulse">
+                  <div className="h-3 w-3/4 bg-slate-100 rounded mb-1.5" />
+                  <div className="h-2.5 w-1/2 bg-slate-100 rounded" />
+                </div>
+              ))}
+            </div>
           ) : proposals.length === 0 ? (
             <div className="px-4 py-6">
               <EmptyState

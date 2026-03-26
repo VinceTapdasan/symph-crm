@@ -32,6 +32,14 @@ export class DocumentsService {
       .orderBy(desc(documents.updatedAt))
   }
 
+  async findByType(type: DocumentType) {
+    return this.db
+      .select()
+      .from(documents)
+      .where(and(eq(documents.type, type), isNull(documents.deletedAt)))
+      .orderBy(desc(documents.updatedAt))
+  }
+
   async findOne(id: string) {
     const [doc] = await this.db.select().from(documents).where(eq(documents.id, id))
     return doc

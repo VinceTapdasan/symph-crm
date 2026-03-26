@@ -7,9 +7,14 @@ export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Get()
-  find(@Query('dealId') dealId?: string, @Query('companyId') companyId?: string) {
+  find(
+    @Query('dealId') dealId?: string,
+    @Query('companyId') companyId?: string,
+    @Query('type') type?: string,
+  ) {
     if (dealId) return this.documentsService.findByDeal(dealId)
     if (companyId) return this.documentsService.findByCompany(companyId)
+    if (type) return this.documentsService.findByType(type as any)
     return []
   }
 
