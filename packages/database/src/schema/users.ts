@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core'
 
 export const users = pgTable('users', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -6,8 +6,15 @@ export const users = pgTable('users', {
   email: text('email').unique(),
   emailVerified: timestamp('emailVerified', { withTimezone: true }),
   image: text('image'),
-  role: text('role', { enum: ['super_admin', 'admin', 'manager', 'rep', 'viewer'] }).default('rep').notNull(),
+  // RBAC: SALES = full access, BUILD = restricted view-only
+  role: text('role', { enum: ['SALES', 'BUILD'] }).default('BUILD').notNull(),
   passwordHash: text('passwordHash'),
+  // Onboarding profile fields
+  firstName: text('first_name'),
+  middleName: text('middle_name'),
+  lastName: text('last_name'),
+  nickname: text('nickname'),
+  isOnboarded: boolean('is_onboarded').default(false).notNull(),
   createdAt: timestamp('createdAt', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updatedAt', { withTimezone: true }).defaultNow().notNull(),
 })

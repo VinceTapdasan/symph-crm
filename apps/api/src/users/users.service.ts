@@ -4,6 +4,21 @@ import { users } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
 
+/**
+ * Emails that are auto-assigned the SALES role on first sign-in.
+ * Everyone else defaults to BUILD.
+ */
+const SALES_EMAILS = new Set([
+  'mary.amora@symph.co',
+  'gee@symph.co',
+  'gee.quidet@symph.co',
+  'chelle@symph.co',
+  'chelle.gray@symph.co',
+  'lyra.gemparo@symph.co',
+  'kate.labra@symph.co',
+  'vince.tapdasan@symph.co',
+])
+
 @Injectable()
 export class UsersService {
   constructor(@Inject(DB) private db: Database) {}
@@ -11,9 +26,12 @@ export class UsersService {
   /**
    * Upsert a user from NextAuth signIn callback.
    * Called once per login — keeps public.users in sync with Google OAuth identity.
+   * Auto-assigns SALES role for known email list; everyone else gets BUILD.
    * id = NextAuth user.id (Google OAuth sub claim)
    */
   async sync(data: { id: string; email: string; name?: string | null; image?: string | null }) {
+    const role: 'SALES' | 'BUILD' = SALES_EMAILS.has(data.email) ? 'SALES' : 'BUILD'
+
     const [user] = await this.db
       .insert(users)
       .values({
@@ -21,6 +39,7 @@ export class UsersService {
         email: data.email,
         name: data.name ?? null,
         image: data.image ?? null,
+        role,
       })
       .onConflictDoUpdate({
         target: users.id,
@@ -28,10 +47,41 @@ export class UsersService {
           email: data.email,
           name: data.name ?? null,
           image: data.image ?? null,
+          role, // re-apply on every login in case email list changes
           updatedAt: new Date(),
         },
       })
       .returning()
+
+    return user
+  }
+
+  /**
+   * Complete onboarding for a user.
+   * Sets profile fields and marks isOnboarded = true.
+   */
+  async completeOnboarding(
+    id: string,
+    data: {
+      firstName: string
+      middleName: string
+      lastName: string
+      nickname?: string | null
+    },
+  ) {
+    const [user] = await this.db
+      .update(users)
+      .set({
+        firstName: data.firstName,
+        middleName: data.middleName,
+        lastName: data.lastName,
+        nickname: data.nickname ?? null,
+        isOnboarded: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning()
+
     return user
   }
 
@@ -41,12 +91,18 @@ export class UsersService {
   }
 
   async findAll() {
-    return this.db.select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      image: users.image,
-      role: users.role,
-    }).from(users)
+    return this.db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        image: users.image,
+        role: users.role,
+        isOnboarded: users.isOnboarded,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        nickname: users.nickname,
+      })
+      .from(users)
   }
 }

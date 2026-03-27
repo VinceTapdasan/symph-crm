@@ -3,7 +3,7 @@ import Google from 'next-auth/providers/google'
 
 const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+export const { handlers, signIn, signOut, auth, unstable_update: update } = NextAuth({
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -16,54 +16,100 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     authorized({ auth: session, request: { nextUrl } }) {
       const isLoggedIn = !!session?.user
-      const isOnLogin = nextUrl.pathname === '/login'
+      const isOnboarded = session?.user?.isOnboarded ?? false
+      const path = nextUrl.pathname
 
-      if (isOnLogin) {
-        if (isLoggedIn) return Response.redirect(new URL('/', nextUrl))
-        return true
+      // Unauthenticated users → login (except /login itself)
+      if (!isLoggedIn) {
+        if (path === '/login') return true
+        return Response.redirect(new URL('/login', nextUrl))
       }
 
-      return isLoggedIn
+      // Authenticated but not onboarded → onboarding page only
+      if (!isOnboarded) {
+        if (path === '/onboarding') return true
+        return Response.redirect(new URL('/onboarding', nextUrl))
+      }
+
+      // Fully onboarded → redirect away from login/onboarding
+      if (path === '/login' || path === '/onboarding') {
+        return Response.redirect(new URL('/', nextUrl))
+      }
+
+      return true
     },
-    jwt({ token, user, account, profile }) {
+
+    async jwt({ token, user, trigger, session: sessionUpdate, profile }) {
+      // --- First sign-in: user object is present ---
       if (user) {
         token.id = user.id
+
+        // Sync user to our DB and capture role + isOnboarded
+        if (user.email) {
+          try {
+            const res = await fetch(`${API_URL}/users/sync`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: user.id,
+                email: user.email,
+                name: user.name ?? null,
+                image: user.image ?? null,
+              }),
+            })
+            if (res.ok) {
+              const data = await res.json()
+              token.role = data.role
+              token.isOnboarded = data.isOnboarded ?? false
+              token.firstName = data.firstName ?? null
+              token.lastName = data.lastName ?? null
+              token.nickname = data.nickname ?? null
+            }
+          } catch {
+            // Non-blocking — login still succeeds even if sync fails
+          }
+        }
       }
+
+      // --- Profile enrichment (name/picture from Google) ---
       if (profile) {
-        // Store profile details for user sync
         token.name = profile.name
         token.email = profile.email
         token.picture = (profile as any).picture
       }
+
+      // --- Session update: re-fetch user to pick up onboarding changes ---
+      if (trigger === 'update' && sessionUpdate?.refreshUser && token.id) {
+        try {
+          const res = await fetch(`${API_URL}/users/${token.id}`)
+          if (res.ok) {
+            const data = await res.json()
+            token.role = data.role
+            token.isOnboarded = data.isOnboarded ?? false
+            token.firstName = data.firstName ?? null
+            token.lastName = data.lastName ?? null
+            token.nickname = data.nickname ?? null
+          }
+        } catch {
+          // Non-blocking
+        }
+      }
+
       return token
     },
+
     session({ session, token }) {
       if (token?.id) {
         session.user.id = token.id as string
       }
-      return session
-    },
-    async signIn({ user, account, profile }) {
-      // Upsert user into our public.users table on every login.
-      // JWT strategy means no DB adapter — we sync manually here.
-      if (!user?.id || !user?.email) return true
-
-      try {
-        await fetch(`${API_URL}/users/sync`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: user.id,
-            email: user.email,
-            name: user.name ?? null,
-            image: user.image ?? null,
-          }),
-        })
-      } catch {
-        // Non-blocking — login still succeeds even if sync fails
+      if (token?.role) {
+        ;(session.user as any).role = token.role
       }
-
-      return true
+      ;(session.user as any).isOnboarded = token.isOnboarded ?? false
+      ;(session.user as any).firstName = token.firstName ?? null
+      ;(session.user as any).lastName = token.lastName ?? null
+      ;(session.user as any).nickname = token.nickname ?? null
+      return session
     },
   },
   session: { strategy: 'jwt' },
