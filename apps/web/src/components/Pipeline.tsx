@@ -214,7 +214,7 @@ function DroppableColumn({
       ref={setNodeRef}
       data-stage-id={col.id}
       className={cn(
-        'w-[252px] shrink-0 flex flex-col overflow-hidden rounded-lg transition-all duration-150',
+        'w-[252px] shrink-0 flex flex-col rounded-lg transition-all duration-150',
         'bg-[rgba(0,0,0,0.02)] dark:bg-white/[.02]',
         isOver
           ? 'border-2 border-dashed'
@@ -357,13 +357,13 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
       </div>
 
       {/* Board */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden">
+      <div className="flex-1 overflow-auto">
         {isLoading ? (
-          <div className="flex gap-2.5 h-full px-4 pb-4" style={{ minWidth: 'max-content' }}>
+          <div className="flex gap-2.5 px-4 pb-4" style={{ minWidth: 'max-content' }}>
             {KANBAN_STAGES.map(col => (
               <div
                 key={col.id}
-                className="w-[252px] shrink-0 flex flex-col overflow-hidden rounded-lg border border-black/[.07] dark:border-white/[.08] bg-[rgba(0,0,0,0.02)] dark:bg-white/[.02]"
+                className="w-[252px] shrink-0 flex flex-col rounded-lg border border-black/[.07] dark:border-white/[.08] bg-[rgba(0,0,0,0.02)] dark:bg-white/[.02]"
               >
                 <div className="px-3.5 py-3 shrink-0 border-b border-black/[.06] dark:border-white/[.08] bg-white/60 dark:bg-white/[.04]">
                   <div className="flex items-center gap-2">
@@ -372,7 +372,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                     <div className="h-5 w-6 bg-slate-100 dark:bg-white/[.06] rounded-full animate-pulse" />
                   </div>
                 </div>
-                <div className="flex flex-col gap-2 flex-1 overflow-y-auto p-2.5">
+                <div className="flex flex-col gap-2 p-2.5">
                   {[1, 2].map(i => (
                     <div key={i} className="rounded-lg p-3.5 bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] animate-pulse">
                       <div className="h-2.5 w-16 bg-slate-100 dark:bg-white/[.06] rounded mb-2" />
@@ -398,7 +398,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div className="flex gap-2.5 h-full px-4 pb-4" style={{ minWidth: 'max-content' }}>
+            <div className="flex gap-2.5 px-4 pb-4" style={{ minWidth: 'max-content' }}>
               {columnDeals.map(col => (
                 <DroppableColumn key={col.id} col={col}>
                   {/* Column header */}
@@ -418,7 +418,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                   </div>
 
                   {/* Cards */}
-                  <div className="flex flex-col gap-2 flex-1 overflow-y-auto p-2.5">
+                  <div className="flex flex-col gap-2 p-2.5">
                     {col.deals.length === 0 ? (
                       <div className="py-8 text-center text-[12px] text-slate-300 dark:text-white/20">
                         No deals
