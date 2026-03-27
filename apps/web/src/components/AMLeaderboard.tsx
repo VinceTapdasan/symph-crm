@@ -36,10 +36,10 @@ export function AMLeaderboard({ entries }: AMLeaderboardProps) {
               </div>
               <Avatar name={entry.name} size={26} />
               <div>
-                <div className="text-xs font-semibold text-slate-900">{entry.name}</div>
+                <div className="text-xs font-semibold text-slate-900 dark:text-white">{entry.name}</div>
                 <div className="text-[10px] text-slate-400">{entry.deals}</div>
               </div>
-              <div className="text-xs font-semibold text-slate-900 tabular-nums">{entry.value}</div>
+              <div className="text-xs font-semibold text-slate-900 dark:text-white tabular-nums">{entry.value}</div>
             </div>
           ))}
         </div>

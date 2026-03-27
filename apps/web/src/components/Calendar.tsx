@@ -121,15 +121,15 @@ function CreateEventModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+      <div className="bg-white dark:bg-[#1c1c1f] rounded-xl shadow-xl w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-[15px] font-semibold text-slate-900">New Event</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">x</button>
+          <h2 className="text-[15px] font-semibold text-slate-900 dark:text-white">New Event</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:text-slate-400 text-lg leading-none">x</button>
         </div>
 
         <div className="space-y-3">
           <div>
-            <label className="block text-[12px] font-medium text-slate-600 mb-1">Title *</label>
+            <label className="block text-[12px] font-medium text-slate-600 dark:text-slate-400 mb-1">Title *</label>
             <Input
               className="h-9 text-[13px]"
               value={form.title}
@@ -141,7 +141,7 @@ function CreateEventModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[12px] font-medium text-slate-600 mb-1">Start *</label>
+              <label className="block text-[12px] font-medium text-slate-600 dark:text-slate-400 mb-1">Start *</label>
               <Input
                 type="datetime-local"
                 className="h-9 text-[13px]"
@@ -150,7 +150,7 @@ function CreateEventModal({
               />
             </div>
             <div>
-              <label className="block text-[12px] font-medium text-slate-600 mb-1">End *</label>
+              <label className="block text-[12px] font-medium text-slate-600 dark:text-slate-400 mb-1">End *</label>
               <Input
                 type="datetime-local"
                 className="h-9 text-[13px]"
@@ -161,7 +161,7 @@ function CreateEventModal({
           </div>
 
           <div>
-            <label className="block text-[12px] font-medium text-slate-600 mb-1">Type</label>
+            <label className="block text-[12px] font-medium text-slate-600 dark:text-slate-400 mb-1">Type</label>
             <Select
               value={form.eventType}
               onValueChange={v => set('eventType', v as CreateEventForm['eventType'])}
@@ -179,7 +179,7 @@ function CreateEventModal({
           </div>
 
           <div>
-            <label className="block text-[12px] font-medium text-slate-600 mb-1">Location</label>
+            <label className="block text-[12px] font-medium text-slate-600 dark:text-slate-400 mb-1">Location</label>
             <Input
               className="h-9 text-[13px]"
               value={form.location}
@@ -189,7 +189,7 @@ function CreateEventModal({
           </div>
 
           <div>
-            <label className="block text-[12px] font-medium text-slate-600 mb-1">Description</label>
+            <label className="block text-[12px] font-medium text-slate-600 dark:text-slate-400 mb-1">Description</label>
             <Textarea
               className="text-[13px] min-h-[80px]"
               rows={3}
@@ -204,7 +204,7 @@ function CreateEventModal({
           <div className="flex justify-end gap-2 pt-1">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-[13px] rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+              className="px-4 py-2 text-[13px] rounded-lg border border-black/[.06] dark:border-white/[.08] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04]"
             >
               Cancel
             </button>
@@ -300,10 +300,10 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
   return (
     <div className="p-4 md:p-6 flex flex-col gap-4">
       {status && !status.connected && (
-        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+        <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40 rounded-xl px-4 py-3">
           <div>
-            <p className="text-[13px] font-semibold text-blue-900">Connect Google Calendar</p>
-            <p className="text-[12px] text-blue-700 mt-0.5">Sync your events and schedule demos directly from the CRM.</p>
+            <p className="text-[13px] font-semibold text-blue-900 dark:text-blue-300">Connect Google Calendar</p>
+            <p className="text-[12px] text-blue-700 dark:text-blue-400 mt-0.5">Sync your events and schedule demos directly from the CRM.</p>
           </div>
           <a
             href={`${API}/auth/google-calendar/connect`}
@@ -317,7 +317,7 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
       {status?.connected && (
         <div className="flex items-center gap-2 text-[12px] text-slate-500">
           <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
-          Connected as <span className="font-medium text-slate-700 ml-1">{status.googleEmail}</span>
+          Connected as <span className="font-medium text-slate-700 dark:text-slate-300 ml-1">{status.googleEmail}</span>
           {status.lastSyncedAt && (
             <span className="ml-auto">Last synced {new Date(status.lastSyncedAt).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}</span>
           )}
@@ -327,14 +327,14 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4 items-start">
         <div>
           <div className="flex items-center gap-2.5 mb-3.5">
-            <div className="text-base font-bold text-slate-900 tracking-tight">
+            <div className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
               {MONTHS[month]} {year}
             </div>
             <div className="ml-auto flex gap-1.5">
-              <button onClick={handlePrev} className="px-3 py-1.5 text-[12px] border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600">
+              <button onClick={handlePrev} className="px-3 py-1.5 text-[12px] border border-black/[.06] dark:border-white/[.08] rounded-lg hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] text-slate-600 dark:text-slate-400">
                 Prev
               </button>
-              <button onClick={handleNext} className="px-3 py-1.5 text-[12px] border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600">
+              <button onClick={handleNext} className="px-3 py-1.5 text-[12px] border border-black/[.06] dark:border-white/[.08] rounded-lg hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] text-slate-600 dark:text-slate-400">
                 Next
               </button>
               <button
@@ -346,8 +346,8 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
             </div>
           </div>
 
-          <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-            <div className="grid grid-cols-7 border-b border-slate-200">
+          <div className="border border-black/[.06] dark:border-white/[.08] rounded-xl overflow-hidden bg-white dark:bg-[#1c1c1f]">
+            <div className="grid grid-cols-7 border-b border-black/[.06] dark:border-white/[.08]">
               {DAYS.map(d => (
                 <div key={d} className="py-2.5 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{d}</div>
               ))}
@@ -365,16 +365,16 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
                     onClick={() => { if (cell.current) { setClickedDate(cell.dateKey); setShowCreateModal(true) } }}
                     className={cn(
                       'min-h-[72px] md:min-h-[96px] px-1.5 py-1 transition-colors',
-                      !isLastCol && 'border-r border-slate-100',
-                      !isLastRow && 'border-b border-slate-100',
-                      isToday && 'bg-slate-50',
-                      cell.current && 'cursor-pointer hover:bg-slate-50/80',
+                      !isLastCol && 'border-r border-black/[.06] dark:border-white/[.08]',
+                      !isLastRow && 'border-b border-black/[.06] dark:border-white/[.08]',
+                      isToday && 'bg-slate-50 dark:bg-white/[.04]',
+                      cell.current && 'cursor-pointer hover:bg-slate-50/80 dark:hover:bg-white/[.03]',
                       !cell.current && 'opacity-30 cursor-default',
                     )}
                   >
                     <div className={cn(
                       'text-[11px] tabular-nums mb-1 w-5 h-5 flex items-center justify-center rounded-full',
-                      isToday ? 'bg-slate-900 text-white font-bold' : 'text-slate-500'
+                      isToday ? 'bg-primary text-white font-bold' : 'text-slate-500'
                     )}>
                       {cell.day}
                     </div>
@@ -409,9 +409,9 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
           </div>
         </div>
 
-        <div className="border border-slate-200 rounded-xl bg-white overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100">
-            <p className="text-[13px] font-semibold text-slate-900">Upcoming</p>
+        <div className="border border-black/[.06] dark:border-white/[.08] rounded-xl bg-white dark:bg-[#1c1c1f] overflow-hidden">
+          <div className="px-4 py-3 border-b border-black/[.06] dark:border-white/[.08]">
+            <p className="text-[13px] font-semibold text-slate-900 dark:text-white">Upcoming</p>
           </div>
           <div className="p-3">
             {!status?.connected ? (
@@ -431,7 +431,7 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
             ) : (
               <div className="space-y-2">
                 {upcoming.map(ev => (
-                  <div key={ev.id} className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-slate-50">
+                  <div key={ev.id} className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/[.04]">
                     <div className={cn('w-1 self-stretch rounded-full shrink-0 mt-0.5', EVENT_TYPE_COLORS[ev.eventType])} />
                     <div className="min-w-0">
                       <p className="text-[12px] font-semibold text-slate-800 truncate">{ev.title}</p>

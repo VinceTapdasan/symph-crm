@@ -97,14 +97,14 @@ function NewProposalModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+      <div className="bg-white dark:bg-[#1c1c1f] rounded-xl shadow-xl w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-[15px] font-semibold text-slate-900">New Proposal</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">x</button>
+          <h2 className="text-[15px] font-semibold text-slate-900 dark:text-white">New Proposal</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:text-slate-400">x</button>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-[12px] font-medium text-slate-600 mb-1">Title</label>
+            <label className="block text-[12px] font-medium text-slate-600 dark:text-slate-400 mb-1">Title</label>
             <Input
               className="h-9 text-[13px]"
               value={title}
@@ -114,7 +114,7 @@ function NewProposalModal({
             />
           </div>
           <div>
-            <label className="block text-[12px] font-medium text-slate-600 mb-1">Deal (optional)</label>
+            <label className="block text-[12px] font-medium text-slate-600 dark:text-slate-400 mb-1">Deal (optional)</label>
             <Select
               value={dealId || '__none__'}
               onValueChange={v => setDealId(v === '__none__' ? '' : v)}
@@ -132,7 +132,7 @@ function NewProposalModal({
           </div>
           {error && <p className="text-[12px] text-red-500">{error}</p>}
           <div className="flex justify-end gap-2 pt-1">
-            <button onClick={onClose} className="px-4 py-2 text-[13px] rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
+            <button onClick={onClose} className="px-4 py-2 text-[13px] rounded-lg border border-black/[.06] dark:border-white/[.08] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04]">
               Cancel
             </button>
             <button
@@ -189,9 +189,9 @@ export function ProposalBuilder() {
   return (
     <div className="h-full flex overflow-hidden">
       {/* Sidebar — proposal list */}
-      <div className="w-64 shrink-0 border-r border-slate-200 bg-slate-50 flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-          <span className="text-[13px] font-semibold text-slate-900">Proposals</span>
+      <div className="w-64 shrink-0 border-r border-black/[.06] dark:border-white/[.08] bg-slate-50 dark:bg-white/[.03] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-black/[.06] dark:border-white/[.08]">
+          <span className="text-[13px] font-semibold text-slate-900 dark:text-white">Proposals</span>
           <button
             onClick={() => setShowNewModal(true)}
             className="text-[12px] px-2 py-1 bg-slate-900 text-white rounded-md hover:bg-slate-700 font-medium"
@@ -204,9 +204,9 @@ export function ProposalBuilder() {
           {isLoading ? (
             <div className="flex flex-col gap-2 p-3">
               {[1, 2, 3].map(i => (
-                <div key={i} className="rounded-lg px-4 py-3 bg-white border border-slate-100 animate-pulse">
-                  <div className="h-3 w-3/4 bg-slate-100 rounded mb-1.5" />
-                  <div className="h-2.5 w-1/2 bg-slate-100 rounded" />
+                <div key={i} className="rounded-lg px-4 py-3 bg-white dark:bg-[#1c1c1f] border border-black/[.06] dark:border-white/[.08] animate-pulse">
+                  <div className="h-3 w-3/4 bg-slate-100 dark:bg-white/[.06] rounded mb-1.5" />
+                  <div className="h-2.5 w-1/2 bg-slate-100 dark:bg-white/[.06] rounded" />
                 </div>
               ))}
             </div>
@@ -225,13 +225,13 @@ export function ProposalBuilder() {
                 key={doc.id}
                 onClick={() => setSelectedId(doc.id)}
                 className={cn(
-                  'w-full text-left px-4 py-3 hover:bg-slate-100 transition-colors border-l-2',
+                  'w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-white/[.06] dark:bg-white/[.06] transition-colors border-l-2',
                   selectedId === doc.id
-                    ? 'border-slate-900 bg-white'
+                    ? 'border-slate-900 dark:border-white bg-white dark:bg-[#1c1c1f]'
                     : 'border-transparent',
                 )}
               >
-                <p className="text-[12px] font-semibold text-slate-800 truncate">{doc.title}</p>
+                <p className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 truncate">{doc.title}</p>
                 {doc.excerpt && (
                   <p className="text-[11px] text-slate-500 mt-0.5 truncate">{doc.excerpt}</p>
                 )}
@@ -258,9 +258,9 @@ export function ProposalBuilder() {
         ) : (
           <>
             {/* Editor header */}
-            <div className="flex items-center px-6 py-3 border-b border-slate-200 bg-white gap-3">
+            <div className="flex items-center px-6 py-3 border-b border-black/[.06] dark:border-white/[.08] bg-white dark:bg-[#1c1c1f] gap-3">
               <div className="min-w-0">
-                <p className="text-[14px] font-semibold text-slate-900 truncate">{selected?.title}</p>
+                <p className="text-[14px] font-semibold text-slate-900 dark:text-white truncate">{selected?.title}</p>
                 {selected?.dealId && (
                   <p className="text-[11px] text-slate-500">Linked to deal</p>
                 )}
@@ -269,7 +269,7 @@ export function ProposalBuilder() {
                 {versions.length > 0 && (
                   <button
                     onClick={() => setShowVersions(v => !v)}
-                    className="text-[12px] px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600"
+                    className="text-[12px] px-3 py-1.5 border border-black/[.06] dark:border-white/[.08] rounded-lg hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] text-slate-600 dark:text-slate-400"
                   >
                     {versions.length} version{versions.length !== 1 ? 's' : ''}
                   </button>
@@ -279,14 +279,14 @@ export function ProposalBuilder() {
 
             {/* Version history panel */}
             {showVersions && versions.length > 0 && (
-              <div className="border-b border-slate-200 bg-amber-50 px-6 py-3">
+              <div className="border-b border-black/[.06] dark:border-white/[.08] bg-amber-50 dark:bg-amber-950/30 px-6 py-3">
                 <p className="text-[12px] font-semibold text-amber-900 mb-2">Version History</p>
                 <div className="flex gap-2 flex-wrap">
                   {versions.map(v => (
                     <button
                       key={v.id}
                       onClick={() => setSelectedId(v.id)}
-                      className="text-[11px] px-2.5 py-1 border border-amber-300 rounded-md bg-white hover:bg-amber-50 text-amber-800"
+                      className="text-[11px] px-2.5 py-1 border border-amber-300 dark:border-amber-700 rounded-md bg-white dark:bg-[#1c1c1f] hover:bg-amber-50 dark:bg-amber-950/30 text-amber-800"
                     >
                       {v.title}
                     </button>

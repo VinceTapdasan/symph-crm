@@ -160,10 +160,10 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 pb-4">
 
           {/* Deal header card */}
-          <div className="bg-white border border-black/[.06] rounded-xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+          <div className="bg-white dark:bg-[#1c1c1f] border border-black/[.06] dark:border-white/[.08] rounded-xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
             <div className="flex items-start justify-between gap-4 mb-4">
               <div className="min-w-0">
-                <h1 className="text-[18px] font-bold text-slate-900 leading-tight mb-2">{deal.title}</h1>
+                <h1 className="text-[18px] font-bold text-slate-900 dark:text-white leading-tight mb-2">{deal.title}</h1>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span
                     className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
@@ -172,7 +172,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                     {stageLabel}
                   </span>
                   {deal.outreachCategory && (
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 capitalize">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[.06] text-slate-500 capitalize">
                       {deal.outreachCategory}
                     </span>
                   )}
@@ -194,29 +194,29 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
             </div>
 
             {/* Meta grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-black/[.05]">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-black/[.05] dark:border-white/[.06]">
               <div>
                 <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Assigned To</div>
                 <div className="flex items-center gap-1.5">
                   <Avatar name={deal.assignedTo || 'U'} size={18} />
-                  <span className="text-[12px] font-medium text-slate-700">{deal.assignedTo || 'Unassigned'}</span>
+                  <span className="text-[12px] font-medium text-slate-700 dark:text-slate-300">{deal.assignedTo || 'Unassigned'}</span>
                 </div>
               </div>
               <div>
                 <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Pricing</div>
-                <div className="text-[12px] font-medium text-slate-700 capitalize">{deal.pricingModel || '—'}</div>
+                <div className="text-[12px] font-medium text-slate-700 dark:text-slate-300 capitalize">{deal.pricingModel || '—'}</div>
               </div>
               {deal.closeDate && (
                 <div>
                   <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Close Date</div>
-                  <div className="text-[12px] font-medium text-slate-700">
+                  <div className="text-[12px] font-medium text-slate-700 dark:text-slate-300">
                     {new Date(deal.closeDate).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </div>
                 </div>
               )}
               <div>
                 <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Created</div>
-                <div className="text-[12px] font-medium text-slate-700">
+                <div className="text-[12px] font-medium text-slate-700 dark:text-slate-300">
                   {new Date(deal.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </div>
               </div>
@@ -224,7 +224,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
 
             {/* Services tags */}
             {deal.servicesTags && deal.servicesTags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-black/[.05]">
+              <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-black/[.05] dark:border-white/[.06]">
                 {deal.servicesTags.map(s => (
                   <span key={s} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                     {s}
@@ -235,7 +235,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
 
             {/* Links */}
             {(deal.proposalLink || deal.demoLink) && (
-              <div className="flex gap-3 mt-3 pt-3 border-t border-black/[.05]">
+              <div className="flex gap-3 mt-3 pt-3 border-t border-black/[.05] dark:border-white/[.06]">
                 {deal.proposalLink && (
                   <a
                     href={deal.proposalLink}
@@ -261,8 +261,8 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
           </div>
 
           {/* Activity feed */}
-          <div className="bg-white border border-black/[.06] rounded-xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-            <div className="text-[13px] font-semibold text-slate-900 mb-3.5">Activity</div>
+          <div className="bg-white dark:bg-[#1c1c1f] border border-black/[.06] dark:border-white/[.08] rounded-xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-3.5">Activity</div>
             {loadingActivities ? (
               <div className="flex items-center justify-center py-8">
                 <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
@@ -279,7 +279,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                 {activities.map((a, i) => (
                   <div
                     key={a.id}
-                    className={`flex items-start gap-3 py-2.5 ${i < activities.length - 1 ? 'border-b border-black/[.04]' : ''}`}
+                    className={`flex items-start gap-3 py-2.5 ${i < activities.length - 1 ? 'border-b border-black/[.04] dark:border-white/[.06]' : ''}`}
                   >
                     <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 bg-primary/40" />
                     <div className="flex-1 min-w-0">

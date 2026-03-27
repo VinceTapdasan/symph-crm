@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
+import { useTheme } from 'next-themes'
 import { Avatar } from './Avatar'
 import { cn } from '@/lib/utils'
 import {
@@ -15,12 +16,14 @@ import {
   Calendar,
   BarChart3,
   FileText,
+  Sun,
+  Moon,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 function LogoutOverlay() {
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', backgroundColor: 'rgba(255,255,255,0.6)' }}>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-md">
       <div className="flex flex-col items-center gap-4">
         <div className="w-10 h-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
         <p className="text-[13px] font-medium text-slate-500">Signing out...</p>
@@ -82,20 +85,15 @@ function LogoutConfirmModal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-[9998] flex items-center justify-center"
-      style={{
-        backdropFilter: 'blur(6px)',
-        WebkitBackdropFilter: 'blur(6px)',
-        backgroundColor: 'rgba(255,255,255,0.5)',
-      }}
+      className="fixed inset-0 z-[9998] flex items-center justify-center bg-white/50 dark:bg-black/50 backdrop-blur-sm"
       onClick={onCancel}
     >
       <div
-        className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-black/[.06] p-6 w-[320px] flex flex-col gap-4"
+        className="bg-white dark:bg-[#1c1c1f] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-black/[.06] dark:border-white/[.08] p-6 w-[320px] flex flex-col gap-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col gap-1">
-          <p className="text-[14px] font-semibold text-slate-900">Sign out of Symph CRM?</p>
+          <p className="text-[14px] font-semibold text-slate-900 dark:text-white">Sign out of Symph CRM?</p>
           <p className="text-[12.5px] text-slate-500 leading-[1.5]">
             Any unsaved work will be lost. You can sign back in anytime.
           </p>
@@ -104,7 +102,7 @@ function LogoutConfirmModal({
         <div className="flex gap-2 mt-1">
           <button
             onClick={onCancel}
-            className="flex-1 h-9 rounded-lg border border-black/[.08] text-[13px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            className="flex-1 h-9 rounded-lg border border-black/[.08] dark:border-white/[.08] text-[13px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors"
           >
             Cancel
           </button>
@@ -122,6 +120,7 @@ function LogoutConfirmModal({
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const { theme, setTheme } = useTheme()
   const { data: session } = useSession()
   const [hoveredPath, setHoveredPath] = useState<string | null>(null)
   const [signingOut, setSigningOut] = useState(false)
@@ -152,22 +151,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       )}
 
       <aside className={cn(
-        'w-[216px] shrink-0 bg-white border-r border-black/[.06] flex flex-col h-full',
+        'w-[216px] shrink-0 bg-white dark:bg-[#1c1c1f] border-r border-black/[.06] dark:border-white/[.08] flex flex-col h-full',
         'fixed inset-y-0 left-0 z-30 md:relative md:z-auto',
         'transition-transform duration-150',
         isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       )}>
         {/* Logo */}
-        <div className="px-4 pt-[16px] pb-[12px] border-b border-black/[.06] flex items-center gap-[10px]">
+        <div className="h-[44px] px-4 border-b border-black/[.06] dark:border-white/[.08] flex items-center">
           <div
-            className="w-[30px] h-[30px] rounded-[7px] flex items-center justify-center text-[13px] font-extrabold text-white shrink-0 tracking-tight"
-            style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
+            className="w-[26px] h-[26px] rounded-[6px] flex items-center justify-center text-[11px] font-extrabold text-white shrink-0 tracking-tight"
+            style={{ background: 'linear-gradient(135deg, #1547e6, #3b82f6)' }}
           >
             S
-          </div>
-          <div>
-            <div className="text-[13px] font-bold text-slate-900 tracking-[-0.02em]">Symph CRM</div>
-            <div className="text-[10px] text-slate-400">Sales Pipeline</div>
           </div>
         </div>
 
@@ -193,12 +188,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       className={cn(
                         'flex items-center gap-[9px] px-[10px] py-[6px] rounded text-[12.5px] w-full text-left transition-colors duration-150',
                         active
-                          ? 'border border-primary-border font-semibold'
-                          : 'border border-transparent font-medium',
-                        !active && hovered && 'bg-slate-100 text-slate-900',
-                        !active && !hovered && 'text-slate-600',
+                          ? 'bg-slate-100 dark:bg-white/[.06] text-slate-900 dark:text-white font-semibold'
+                          : 'font-medium',
+                        !active && hovered && 'bg-slate-100 dark:bg-white/[.06] text-slate-900 dark:text-white',
+                        !active && !hovered && 'text-slate-600 dark:text-slate-400',
                       )}
-                      style={active ? { background: 'var(--color-primary-dim)', color: 'var(--primary)' } : undefined}
                     >
                       <Icon size={15} strokeWidth={1.4} />
                       <span className="flex-1">{item.label}</span>
@@ -218,21 +212,32 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           ))}
         </nav>
 
+        {/* Theme toggle */}
+        <div className="px-[14px] py-2 border-t border-black/[.06] dark:border-white/[.08]">
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded text-[12px] font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-white/[.06] dark:bg-white/[.06] transition-colors"
+          >
+            {theme === 'dark' ? <Sun size={14} strokeWidth={1.4} /> : <Moon size={14} strokeWidth={1.4} />}
+            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          </button>
+        </div>
+
         {/* User profile */}
-        <div className="px-[14px] py-2.5 border-t border-black/[.06] flex items-center gap-[9px]">
+        <div className="px-[14px] py-2.5 border-t border-black/[.06] dark:border-white/[.08] flex items-center gap-[9px]">
           {user?.image ? (
             <img src={user.image} alt="" className="w-7 h-7 rounded-full" />
           ) : (
             <Avatar name={user?.name || '?'} size={28} />
           )}
           <div className="flex-1 min-w-0">
-            <div className="text-[12px] font-semibold text-slate-900 truncate">{user?.name || 'User'}</div>
+            <div className="text-[12px] font-semibold text-slate-900 dark:text-white truncate">{user?.name || 'User'}</div>
             <div className="text-[10px] text-slate-400 truncate">{user?.email || ''}</div>
           </div>
           <button
             onClick={() => setShowLogoutConfirm(true)}
             disabled={signingOut}
-            className="text-[10px] font-medium text-slate-400 hover:text-slate-600 transition-colors cursor-pointer disabled:opacity-40"
+            className="text-[10px] font-medium text-slate-400 hover:text-slate-600 dark:text-slate-400 transition-colors cursor-pointer disabled:opacity-40"
             title="Sign out"
           >
             Sign out

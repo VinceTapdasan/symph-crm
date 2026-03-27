@@ -82,7 +82,7 @@ export function PipelineBar({ deals }: PipelineBarProps) {
             >
               {s.label}
             </div>
-            <div className="h-[6px] bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-[6px] bg-slate-100 dark:bg-white/[.06] rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{

@@ -118,7 +118,7 @@ function BrandHeader({
   return (
     <button
       onClick={onToggle}
-      className="grid grid-cols-[36px_1fr_auto_20px] sm:grid-cols-[40px_1fr_auto_auto_auto_20px] items-center gap-3 sm:gap-3.5 w-full px-4 sm:px-[18px] py-3.5 bg-white border-0 border-b border-black/[.06] cursor-pointer transition-colors text-left hover:bg-slate-50 active:scale-[0.998]"
+      className="grid grid-cols-[36px_1fr_auto_20px] sm:grid-cols-[40px_1fr_auto_auto_auto_20px] items-center gap-3 sm:gap-3.5 w-full px-4 sm:px-[18px] py-3.5 bg-white dark:bg-[#1c1c1f] border-0 border-b border-black/[.06] dark:border-white/[.08] cursor-pointer transition-colors text-left hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] active:scale-[0.998]"
     >
       <div
         className="w-9 h-9 rounded-lg flex items-center justify-center text-[13px] font-semibold shrink-0"
@@ -127,7 +127,7 @@ function BrandHeader({
         {getInitials(group.company.name)}
       </div>
       <div className="min-w-0">
-        <div className="text-[13px] font-semibold text-slate-900 truncate">
+        <div className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">
           {group.company.name}
         </div>
         <div className="text-[11px] text-slate-400 mt-px">
@@ -178,7 +178,7 @@ function DealRow({
   return (
     <div
       onClick={onClick}
-      className="grid grid-cols-[16px_1fr_auto_auto] sm:grid-cols-[40px_1.4fr_0.8fr_auto_0.5fr] items-center gap-3 sm:gap-3.5 py-3 pr-4 sm:pr-[18px] pl-5 sm:pl-8 border-b border-black/[.04] cursor-pointer transition-colors bg-white hover:bg-slate-50 active:scale-[0.998]"
+      className="grid grid-cols-[16px_1fr_auto_auto] sm:grid-cols-[40px_1.4fr_0.8fr_auto_0.5fr] items-center gap-3 sm:gap-3.5 py-3 pr-4 sm:pr-[18px] pl-5 sm:pl-8 border-b border-black/[.04] dark:border-white/[.06] cursor-pointer transition-colors bg-white dark:bg-[#1c1c1f] hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] active:scale-[0.998]"
     >
       <div className="flex items-center justify-center">
         <div
@@ -187,7 +187,7 @@ function DealRow({
         />
       </div>
       <div className="min-w-0">
-        <div className="text-[13px] font-medium text-slate-900 whitespace-nowrap overflow-hidden text-ellipsis">
+        <div className="text-[13px] font-medium text-slate-900 dark:text-white whitespace-nowrap overflow-hidden text-ellipsis">
           {deal.title}
         </div>
         {tags.length > 0 && (
@@ -195,7 +195,7 @@ function DealRow({
             {tags.slice(0, 3).map(s => (
               <span
                 key={s}
-                className="text-[9px] font-medium px-1.5 py-0.5 rounded-[3px] bg-slate-100 text-slate-500 whitespace-nowrap"
+                className="text-[9px] font-medium px-1.5 py-0.5 rounded-[3px] bg-slate-100 dark:bg-white/[.06] text-slate-500 whitespace-nowrap"
               >
                 {s}
               </span>
@@ -209,7 +209,7 @@ function DealRow({
       <div className="hidden sm:block">
         <StagePill stage={deal.stage} />
       </div>
-      <div className="text-[13px] font-medium text-slate-700 tabular-nums text-right whitespace-nowrap">
+      <div className="text-[13px] font-medium text-slate-700 dark:text-slate-300 tabular-nums text-right whitespace-nowrap">
         {formatValue(deal.value)}
       </div>
       <div className="hidden sm:flex items-center justify-end">
@@ -361,7 +361,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 shrink-0">
           <div>
-            <div className="text-[13px] font-semibold text-slate-900">Deals</div>
+            <div className="text-[13px] font-semibold text-slate-900 dark:text-white">Deals</div>
             <div className="text-[11px] text-slate-400 mt-0.5">
               {isLoading
                 ? 'Loading…'
@@ -372,10 +372,10 @@ export function Deals({ onOpenDeal }: DealsProps) {
 
           <div className="sm:ml-auto flex flex-wrap gap-2 items-center">
             {/* View toggle */}
-            <div className="flex items-center bg-slate-100 rounded-lg p-0.5 gap-0.5">
+            <div className="flex items-center bg-slate-100 dark:bg-white/[.06] rounded-lg p-0.5 gap-0.5">
               <button
                 onClick={() => setViewMode('list')}
-                className={`h-[26px] px-2.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 ${viewMode === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`h-[26px] px-2.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 ${viewMode === 'list' ? 'bg-white dark:bg-[#1c1c1f] text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'}`}
               >
                 <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
                   <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
@@ -385,7 +385,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
               </button>
               <button
                 onClick={() => setViewMode('graph')}
-                className={`h-[26px] px-2.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 ${viewMode === 'graph' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`h-[26px] px-2.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 ${viewMode === 'graph' ? 'bg-white dark:bg-[#1c1c1f] text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'}`}
               >
                 <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
                   <circle cx="5" cy="12" r="2" /><circle cx="19" cy="5" r="2" /><circle cx="19" cy="19" r="2" /><circle cx="12" cy="12" r="2" />
@@ -396,7 +396,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
             </div>
 
             {/* Search */}
-            <div className="flex items-center gap-1.5 bg-slate-50 border border-black/[.06] rounded-lg px-2.5 py-[5px] flex-1 sm:flex-none sm:w-[200px] min-w-[140px]">
+            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-white/[.03] border border-black/[.06] dark:border-white/[.08] rounded-lg px-2.5 py-[5px] flex-1 sm:flex-none sm:w-[200px] min-w-[140px]">
                 <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="text-slate-400 shrink-0" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round">
                   <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
@@ -405,7 +405,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Search deals…"
-                  className="border-none bg-transparent outline-none text-[12.5px] text-slate-900 w-full placeholder:text-slate-400 focus:ring-0 px-0 py-0 rounded-none h-auto shadow-none"
+                  className="border-none bg-transparent outline-none text-[12.5px] text-slate-900 dark:text-white w-full placeholder:text-slate-400 focus:ring-0 px-0 py-0 rounded-none h-auto shadow-none"
                 />
               </div>
 
@@ -414,13 +414,13 @@ export function Deals({ onOpenDeal }: DealsProps) {
               <>
                 <button
                   onClick={expandAll}
-                  className="h-[30px] px-3 rounded-lg border border-black/[.08] text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="h-[30px] px-3 rounded-lg border border-black/[.08] dark:border-white/[.08] text-[12px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors"
                 >
                   Expand all
                 </button>
                 <button
                   onClick={collapseAll}
-                  className="h-[30px] px-3 rounded-lg border border-black/[.08] text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="h-[30px] px-3 rounded-lg border border-black/[.08] dark:border-white/[.08] text-[12px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors"
                 >
                   Collapse all
                 </button>
@@ -430,7 +430,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
             {/* New Brand */}
             <button
               onClick={() => setShowCreateBrand(true)}
-              className="h-[30px] px-3 rounded-lg border border-black/[.08] text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1.5"
+              className="h-[30px] px-3 rounded-lg border border-black/[.08] dark:border-white/[.08] text-[12px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors flex items-center gap-1.5"
             >
               <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
                 <path d="M12 5v14M5 12h14" />
@@ -474,7 +474,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
 
         {/* Graph view */}
         {!isLoading && deals.length > 0 && viewMode === 'graph' && (
-          <div className="flex-1 rounded-xl overflow-hidden border border-black/[.06]">
+          <div className="flex-1 rounded-xl overflow-hidden border border-black/[.06] dark:border-white/[.08]">
             <DealsGraph
               companies={companies}
               deals={deals}
@@ -485,7 +485,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
 
         {/* List view */}
         {!isLoading && deals.length > 0 && viewMode === 'list' && (
-          <div className="flex-1 overflow-y-auto bg-white border border-black/[.06] rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+          <div className="flex-1 overflow-y-auto bg-white dark:bg-[#1c1c1f] border border-black/[.06] dark:border-white/[.08] rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
             {filtered.length === 0 ? (
               <div className="p-10 text-center text-[13px] text-slate-400">
                 No deals matching &quot;{search}&quot;

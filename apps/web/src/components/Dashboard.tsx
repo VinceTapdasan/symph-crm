@@ -104,7 +104,7 @@ export function Dashboard() {
     }))
 
   return (
-    <div className="w-full p-4 md:px-6 pb-6">
+    <div className="w-full p-4 md:p-5">
 
       {/* KPI Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-[1.2fr_0.9fr_0.9fr_1fr] gap-3 md:gap-3.5 mb-5">
@@ -150,23 +150,23 @@ export function Dashboard() {
       {/* 2-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 items-start">
         <div className="flex flex-col gap-4">
-          <div className="bg-white border border-black/[.06] rounded-[10px] px-5 py-[18px] shadow-[var(--shadow-card)]">
-            <div className="text-[13px] font-semibold text-slate-900 mb-4">Pipeline by Stage</div>
+          <div className="bg-white dark:bg-[#1c1c1f] border border-black/[.06] dark:border-white/[.08] rounded-[10px] px-5 py-[18px] shadow-[var(--shadow-card)]">
+            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-4">Pipeline by Stage</div>
             {isLoading ? <PipelineBarSkeleton /> : <PipelineBar deals={deals} />}
           </div>
-          <div className="bg-white border border-black/[.06] rounded-[10px] px-5 py-[18px] shadow-[var(--shadow-card)]">
-            <div className="text-[13px] font-semibold text-slate-900 mb-3.5">Top Deals</div>
+          <div className="bg-white dark:bg-[#1c1c1f] border border-black/[.06] dark:border-white/[.08] rounded-[10px] px-5 py-[18px] shadow-[var(--shadow-card)]">
+            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-3.5">Top Deals</div>
             {isLoading ? <TopDealsSkeleton /> : <TopDeals deals={topDeals} />}
           </div>
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="bg-white border border-black/[.06] rounded-[10px] px-5 py-[18px] shadow-[var(--shadow-card)]">
-            <div className="text-[13px] font-semibold text-slate-900 mb-3.5">AM Leaderboard</div>
+          <div className="bg-white dark:bg-[#1c1c1f] border border-black/[.06] dark:border-white/[.08] rounded-[10px] px-5 py-[18px] shadow-[var(--shadow-card)]">
+            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-3.5">AM Leaderboard</div>
             {isLoading ? <AMLeaderboardSkeleton /> : <AMLeaderboard entries={amEntries} />}
           </div>
-          <div className="bg-white border border-black/[.06] rounded-[10px] px-5 py-[18px] shadow-[var(--shadow-card)]">
-            <div className="text-[13px] font-semibold text-slate-900 mb-3.5">Recent Activity</div>
+          <div className="bg-white dark:bg-[#1c1c1f] border border-black/[.06] dark:border-white/[.08] rounded-[10px] px-5 py-[18px] shadow-[var(--shadow-card)]">
+            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-3.5">Recent Activity</div>
             {isLoading ? <RecentActivitySkeleton /> : <RecentActivity entries={recentEntries} />}
           </div>
         </div>

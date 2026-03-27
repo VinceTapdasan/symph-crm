@@ -128,7 +128,7 @@ export function Reports() {
     .slice(0, 10)
 
   return (
-    <div className="p-4 md:p-6 max-w-[1200px]">
+    <div className="p-4 md:p-5 max-w-[1200px]">
 
       {/* Metrics row */}
       <div className="flex gap-3 mb-4 flex-wrap">
@@ -137,7 +137,7 @@ export function Reports() {
             <CardContent>
               <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">{m.label}</div>
               <div className="text-[22px] font-bold tabular-nums leading-none" style={{ color: m.color || undefined }}>
-                {!m.color && <span className="text-slate-900">{m.value}</span>}
+                {!m.color && <span className="text-slate-900 dark:text-white">{m.value}</span>}
                 {m.color && m.value}
               </div>
               <div className="text-[11px] text-slate-500 mt-1.5">{m.trend}</div>
@@ -152,7 +152,7 @@ export function Reports() {
         {/* Pipeline Value by Stage */}
         <Card>
           <CardContent>
-            <div className="text-[13px] font-semibold text-slate-900 mb-4">
+            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-4">
               Pipeline Value by Stage
             </div>
             {isLoading ? (
@@ -168,10 +168,10 @@ export function Reports() {
               <div className="flex flex-col gap-2.5">
                 {activeStages.map(s => (
                   <div key={s.stage} className="flex items-center gap-2.5">
-                    <div className="w-[80px] shrink-0 text-[11px] font-medium text-slate-600 truncate">
+                    <div className="w-[80px] shrink-0 text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate">
                       {STAGE_LABELS[s.stage] ?? s.stage}
                     </div>
-                    <div className="flex-1 h-[16px] bg-slate-100 rounded overflow-hidden">
+                    <div className="flex-1 h-[16px] bg-slate-100 dark:bg-white/[.06] rounded overflow-hidden">
                       <div
                         className="h-full rounded transition-all duration-500"
                         style={{
@@ -181,7 +181,7 @@ export function Reports() {
                         }}
                       />
                     </div>
-                    <div className="w-[56px] shrink-0 text-[11px] font-semibold tabular-nums text-right text-slate-700">
+                    <div className="w-[56px] shrink-0 text-[11px] font-semibold tabular-nums text-right text-slate-700 dark:text-slate-300">
                       {formatCurrency(s.totalValue)}
                     </div>
                     <div className="w-[18px] shrink-0 text-[10px] font-medium text-center text-slate-400 tabular-nums">
@@ -197,7 +197,7 @@ export function Reports() {
         {/* Pipeline Funnel */}
         <Card>
           <CardContent>
-            <div className="text-[13px] font-semibold text-slate-900 mb-4">
+            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-4">
               Pipeline Funnel
             </div>
             {isLoading ? (
@@ -215,7 +215,7 @@ export function Reports() {
                   const widthPct = Math.max(10, Math.round((s.count / maxFunnelCount) * 100))
                   return (
                     <div key={s.stage} className="flex items-center gap-2.5">
-                      <div className="w-[80px] shrink-0 text-[11px] font-medium text-slate-600 truncate">
+                      <div className="w-[80px] shrink-0 text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate">
                         {STAGE_LABELS[s.stage] ?? s.stage}
                       </div>
                       <div className="flex-1 flex items-center">
@@ -247,7 +247,7 @@ export function Reports() {
       {/* AM Performance */}
       <Card className="mb-4">
         <CardContent>
-          <div className="text-[13px] font-semibold text-slate-900 mb-3.5">
+          <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-3.5">
             AM Performance
           </div>
           {loadingDeals ? (
@@ -264,16 +264,16 @@ export function Reports() {
               {amRows.map(([name, stats], i) => (
                 <div
                   key={name}
-                  className="grid grid-cols-[20px_1fr_auto_auto] items-center gap-3 py-2.5 px-1 border-b border-black/[.04] last:border-0"
+                  className="grid grid-cols-[20px_1fr_auto_auto] items-center gap-3 py-2.5 px-1 border-b border-black/[.04] dark:border-white/[.06] last:border-0"
                 >
                   <div className={`text-[11px] font-bold tabular-nums text-center ${i === 0 ? 'text-primary' : 'text-slate-400'}`}>
                     {i + 1}
                   </div>
                   <div>
-                    <div className="text-xs font-semibold text-slate-900">{name}</div>
+                    <div className="text-xs font-semibold text-slate-900 dark:text-white">{name}</div>
                     <div className="text-[10px] text-slate-400">{stats.deals} deal{stats.deals !== 1 ? 's' : ''}</div>
                   </div>
-                  <div className="text-xs font-semibold text-slate-700 tabular-nums">{formatCurrency(stats.value)}</div>
+                  <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 tabular-nums">{formatCurrency(stats.value)}</div>
                 </div>
               ))}
             </div>

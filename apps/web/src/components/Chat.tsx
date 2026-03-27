@@ -140,7 +140,7 @@ function AttachmentBubble({ attachment }: { attachment: PendingAttachment }) {
         <img
           src={attachment.previewUrl}
           alt={attachment.filename}
-          className="max-w-[200px] max-h-[150px] rounded-xl border border-black/[.08] object-cover"
+          className="max-w-[200px] max-h-[150px] rounded-xl border border-black/[.08] dark:border-white/[.08] object-cover"
         />
       </div>
     )
@@ -168,7 +168,7 @@ function AttachmentBubble({ attachment }: { attachment: PendingAttachment }) {
 
   return (
     <div className="flex justify-end mb-1">
-      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-dim border border-primary-border text-[12px] text-slate-600">
+      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-dim border border-primary-border text-[12px] text-slate-600 dark:text-slate-400">
         {icon}
         <span className="max-w-[160px] truncate">{label}</span>
       </div>
@@ -189,10 +189,10 @@ function AttachmentPreview({
         <img
           src={attachment.previewUrl}
           alt={attachment.filename}
-          className="w-10 h-10 rounded-lg object-cover border border-black/[.08] shrink-0"
+          className="w-10 h-10 rounded-lg object-cover border border-black/[.08] dark:border-white/[.08] shrink-0"
         />
       ) : (
-        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-white/[.06] flex items-center justify-center shrink-0">
           {attachment.type === 'voice' ? (
             <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
@@ -209,7 +209,7 @@ function AttachmentPreview({
       )}
 
       <div className="flex-1 min-w-0">
-        <p className="text-[12px] font-medium text-slate-700 truncate">{attachment.filename}</p>
+        <p className="text-[12px] font-medium text-slate-700 dark:text-slate-300 truncate">{attachment.filename}</p>
         <p className="text-[11px] text-slate-400 capitalize">
           {attachment.type === 'voice' && attachment.duration
             ? `Voice · ${formatDuration(attachment.duration)}`
@@ -219,7 +219,7 @@ function AttachmentPreview({
 
       <button
         onClick={onRemove}
-        className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
+        className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[.06] dark:bg-white/[.06] transition-colors shrink-0"
       >
         <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
           <line x1="18" y1="6" x2="6" y2="18"/>
@@ -338,7 +338,7 @@ function renderContent(text: string) {
     const parts = line.split(/(\*\*.*?\*\*)/)
     const rendered = parts.map((part, partIdx) => {
       if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={partIdx} className="font-semibold text-slate-900">{part.slice(2, -2)}</strong>
+        return <strong key={partIdx} className="font-semibold text-slate-900 dark:text-white">{part.slice(2, -2)}</strong>
       }
       return <span key={partIdx}>{part}</span>
     })
@@ -747,10 +747,10 @@ export function Chat({ dealId }: { dealId?: string }) {
     <div className="max-w-[680px] w-full mx-auto">
       <div
         className={cn(
-          'rounded-2xl bg-white transition-all duration-150',
+          'rounded-2xl bg-white dark:bg-[#1c1c1f] transition-all duration-150',
           focused
             ? 'border border-black/20 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_0_0_3px_rgba(0,0,0,0.05)]'
-            : 'border border-black/[.08] shadow-[var(--shadow-card)]'
+            : 'border border-black/[.08] dark:border-white/[.08] shadow-[var(--shadow-card)]'
         )}
       >
         {/* Recording indicator + visualizer */}
@@ -786,7 +786,7 @@ export function Chat({ dealId }: { dealId?: string }) {
             disabled={typing}
             rows={1}
             className={cn(
-              'w-full bg-transparent border-none outline-none text-[14px] text-slate-900 leading-[1.6] resize-none overflow-hidden placeholder:text-slate-400',
+              'w-full bg-transparent border-none outline-none text-[14px] text-slate-900 dark:text-white leading-[1.6] resize-none overflow-hidden placeholder:text-slate-400',
               typing && 'opacity-50'
             )}
             style={{ minHeight: '28px', maxHeight: '160px' }}
@@ -822,7 +822,7 @@ export function Chat({ dealId }: { dealId?: string }) {
             onClick={() => fileInputRef.current?.click()}
             disabled={typing || recording}
             title="Attach file or image"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[.06] dark:bg-white/[.06] transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -840,7 +840,7 @@ export function Chat({ dealId }: { dealId?: string }) {
               'w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed',
               recording
                 ? 'text-red-500 bg-red-50 hover:bg-red-100'
-                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                : 'text-slate-400 hover:text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[.06] dark:bg-white/[.06]'
             )}
           >
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -867,7 +867,7 @@ export function Chat({ dealId }: { dealId?: string }) {
               'w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 active:scale-[0.94]',
               canSubmit
                 ? 'bg-primary hover:bg-primary-hover cursor-pointer'
-                : 'bg-slate-100 cursor-default'
+                : 'bg-slate-100 dark:bg-white/[.06] cursor-default'
             )}
           >
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={canSubmit ? '#fff' : '#94a3b8'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -898,7 +898,7 @@ export function Chat({ dealId }: { dealId?: string }) {
             >
               S
             </div>
-            <h1 className="text-[28px] font-bold text-slate-900 tracking-tight leading-none">
+            <h1 className="text-[28px] font-bold text-slate-900 dark:text-white tracking-tight leading-none">
               {getGreeting()}, {userName}
             </h1>
           </div>
@@ -910,7 +910,7 @@ export function Chat({ dealId }: { dealId?: string }) {
               <button
                 key={p.prompt}
                 onClick={() => sendMessage(p.prompt)}
-                className="px-3.5 py-2 rounded-xl bg-white border border-black/[.08] text-[12px] font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900 active:scale-[0.98] transition-colors duration-150 shadow-[var(--shadow-card)]"
+                className="px-3.5 py-2 rounded-xl bg-white dark:bg-[#1c1c1f] border border-black/[.08] dark:border-white/[.08] text-[12px] font-medium text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:text-slate-900 dark:text-white active:scale-[0.98] transition-colors duration-150 shadow-[var(--shadow-card)]"
               >
                 {p.label}
               </button>
@@ -934,7 +934,7 @@ export function Chat({ dealId }: { dealId?: string }) {
                   {msg.attachment && <AttachmentBubble attachment={msg.attachment} />}
                   {msg.content && (
                     <div className="flex justify-end">
-                      <div className="max-w-[78%] px-4 py-3 rounded-2xl bg-primary-dim border border-primary-border text-[13px] text-slate-900 leading-[1.6]">
+                      <div className="max-w-[78%] px-4 py-3 rounded-2xl bg-primary-dim border border-primary-border text-[13px] text-slate-900 dark:text-white leading-[1.6]">
                         {msg.content}
                       </div>
                     </div>
@@ -942,7 +942,7 @@ export function Chat({ dealId }: { dealId?: string }) {
                 </div>
               ) : (
                 <div>
-                  <div className="text-[13px] text-slate-700 leading-[1.75] whitespace-pre-wrap">
+                  <div className="text-[13px] text-slate-700 dark:text-slate-300 leading-[1.75] whitespace-pre-wrap">
                     {renderContent(msg.content)}
                   </div>
                   {msg.actionsTaken && msg.actionsTaken.length > 0 && (
@@ -957,7 +957,7 @@ export function Chat({ dealId }: { dealId?: string }) {
         </div>
       </div>
 
-      <div className="shrink-0 px-6 pb-5 pt-3 border-t border-black/[.06]">
+      <div className="shrink-0 px-6 pb-5 pt-3 border-t border-black/[.06] dark:border-white/[.08]">
         {apiError && (
           <p className="text-[11px] text-red-500 mb-2 text-center">{apiError}</p>
         )}

@@ -41,23 +41,22 @@ export function CreateBrandModal({ onClose, onCreated }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center"
-      style={{ backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', backgroundColor: 'rgba(255,255,255,0.5)' }}
+      className="fixed inset-0 z-40 flex items-center justify-center bg-white/50 dark:bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-black/[.06] w-full max-w-[400px] mx-4"
+        className="bg-white dark:bg-[#1c1c1f] rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-black/[.06] dark:border-white/[.08] w-full max-w-[400px] mx-4"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 pt-5 pb-4 border-b border-black/[.06] flex items-center justify-between">
+        <div className="px-6 pt-5 pb-4 border-b border-black/[.06] dark:border-white/[.08] flex items-center justify-between">
           <div>
-            <div className="text-[14px] font-semibold text-slate-900">New Brand</div>
+            <div className="text-[14px] font-semibold text-slate-900 dark:text-white">New Brand</div>
             <div className="text-[11.5px] text-slate-400 mt-0.5">Add a client brand to group deals under</div>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[.06] dark:bg-white/[.06] transition-colors"
           >
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
               <path d="M18 6 6 18M6 6l12 12" />
@@ -133,7 +132,7 @@ export function CreateBrandModal({ onClose, onCreated }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 h-9 rounded-lg border border-black/[.08] text-[13px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              className="flex-1 h-9 rounded-lg border border-black/[.08] dark:border-white/[.08] text-[13px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors"
             >
               Cancel
             </button>

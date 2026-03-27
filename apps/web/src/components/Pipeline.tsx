@@ -62,8 +62,8 @@ function DealCard({ deal, colColor, onClick }: { deal: ApiDeal; colColor: string
         isWon
           ? 'bg-[rgba(22,163,74,0.05)] border border-[rgba(22,163,74,0.22)]'
           : isLost
-          ? 'bg-white border border-[rgba(220,38,38,0.15)] opacity-70'
-          : 'bg-white border border-black/[.08] hover:border-primary hover:shadow-[0_0_0_3px_var(--color-primary-dim)]'
+          ? 'bg-white dark:bg-[#1c1c1f] border border-[rgba(220,38,38,0.15)] opacity-70'
+          : 'bg-white dark:bg-[#1c1c1f] border border-black/[.08] dark:border-white/[.08] hover:border-primary hover:shadow-[0_0_0_3px_var(--color-primary-dim)]'
       )}
     >
       {/* Sub-stage label + outreach badge */}
@@ -82,7 +82,7 @@ function DealCard({ deal, colColor, onClick }: { deal: ApiDeal; colColor: string
       </div>
 
       {/* Deal title */}
-      <div className="text-[14px] font-bold text-slate-900 leading-snug mb-2.5">
+      <div className="text-[14px] font-bold text-slate-900 dark:text-white leading-snug mb-2.5">
         {deal.title}
       </div>
 
@@ -101,13 +101,13 @@ function DealCard({ deal, colColor, onClick }: { deal: ApiDeal; colColor: string
       )}
 
       {/* Value + AM */}
-      <div className="flex items-center justify-between pt-2 border-t border-black/[.05]">
+      <div className="flex items-center justify-between pt-2 border-t border-black/[.05] dark:border-white/[.06]">
         <span className="text-[15px] font-bold tabular-nums" style={{ color: colColor }}>
           {deal.value ? formatPeso(parseFloat(deal.value)) : '—'}
         </span>
         <div className="flex items-center gap-1">
           <Avatar name={amName} size={20} />
-          <span className="text-[11px] font-medium text-slate-600">{amName}</span>
+          <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">{amName}</span>
         </div>
       </div>
     </div>
@@ -144,9 +144,9 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
       {/* Stats + actions */}
       <div className="flex items-center justify-between px-4 py-2.5 shrink-0">
         {isLoading ? (
-          <div className="h-4 w-40 bg-slate-100 rounded animate-pulse" />
+          <div className="h-4 w-40 bg-slate-100 dark:bg-white/[.06] rounded animate-pulse" />
         ) : (
-          <span className="text-[13px] font-medium text-slate-900">
+          <span className="text-[13px] font-medium text-slate-900 dark:text-white">
             {activeDeals.length} active deals
             {totalValue > 0 && (
               <> &middot; <span className="tabular-nums">P{(totalValue / 1_000_000).toFixed(1)}M</span></>
@@ -154,10 +154,10 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
           </span>
         )}
         <div className="flex gap-2">
-          <button className="bg-white border border-black/[.08] rounded-lg px-3 py-[5px] text-[12px] font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150 cursor-pointer">
+          <button className="bg-white dark:bg-[#1c1c1f] border border-black/[.08] dark:border-white/[.08] rounded-lg px-3 py-[5px] text-[12px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors duration-150 cursor-pointer">
             Filter
           </button>
-          <button className="hidden sm:block bg-white border border-black/[.08] rounded-lg px-3 py-[5px] text-[12px] font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150 cursor-pointer">
+          <button className="hidden sm:block bg-white dark:bg-[#1c1c1f] border border-black/[.08] dark:border-white/[.08] rounded-lg px-3 py-[5px] text-[12px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors duration-150 cursor-pointer">
             Group by AM
           </button>
         </div>
@@ -170,30 +170,30 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
             ? KANBAN_STAGES.map(col => (
                 <div
                   key={col.id}
-                  className="w-[252px] shrink-0 flex flex-col overflow-hidden rounded-xl border border-black/[.07] bg-[rgba(0,0,0,0.02)]"
+                  className="w-[252px] shrink-0 flex flex-col overflow-hidden rounded-xl border border-black/[.07] dark:border-white/[.08] bg-[rgba(0,0,0,0.02)] dark:bg-white/[.02]"
                 >
                   {/* Column header skeleton */}
-                  <div className="px-3.5 py-3 shrink-0 border-b border-black/[.06] bg-white/60">
+                  <div className="px-3.5 py-3 shrink-0 border-b border-black/[.06] dark:border-white/[.08] bg-white/60 dark:bg-white/[.04]">
                     <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse bg-slate-200" />
-                      <div className="h-3 w-20 bg-slate-100 rounded animate-pulse flex-1" />
-                      <div className="h-5 w-6 bg-slate-100 rounded-full animate-pulse" />
+                      <div className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse bg-slate-200 dark:bg-white/[.1]" />
+                      <div className="h-3 w-20 bg-slate-100 dark:bg-white/[.06] rounded animate-pulse flex-1" />
+                      <div className="h-5 w-6 bg-slate-100 dark:bg-white/[.06] rounded-full animate-pulse" />
                     </div>
                   </div>
                   {/* Card skeletons */}
                   <div className="flex flex-col gap-2 flex-1 overflow-y-auto p-2.5">
                     {[1, 2].map(i => (
-                      <div key={i} className="rounded-xl p-3.5 bg-white border border-black/[.06] animate-pulse">
-                        <div className="h-2.5 w-16 bg-slate-100 rounded mb-2" />
-                        <div className="h-4 w-full bg-slate-100 rounded mb-1" />
-                        <div className="h-3 w-3/4 bg-slate-100 rounded mb-3" />
+                      <div key={i} className="rounded-xl p-3.5 bg-white dark:bg-[#1c1c1f] border border-black/[.06] dark:border-white/[.08] animate-pulse">
+                        <div className="h-2.5 w-16 bg-slate-100 dark:bg-white/[.06] rounded mb-2" />
+                        <div className="h-4 w-full bg-slate-100 dark:bg-white/[.06] rounded mb-1" />
+                        <div className="h-3 w-3/4 bg-slate-100 dark:bg-white/[.06] rounded mb-3" />
                         <div className="flex gap-1.5 mb-3">
-                          <div className="h-4 w-12 bg-slate-100 rounded-full" />
-                          <div className="h-4 w-16 bg-slate-100 rounded-full" />
+                          <div className="h-4 w-12 bg-slate-100 dark:bg-white/[.06] rounded-full" />
+                          <div className="h-4 w-16 bg-slate-100 dark:bg-white/[.06] rounded-full" />
                         </div>
-                        <div className="flex items-center justify-between pt-2 border-t border-black/[.04]">
-                          <div className="h-4 w-16 bg-slate-100 rounded" />
-                          <div className="h-5 w-5 bg-slate-100 rounded-full" />
+                        <div className="flex items-center justify-between pt-2 border-t border-black/[.04] dark:border-white/[.06]">
+                          <div className="h-4 w-16 bg-slate-100 dark:bg-white/[.06] rounded" />
+                          <div className="h-5 w-5 bg-slate-100 dark:bg-white/[.06] rounded-full" />
                         </div>
                       </div>
                     ))}
@@ -203,14 +203,14 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
             : columnDeals.map(col => (
                 <div
                   key={col.id}
-                  className="w-[252px] shrink-0 flex flex-col overflow-hidden rounded-xl border border-black/[.07] bg-[rgba(0,0,0,0.02)]"
+                  className="w-[252px] shrink-0 flex flex-col overflow-hidden rounded-xl border border-black/[.07] dark:border-white/[.08] bg-[rgba(0,0,0,0.02)] dark:bg-white/[.02]"
                 >
                   {/* Column header */}
-                  <div className="px-3.5 py-3 shrink-0 border-b border-black/[.06] bg-white/60">
+                  <div className="px-3.5 py-3 shrink-0 border-b border-black/[.06] dark:border-white/[.08] bg-white/60 dark:bg-white/[.04]">
                     <div className="flex items-center gap-2">
                       <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: col.color }} />
-                      <span className="text-[12.5px] font-semibold text-slate-700 flex-1 leading-none">{col.label}</span>
-                      <span className="bg-white border border-black/[.07] text-slate-500 text-[11px] font-semibold tabular-nums px-2 py-0.5 rounded-full">
+                      <span className="text-[12.5px] font-semibold text-slate-700 dark:text-slate-300 flex-1 leading-none">{col.label}</span>
+                      <span className="bg-white dark:bg-[#1c1c1f] border border-black/[.07] dark:border-white/[.08] text-slate-500 text-[11px] font-semibold tabular-nums px-2 py-0.5 rounded-full">
                         {col.deals.length}
                       </span>
                     </div>

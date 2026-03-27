@@ -59,7 +59,7 @@ function ToolbarBtn({
         'px-2 py-1 rounded text-[12px] font-medium transition-colors',
         active
           ? 'bg-slate-900 text-white'
-          : 'text-slate-600 hover:bg-slate-100',
+          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[.06] dark:bg-white/[.06]',
         disabled && 'opacity-30 cursor-not-allowed',
       )}
     >
@@ -168,17 +168,17 @@ export default function ProposalEditor({ documentId, dealId, initialContent, onV
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center gap-0.5 px-4 py-2 border-b border-slate-200 bg-slate-50 flex-wrap">
+      <div className="flex items-center gap-0.5 px-4 py-2 border-b border-slate-200 bg-slate-50 dark:bg-white/[.03] flex-wrap">
         <ToolbarBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Bold">B</ToolbarBtn>
         <ToolbarBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="Italic"><em>I</em></ToolbarBtn>
-        <div className="w-px h-4 bg-slate-200 mx-1" />
+        <div className="w-px h-4 bg-slate-200 dark:bg-white/[.1] mx-1" />
         <ToolbarBtn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} title="Heading 1">H1</ToolbarBtn>
         <ToolbarBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} title="Heading 2">H2</ToolbarBtn>
         <ToolbarBtn onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })} title="Heading 3">H3</ToolbarBtn>
-        <div className="w-px h-4 bg-slate-200 mx-1" />
+        <div className="w-px h-4 bg-slate-200 dark:bg-white/[.1] mx-1" />
         <ToolbarBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet list">• List</ToolbarBtn>
         <ToolbarBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Numbered list">1. List</ToolbarBtn>
-        <div className="w-px h-4 bg-slate-200 mx-1" />
+        <div className="w-px h-4 bg-slate-200 dark:bg-white/[.1] mx-1" />
         <ToolbarBtn
           onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
           title="Insert table"
@@ -195,7 +195,7 @@ export default function ProposalEditor({ documentId, dealId, initialContent, onV
         >
           Link
         </ToolbarBtn>
-        <div className="w-px h-4 bg-slate-200 mx-1" />
+        <div className="w-px h-4 bg-slate-200 dark:bg-white/[.1] mx-1" />
         <ToolbarBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">↩</ToolbarBtn>
         <ToolbarBtn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">↪</ToolbarBtn>
 
@@ -215,7 +215,7 @@ export default function ProposalEditor({ documentId, dealId, initialContent, onV
           </span>
           <button
             onClick={saveVersion}
-            className="px-3 py-1 text-[12px] border border-slate-300 rounded-lg hover:bg-slate-100 text-slate-700 font-medium"
+            className="px-3 py-1 text-[12px] border border-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[.06] dark:bg-white/[.06] text-slate-700 dark:text-slate-300 font-medium"
           >
             Save Version
           </button>
@@ -223,7 +223,7 @@ export default function ProposalEditor({ documentId, dealId, initialContent, onV
       </div>
 
       {/* Editor body */}
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div className="flex-1 overflow-y-auto bg-white dark:bg-[#1c1c1f]">
         <EditorContent editor={editor} />
       </div>
     </div>
