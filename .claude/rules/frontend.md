@@ -104,3 +104,18 @@ apps/web/src/
 - Do NOT use `useEffect` for data fetching — use React Query.
 - Do NOT hardcode API URLs — use the `api` client which reads `NEXT_PUBLIC_API_URL`.
 - Do NOT commit `.env` or `.env.local` files.
+
+## Dark / Light Mode (MANDATORY)
+
+- **Every color change must account for both light and dark mode.** No exceptions.
+- Use Tailwind `dark:` variants: `text-slate-900 dark:text-white`, `bg-white dark:bg-[#1e1e21]`, etc.
+- When using `inline style` for dynamic colors (e.g., colors from data), the light-mode inline style must always be paired with a `dark:` Tailwind variant on the same element or a CSS variable that resolves in both themes.
+- Never add a color in light mode only and leave dark mode broken. Always check and update both.
+- The dark mode toggle is always active — all UI must render correctly in both modes at all times.
+
+## Pipeline Stage Constraint (MANDATORY)
+
+- **Kanban drag is forward-only. Once a deal is advanced to a stage, it cannot be dragged back.**
+- Enforce via `STAGE_ORDER` index: if `targetOrder < currentOrder`, block the drop silently (no toast, no error — no-op).
+- `closed_won` and `closed_lost` are at the same order level (both terminal) — moves between them are allowed.
+- This constraint applies to all drag-drop and any programmatic stage update in the pipeline.

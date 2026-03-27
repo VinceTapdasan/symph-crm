@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -13,6 +13,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { formatPeso } from '@/lib/utils'
 import { Avatar } from './Avatar'
@@ -61,6 +62,25 @@ const COLUMN_TO_STAGE: Record<string, string> = {
   closed_lost:  'closed_lost',
 }
 
+/**
+ * Stage ordering for forward-only constraint.
+ * closed_won and closed_lost share the same level (both terminal).
+ * If targetOrder < currentOrder → block the drag (no-op, no toast).
+ */
+const STAGE_ORDER: Record<string, number> = {
+  lead:         0,
+  discovery:    1,
+  assessment:   2,
+  qualified:    2,
+  demo:         3,
+  proposal:     3,
+  proposal_demo: 3,
+  negotiation:  4,
+  followup:     4,
+  closed_won:   5,
+  closed_lost:  5,
+}
+
 const CLOSED_IDS = new Set(['closed_won', 'closed_lost'])
 
 // Sub-stage label for individual deal cards (show granular stage inside grouped column)
@@ -71,7 +91,7 @@ const SUB_STAGE_LABEL: Record<string, string> = {
   followup: 'Follow-up', closed_won: 'Won', closed_lost: 'Lost',
 }
 
-// --- DealCard (unchanged) ---
+// --- DealCard ---
 function DealCard({ deal, colColor, onClick }: { deal: ApiDeal; colColor: string; onClick: () => void }) {
   const isWon = deal.stage === 'closed_won'
   const isLost = deal.stage === 'closed_lost'
@@ -83,7 +103,7 @@ function DealCard({ deal, colColor, onClick }: { deal: ApiDeal; colColor: string
     <div
       onClick={onClick}
       className={cn(
-        'rounded-lg p-3.5 cursor-pointer transition-all duration-150',
+        'rounded-lg p-3.5 cursor-pointer transition-colors duration-150',
         isWon
           ? 'bg-[rgba(22,163,74,0.05)] dark:bg-[rgba(22,163,74,0.08)] border border-[rgba(22,163,74,0.22)]'
           : isLost
@@ -91,31 +111,22 @@ function DealCard({ deal, colColor, onClick }: { deal: ApiDeal; colColor: string
           : 'bg-white dark:bg-[#222225] border border-black/[.08] dark:border-white/[.1]'
       )}
       onMouseEnter={(e) => {
-        if (!isWon && !isLost) {
-          e.currentTarget.style.borderColor = colColor
-          e.currentTarget.style.boxShadow = `0 0 0 3px ${colColor}20`
-        }
+        e.currentTarget.style.backgroundColor = colColor + '14'
       }}
       onMouseLeave={(e) => {
-        if (!isWon && !isLost) {
-          e.currentTarget.style.borderColor = ''
-          e.currentTarget.style.boxShadow = ''
-        }
+        e.currentTarget.style.backgroundColor = ''
       }}
     >
       {/* Sub-stage label + outreach badge */}
       <div className="flex items-center justify-between mb-1.5">
-        <span
-          className="text-[11px] font-semibold uppercase tracking-[0.05em]"
-          style={{ color: colColor }}
-        >
+        <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-400">
           {SUB_STAGE_LABEL[deal.stage] ?? deal.stage.replace(/_/g, ' ')}
         </span>
         <span className={cn(
           'text-[10px] font-semibold px-2 py-0.5 rounded-full',
           outreach === 'inbound'
             ? 'bg-[rgba(22,163,74,0.1)] text-[#16a34a]'
-            : 'bg-[rgba(124,58,237,0.1)] text-[#8b5cf6]'
+            : 'bg-slate-100 dark:bg-white/[.06] text-slate-500'
         )}>
           {outreach === 'inbound' ? 'Inbound' : 'Outbound'}
         </span>
@@ -201,6 +212,7 @@ function DroppableColumn({
   return (
     <div
       ref={setNodeRef}
+      data-stage-id={col.id}
       className={cn(
         'w-[252px] shrink-0 flex flex-col overflow-hidden rounded-lg transition-all duration-150',
         'bg-[rgba(0,0,0,0.02)] dark:bg-white/[.02]',
@@ -225,6 +237,9 @@ async function fetchDeals(): Promise<ApiDeal[]> {
 export function Pipeline({ onOpenDeal }: PipelineProps) {
   const [activeDealId, setActiveDealId] = useState<string | null>(null)
   const queryClient = useQueryClient()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const scrolledRef = useRef(false)
 
   const { data: deals = [], isLoading } = useQuery({
     queryKey: queryKeys.deals.all,
@@ -236,6 +251,23 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   )
 
   const patchStage = usePatchDealStage()
+
+  // Scroll to the stage column referenced by ?stage= param, then clear the param
+  useEffect(() => {
+    if (isLoading || scrolledRef.current) return
+    const stageId = searchParams.get('stage')
+    if (!stageId) return
+    scrolledRef.current = true
+    // Small delay to let the DOM render the kanban columns
+    const timer = setTimeout(() => {
+      const el = document.querySelector(`[data-stage-id="${stageId}"]`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+      }
+      router.replace('/pipeline')
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [isLoading, searchParams, router])
 
   const activeDeals = deals.filter(d => !CLOSED_IDS.has(d.stage))
   const totalValue = activeDeals.reduce((s, d) => s + (parseFloat(d.value || '0') || 0), 0)
@@ -270,9 +302,14 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
     const targetStage = COLUMN_TO_STAGE[over.id as string]
     if (!targetStage) return
 
-    // No-op if already in the same column
+    // No-op: same column
     const currentCol = KANBAN_STAGES.find(c => c.matches.includes(deal.stage))
     if (currentCol?.id === over.id) return
+
+    // Forward-only constraint: block backward drags
+    const currentOrder = STAGE_ORDER[deal.stage] ?? 0
+    const targetOrder = STAGE_ORDER[targetStage] ?? 0
+    if (targetOrder < currentOrder) return
 
     // Snapshot for rollback
     const previousDeals = queryClient.getQueryData<ApiDeal[]>(queryKeys.deals.all)
@@ -328,7 +365,6 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                 key={col.id}
                 className="w-[252px] shrink-0 flex flex-col overflow-hidden rounded-lg border border-black/[.07] dark:border-white/[.08] bg-[rgba(0,0,0,0.02)] dark:bg-white/[.02]"
               >
-                {/* Column header skeleton */}
                 <div className="px-3.5 py-3 shrink-0 border-b border-black/[.06] dark:border-white/[.08] bg-white/60 dark:bg-white/[.04]">
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse bg-slate-200 dark:bg-white/[.1]" />
@@ -336,7 +372,6 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                     <div className="h-5 w-6 bg-slate-100 dark:bg-white/[.06] rounded-full animate-pulse" />
                   </div>
                 </div>
-                {/* Card skeletons */}
                 <div className="flex flex-col gap-2 flex-1 overflow-y-auto p-2.5">
                   {[1, 2].map(i => (
                     <div key={i} className="rounded-lg p-3.5 bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] animate-pulse">
@@ -385,7 +420,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                   {/* Cards */}
                   <div className="flex flex-col gap-2 flex-1 overflow-y-auto p-2.5">
                     {col.deals.length === 0 ? (
-                      <div className="py-8 text-center text-[12px] text-slate-300">
+                      <div className="py-8 text-center text-[12px] text-slate-300 dark:text-white/20">
                         No deals
                       </div>
                     ) : (
