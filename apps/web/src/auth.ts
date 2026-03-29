@@ -61,6 +61,10 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
             })
             if (res.ok) {
               const data = await res.json()
+              // Use the DB's stable id — the OAuth user.id UUID can differ
+              // across sessions when no DB adapter is used. Email upsert
+              // preserves the original DB record id.
+              token.id = data.id
               token.role = data.role
               token.isOnboarded = data.isOnboarded ?? false
               token.firstName = data.firstName ?? null

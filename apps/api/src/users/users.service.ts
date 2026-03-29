@@ -42,13 +42,17 @@ export class UsersService {
         role,
       })
       .onConflictDoUpdate({
-        target: users.id,
+        // Conflict on email (not id) — the same Google account can generate
+        // different OAuth UUIDs across sessions when no DB adapter is used.
+        // Email is the stable identifier from Google OAuth.
+        target: users.email,
         set: {
-          email: data.email,
           name: data.name ?? null,
           image: data.image ?? null,
           role, // re-apply on every login in case email list changes
           updatedAt: new Date(),
+          // Note: we intentionally do NOT update `id` here.
+          // The existing DB id is kept stable so JWT token.id stays consistent.
         },
       })
       .returning()
