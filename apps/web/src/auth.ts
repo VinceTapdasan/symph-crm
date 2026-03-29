@@ -1,7 +1,9 @@
 import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
 
-const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'
+// NEXT_PUBLIC_API_URL includes the /api prefix (e.g. https://...run.app/api)
+// API_URL is the bare base URL without /api — don't use it for endpoint calls
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? 'http://localhost:3001/api'
 
 export const { handlers, signIn, signOut, auth, unstable_update: update } = NextAuth({
   providers: [
