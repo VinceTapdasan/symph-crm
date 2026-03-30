@@ -51,5 +51,6 @@ export const queryKeys = {
   },
   gmail: {
     inbox: ['gmail', 'inbox'] as const,
+    user: ['gmail', 'user'] as const,
   },
 } as const

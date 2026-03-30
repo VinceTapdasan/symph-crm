@@ -3,16 +3,15 @@ import { google } from 'googleapis'
 import { CalendarConnectionsService } from '../calendar/calendar-connections.service'
 
 /**
- * GmailService — fetches inbox threads via Gmail API.
+ * GmailService — inbox fetch + email send via Gmail API.
  *
- * Filter rules:
+ * Inbox filter rules:
  *   1. From one of INBOX_SENDERS (the 8 Symph team addresses)
  *   2. Sent after the 1st of the current calendar month
  *   3. CC must be non-empty — emails with no CC are excluded always
  *
  * Auth: reuses the OAuth2 token stored during Google Calendar connection.
- * Requires gmail.readonly scope (added to OAuth flow 2026-03-30).
- * Users connected before this date must reconnect to grant the new scope.
+ * Requires gmail.readonly + gmail.send scopes.
  */
 
 export const INBOX_SENDERS = [
@@ -26,8 +25,18 @@ export const INBOX_SENDERS = [
   'vince.tapdasan@symph.co',
 ]
 
+export interface SendEmailDto {
+  to: string[]
+  cc?: string[]
+  subject: string
+  body: string
+  threadId?: string    // Gmail thread ID — keeps reply in same thread
+  inReplyTo?: string   // RFC 2822 Message-ID of parent message
+}
+
 export type GmailMessage = {
-  id: string
+  id: string           // Gmail message ID
+  rfcMessageId: string // RFC 2822 Message-ID header (for In-Reply-To)
   subject: string
   from: string
   fromEmail: string
@@ -59,6 +68,8 @@ export type InboxResponse = {
   needsReconnect?: boolean
   error?: string
 }
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function parseEmailAddress(raw: string): { display: string; email: string } {
   const match = raw.match(/^(.+?)\s*<(.+?)>$/)
@@ -108,12 +119,91 @@ function extractBody(payload: any): { html?: string; text?: string } {
   return {}
 }
 
+/**
+ * Build a base64url-encoded RFC 2822 email message for gmail.users.messages.send.
+ */
+function buildRawMessage(from: string, dto: SendEmailDto): string {
+  const lines: string[] = [`From: ${from}`, `To: ${dto.to.join(', ')}`]
+
+  if (dto.cc?.length) lines.push(`Cc: ${dto.cc.join(', ')}`)
+  if (dto.inReplyTo) {
+    lines.push(`In-Reply-To: ${dto.inReplyTo}`)
+    lines.push(`References: ${dto.inReplyTo}`)
+  }
+
+  lines.push(
+    `Subject: ${dto.subject}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: text/plain; charset=UTF-8`,
+    ``,
+    dto.body,
+  )
+
+  return Buffer.from(lines.join('\r\n')).toString('base64url')
+}
+
+// ─── Service ─────────────────────────────────────────────────────────────────
+
 @Injectable()
 export class GmailService {
   private readonly logger = new Logger(GmailService.name)
 
   constructor(private connections: CalendarConnectionsService) {}
 
+  /**
+   * Returns the Google email for the connected account.
+   * Frontend uses this to determine which side of the chat to render messages on.
+   */
+  async getGoogleEmail(userId: string): Promise<{ email: string } | null> {
+    if (!userId) return null
+
+    const oauth2 = await this.connections.getAuthedOAuth2Client(userId)
+    if (!oauth2) return null
+
+    try {
+      const gmail = google.gmail({ version: 'v1', auth: oauth2 })
+      const { data } = await gmail.users.getProfile({ userId: 'me' })
+      return { email: data.emailAddress ?? '' }
+    } catch (err) {
+      this.logger.warn(`getGoogleEmail failed for ${userId}: ${(err as Error).message}`)
+      return null
+    }
+  }
+
+  /**
+   * Send an email via Gmail API using the stored OAuth2 token.
+   */
+  async sendEmail(
+    userId: string,
+    dto: SendEmailDto,
+  ): Promise<{ messageId: string; threadId: string }> {
+    if (!userId) throw new Error('Not authenticated')
+
+    const oauth2 = await this.connections.getAuthedOAuth2Client(userId)
+    if (!oauth2) throw new Error('Google account not connected. Please reconnect.')
+
+    const gmail = google.gmail({ version: 'v1', auth: oauth2 })
+
+    // Fetch the sender's actual email from Google profile
+    const { data: profile } = await gmail.users.getProfile({ userId: 'me' })
+    const fromEmail = profile.emailAddress!
+
+    const raw = buildRawMessage(fromEmail, dto)
+
+    const { data } = await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: {
+        raw,
+        ...(dto.threadId ? { threadId: dto.threadId } : {}),
+      },
+    })
+
+    return { messageId: data.id!, threadId: data.threadId! }
+  }
+
+  /**
+   * Fetch this month's filtered inbox threads.
+   */
   async getInbox(userId: string): Promise<InboxResponse> {
     const oauth2 = await this.connections.getAuthedOAuth2Client(userId)
 
@@ -162,7 +252,9 @@ export class GmailService {
             const messages: GmailMessage[] = []
 
             for (const msg of rawMessages) {
-              const headers: { name?: string | null; value?: string | null }[] = msg.payload?.headers ?? []
+              const headers: { name?: string | null; value?: string | null }[] =
+                msg.payload?.headers ?? []
+
               const ccRaw = getHeader(headers, 'Cc')
               const ccList = parseEmailList(ccRaw)
 
@@ -174,11 +266,13 @@ export class GmailService {
               const subject = getHeader(headers, 'Subject') || '(no subject)'
               const toRaw = getHeader(headers, 'To')
               const dateRaw = getHeader(headers, 'Date')
+              const rfcMessageId = getHeader(headers, 'Message-ID')
               const isUnread = (msg.labelIds ?? []).includes('UNREAD')
               const { html, text } = extractBody(msg.payload)
 
               messages.push({
                 id: msg.id!,
+                rfcMessageId,
                 subject,
                 from: fromParsed.display,
                 fromEmail: fromParsed.email,
@@ -192,7 +286,6 @@ export class GmailService {
               })
             }
 
-            // Skip thread if no message passed the CC filter
             if (messages.length === 0) return
 
             const first = messages[0]
@@ -211,7 +304,9 @@ export class GmailService {
               messages,
             })
           } catch (err) {
-            this.logger.warn(`Failed to fetch thread ${item.id}: ${(err as Error).message}`)
+            this.logger.warn(
+              `Failed to fetch thread ${item.id}: ${(err as Error).message}`,
+            )
           }
         }),
       )
@@ -229,12 +324,15 @@ export class GmailService {
         err?.code === 403
 
       if (isInsufficientScope) {
-        this.logger.warn(`User ${userId} needs to reconnect Google (insufficient gmail scope)`)
+        this.logger.warn(
+          `User ${userId} needs to reconnect Google (insufficient gmail scope)`,
+        )
         return {
           threads: [],
           fetchedAt: new Date().toISOString(),
           needsReconnect: true,
-          error: 'Gmail access not granted. Please reconnect your Google account to enable inbox.',
+          error:
+            'Gmail access not granted. Please reconnect your Google account to enable inbox.',
         }
       }
 
