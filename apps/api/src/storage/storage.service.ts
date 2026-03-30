@@ -68,6 +68,14 @@ export class StorageService {
     return data.signedUrl
   }
 
+  /** Read a binary attachment from the attachments bucket. Returns a Buffer. */
+  async readAttachment(path: string): Promise<Buffer> {
+    const { data, error } = await this.client.storage.from(ATTACHMENTS_BUCKET).download(path)
+    if (error) throw new Error(`Attachment read failed [${path}]: ${error.message}`)
+    const arrayBuffer = await data.arrayBuffer()
+    return Buffer.from(arrayBuffer)
+  }
+
   /** Delete a file. Does not throw if the file doesn't exist. */
   async delete(bucket: string, path: string): Promise<void> {
     const { error } = await this.client.storage.from(bucket).remove([path])

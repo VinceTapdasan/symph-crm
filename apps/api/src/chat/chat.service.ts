@@ -26,6 +26,8 @@ export interface AttachmentContext {
   filename: string
   // For file and voice: extracted text content
   text?: string
+  // For voice: the persisted file ID — enables playback + retry without re-recording
+  fileId?: string
   // For image: raw bytes for Claude vision (passed as base64 content block)
   imageData?: {
     base64: string

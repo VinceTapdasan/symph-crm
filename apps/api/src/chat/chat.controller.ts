@@ -7,12 +7,14 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  UnprocessableEntityException,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { memoryStorage } from 'multer'
 import { ChatService, ChatMessageDto, AttachmentContext } from './chat.service'
 import { FileParserService } from '../file-parser/file-parser.service'
 import { VoiceService } from '../voice/voice.service'
+import { VoiceUploadService, TranscribeError } from '../voice/voice-upload.service'
 
 @Controller('chat')
 export class ChatController {
@@ -20,6 +22,7 @@ export class ChatController {
     private readonly chatService: ChatService,
     private readonly fileParser: FileParserService,
     private readonly voice: VoiceService,
+    private readonly voiceUpload: VoiceUploadService,
   ) {}
 
   /**
@@ -35,6 +38,14 @@ export class ChatController {
    * POST /api/chat/upload
    * Multipart endpoint for file / image / voice attachments.
    * Form fields mirror ChatMessageDto. The file field is "attachment".
+   *
+   * Voice flow (new):
+   *  1. Audio is uploaded to Supabase Storage and a `files` record created.
+   *  2. Groq transcription is attempted.
+   *  3a. Success → chat is sent with the transcript as context.
+   *  3b. Failure → 422 returned with { error, fileId, retryable: true }.
+   *      FE shows "Retry transcription" — user calls POST /api/voice/retry/:fileId,
+   *      gets text back, then completes the send via POST /api/chat/message.
    */
   @Post('upload')
   @UseInterceptors(
@@ -54,17 +65,39 @@ export class ChatController {
       const baseMime = mimetype.split(';')[0].trim()
 
       if (this.voice.canTranscribe(mimetype)) {
-        // ── Voice ──────────────────────────────────────────────
+        // ── Voice ──────────────────────────────────────────────────────────
         if (!this.voice.isConfigured) {
           throw new BadRequestException(
             'Voice transcription is not yet configured on this server. Add GROQ_API_KEY.',
           )
         }
-        const text = await this.voice.transcribe(buffer, mimetype, originalname)
-        attachmentContext = { type: 'voice', filename: originalname, text }
+
+        try {
+          const { text, fileId } = await this.voiceUpload.persistAndTranscribe(
+            buffer,
+            mimetype,
+            originalname,
+            {
+              userId: body.userId,
+              dealId: body.dealId ?? undefined,
+            },
+          )
+          attachmentContext = { type: 'voice', filename: originalname, text, fileId }
+        } catch (err: unknown) {
+          const te = err as TranscribeError
+          if (te.retryable) {
+            // Audio is persisted — tell FE it can retry without re-recording
+            throw new UnprocessableEntityException({
+              error: 'TranscriptionFailed',
+              message: te.message,
+              fileId: te.fileId,
+              retryable: true,
+            })
+          }
+          throw err
+        }
       } else if (baseMime.startsWith('image/')) {
-        // ── Image ──────────────────────────────────────────────
-        // Pass raw bytes to Claude vision — no server-side analysis needed
+        // ── Image ─────────────────────────────────────────────────────────
         const supportedMediaTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
         const mediaType = supportedMediaTypes.includes(baseMime)
           ? (baseMime as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp')
@@ -79,7 +112,7 @@ export class ChatController {
           },
         }
       } else if (this.fileParser.canParse(mimetype)) {
-        // ── Document ───────────────────────────────────────────
+        // ── Document ──────────────────────────────────────────────────────
         const parsed = await this.fileParser.parse(buffer, mimetype, originalname)
         attachmentContext = {
           type: 'file',

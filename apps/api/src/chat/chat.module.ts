@@ -21,6 +21,6 @@ import { DealsModule } from '../deals/deals.module'
   ],
   controllers: [ChatController],
   providers: [ChatService],
-  exports: [ChatService],
+  exports: [ChatService, VoiceModule],
 })
 export class ChatModule {}

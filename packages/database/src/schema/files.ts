@@ -15,4 +15,13 @@ export const files = pgTable('files', {
   mimeType: text('mime_type'),
   description: text('description'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+
+  // ── Transcription lifecycle ────────────────────────────────────────────────
+  // Populated for audio files (voice notes, call recordings).
+  // status: 'none' for non-audio files, 'pending' → 'success' | 'failed' for audio.
+  // If 'failed', transcriptionError explains why — frontend can offer retry.
+  transcriptionStatus: text('transcription_status').default('none').notNull(),
+  transcriptionText:   text('transcription_text'),
+  transcriptionError:  text('transcription_error'),
+  retryCount:          integer('retry_count').default(0).notNull(),
 })
