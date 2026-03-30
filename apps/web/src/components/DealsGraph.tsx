@@ -115,12 +115,24 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null)
   const viewportRef = useRef<{ W: number; H: number }>({ W: 900, H: 600 })
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
-  // Stable refs for deals/companies — always synced in render body so the
-  // search effect can read latest data without taking them as dependencies.
+  // Stable refs — always synced in render body so effects can read latest
+  // values without taking them as reactive dependencies (prevents re-runs on
+  // every parent re-render caused by keystroke in search box).
   const dealsRef = useRef(deals)
   const companiesRef = useRef(companies)
+  const onOpenDealRef = useRef(onOpenDeal)
+  const onOpenBrandRef = useRef(onOpenBrand)
   const [tooltip, setTooltip] = useState<Tooltip>(null)
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
+
+  // Content fingerprint — only changes when the actual graph data changes
+  // (nodes added/removed, stage changed, title changed, company link changed).
+  // Typing in the search box does NOT change this, so the graph never rebuilds.
+  const graphKey = useMemo(() => {
+    const cs = companies.map(c => `${c.id}:${c.name}:${c.industry ?? ''}:${c.domain ?? ''}`).join('|')
+    const ds = deals.map(d => `${d.id}:${d.title}:${d.stage}:${d.companyId ?? ''}:${d.value ?? ''}:${(d.servicesTags ?? []).join(',')}`).join('|')
+    return `${cs}||${ds}`
+  }, [companies, deals])
 
   // Debounce searchQuery → debouncedSearch (300ms) to prevent flicker on keystrokes
   useEffect(() => {
@@ -169,9 +181,16 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
   }, [debouncedSearch, deals, companies])
 
   const matchCount = matchedNodeIds?.size ?? 0
+  // Sync all stable refs every render — effects read from these, not from props
   dealsRef.current = deals
   companiesRef.current = companies
+  onOpenDealRef.current = onOpenDeal
+  onOpenBrandRef.current = onOpenBrand
 
+  // Main graph build — depends only on `graphKey` (the content fingerprint).
+  // Keystrokes / search state changes in the parent do NOT change graphKey, so
+  // they never trigger a rebuild → nodes stay put while you type.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const svg = d3.select(svgRef.current!)
     const container = containerRef.current!
@@ -182,7 +201,10 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
 
     svg.selectAll('*').remove()
 
-    // ── Build graph data ──────────────────────────────────────────────────────
+    // ── Build graph data (read from stable refs) ──────────────────────────────
+
+    const companies = companiesRef.current
+    const deals = dealsRef.current
 
     const companyMap = new Map<string, ApiCompany>()
     for (const c of companies) companyMap.set(c.id, c)
@@ -377,13 +399,13 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
       })
       .on('mouseleave', () => setTooltip(null))
 
-    // ── Click — deals open deal detail, brands open brand detail ─────────────
+    // ── Click — use stable refs so we don't close over stale callbacks ───────
 
     nodeSel.on('click', (_event, d) => {
       if (d.kind === 'deal' && d.dealId) {
-        onOpenDeal(d.dealId)
-      } else if (d.kind === 'company' && d.companyId && onOpenBrand) {
-        onOpenBrand(d.companyId)
+        onOpenDealRef.current(d.dealId)
+      } else if (d.kind === 'company' && d.companyId && onOpenBrandRef.current) {
+        onOpenBrandRef.current(d.companyId)
       }
     })
 
@@ -420,7 +442,11 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
     return () => {
       sim.stop()
     }
-  }, [companies, deals, onOpenDeal, onOpenBrand])
+  // graphKey is the content fingerprint — only changes when real data changes.
+  // dealsRef/companiesRef/onOpenDealRef/onOpenBrandRef are stable refs that
+  // are always up-to-date; they don't need to be deps.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [graphKey])
 
   // ── Search highlight + center (no zoom change) ────────────────────────────
   //
