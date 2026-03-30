@@ -32,6 +32,7 @@ export class CalendarController {
   @Get('auth/google-calendar/connect')
   connect(
     @Query('userId') userId: string,
+    @Query('returnTo') returnTo: string,
     @Req() req: Request,
     @Res() res: Response,
   ) {
@@ -40,7 +41,8 @@ export class CalendarController {
     if (!uid) {
       return res.status(400).json({ error: 'Missing userId — make sure you are logged in before connecting' })
     }
-    const url = this.connections.getAuthUrl(uid)
+    // returnTo defaults to /calendar; /inbox passes /inbox so the callback redirects there
+    const url = this.connections.getAuthUrl(uid, returnTo || '/calendar')
     res.redirect(url)
   }
 
@@ -58,24 +60,28 @@ export class CalendarController {
   ) {
     const webUrl = process.env.WEB_BASE_URL ?? 'http://localhost:3000'
 
+    // Decode state early so we can redirect to the right page even on error.
+    // State format: "userId|returnTo" — returnTo defaults to /calendar.
+    const { userId, returnTo } = state
+      ? this.connections.decodeState(state)
+      : { userId: '', returnTo: '/calendar' }
+
+    const errorRedirect = (msg: string) =>
+      res.redirect(`${webUrl}${returnTo}?oauth_error=${encodeURIComponent(msg)}`)
+
     // Google itself returned an error (e.g. user denied consent)
-    if (oauthError) {
-      return res.redirect(`${webUrl}/calendar?oauth_error=${encodeURIComponent(oauthError)}`)
-    }
+    if (oauthError) return errorRedirect(oauthError)
 
     // Missing required params
-    if (!state || !code) {
-      return res.redirect(`${webUrl}/calendar?oauth_error=${encodeURIComponent('Missing code or state')}`)
-    }
+    if (!state || !code) return errorRedirect('Missing code or state')
 
     try {
-      await this.connections.handleCallback(state, code)
-      res.redirect(`${webUrl}/calendar?connected=true`)
+      await this.connections.handleCallback(userId, code)
+      res.redirect(`${webUrl}${returnTo}?connected=true`)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
-      this.logger.error(`OAuth callback failed for user ${state}: ${message}`)
-      // Redirect with a readable error so the user isn't stuck on the API URL
-      res.redirect(`${webUrl}/calendar?oauth_error=${encodeURIComponent(message)}`)
+      this.logger.error(`OAuth callback failed for user ${userId}: ${message}`)
+      errorRedirect(message)
     }
   }
 

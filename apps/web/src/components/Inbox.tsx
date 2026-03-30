@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { queryKeys } from '@/lib/query-keys'
 import { useUser } from '@/lib/hooks/use-user'
@@ -563,8 +564,31 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
   const [compose, setCompose] = useState<ComposeState | null>(null)
   // Mobile navigation: 'list' shows the conversation list, 'chat' shows the chat panel
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list')
+  const [oauthBanner, setOauthBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const { userId } = useUser()
+  const searchParams = useSearchParams()
+  const qc = useQueryClient()
+
+  // Read OAuth redirect params once on mount, then clean the URL
+  useEffect(() => {
+    const connected = searchParams.get('connected')
+    const oauthError = searchParams.get('oauth_error')
+    if (connected === 'true') {
+      setOauthBanner({ type: 'success', message: 'Google connected successfully!' })
+      qc.invalidateQueries({ queryKey: queryKeys.gmail.inbox })
+      qc.invalidateQueries({ queryKey: queryKeys.gmail.user })
+    } else if (oauthError) {
+      setOauthBanner({ type: 'error', message: oauthError })
+    }
+    if (connected || oauthError) {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('connected')
+      url.searchParams.delete('oauth_error')
+      window.history.replaceState({}, '', url.toString())
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.gmail.inbox,
@@ -608,10 +632,33 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
 
   return (
     <div className="h-full flex flex-col overflow-hidden relative">
+      {/* OAuth result banner — shown after returning from Google consent */}
+      {oauthBanner && (
+        <div className={cn(
+          'flex items-center justify-between rounded-lg px-4 py-3 mx-4 mb-3',
+          oauthBanner.type === 'success'
+            ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/40'
+            : 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40',
+        )}>
+          <p className={cn(
+            'text-[13px] font-medium',
+            oauthBanner.type === 'success' ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300',
+          )}>
+            {oauthBanner.message}
+          </p>
+          <button
+            onClick={() => setOauthBanner(null)}
+            className="ml-4 shrink-0 text-[11px] opacity-60 hover:opacity-100 transition-opacity"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Connect banner — shown when Google not connected */}
       {needsReconnect && (
         <ConnectBanner
-          connectUrl={`${API}/auth/google-calendar/connect${userId ? `?userId=${encodeURIComponent(userId)}` : ''}`}
+          connectUrl={`${API}/auth/google-calendar/connect?userId=${encodeURIComponent(userId ?? '')}&returnTo=%2Finbox`}
         />
       )}
 

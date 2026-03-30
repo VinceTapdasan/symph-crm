@@ -29,15 +29,16 @@ export class CalendarConnectionsService {
 
   /**
    * Step 1 — generate the OAuth2 consent URL.
-   * userId is encoded in the `state` param so the callback can identify the user
-   * without relying on headers (Google redirect loses all custom headers).
+   * State encodes both userId and returnTo as "userId|returnTo" so the callback
+   * can identify the user AND redirect back to the correct page (Inbox or Calendar).
+   * Google echoes the state param back verbatim — headers are lost in the redirect.
    */
-  getAuthUrl(userId: string): string {
+  getAuthUrl(userId: string, returnTo = '/calendar'): string {
     const oauth2 = this.getOAuth2Client()
     return oauth2.generateAuthUrl({
       access_type: 'offline',
       prompt: 'consent', // force refresh_token on every connect
-      state: userId,     // Google echoes this back to /callback verbatim
+      state: `${userId}|${returnTo}`,  // decoded in handleCallback
       scope: [
         'openid',
         'email',   // required: userinfo.get() needs email scope to return the address
@@ -46,6 +47,19 @@ export class CalendarConnectionsService {
         'https://www.googleapis.com/auth/gmail.send',
       ],
     })
+  }
+
+  /**
+   * Decode the OAuth state param: "userId|returnTo" → { userId, returnTo }.
+   * Backwards-compatible: if no pipe, treats entire string as userId.
+   */
+  decodeState(state: string): { userId: string; returnTo: string } {
+    const pipeIdx = state.indexOf('|')
+    if (pipeIdx === -1) return { userId: state, returnTo: '/calendar' }
+    return {
+      userId: state.slice(0, pipeIdx),
+      returnTo: state.slice(pipeIdx + 1) || '/calendar',
+    }
   }
 
   /**
