@@ -1,6 +1,6 @@
 import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common'
 import { eq } from 'drizzle-orm'
-import { google, type calendar_v3 } from 'googleapis'
+import { google, type calendar_v3, type Auth } from 'googleapis'
 import { userCalendarConnections, calendarEvents } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
@@ -36,7 +36,10 @@ export class CalendarConnectionsService {
     return oauth2.generateAuthUrl({
       access_type: 'offline',
       prompt: 'consent', // force refresh_token on every connect
-      scope: ['https://www.googleapis.com/auth/calendar.events'],
+      scope: [
+        'https://www.googleapis.com/auth/calendar.events',
+        'https://www.googleapis.com/auth/gmail.readonly',
+      ],
     })
   }
 
@@ -209,6 +212,24 @@ export class CalendarConnectionsService {
       .from(userCalendarConnections)
       .where(eq(userCalendarConnections.userId, userId))
     return conn ?? null
+  }
+
+  /**
+   * Returns an authenticated OAuth2 client for the given user.
+   * Used by other services (e.g. GmailService) that share the same token store.
+   * Returns null if the user has no active connection.
+   */
+  async getAuthedOAuth2Client(userId: string): Promise<Auth.OAuth2Client | null> {
+    const [conn] = await this.db
+      .select()
+      .from(userCalendarConnections)
+      .where(eq(userCalendarConnections.userId, userId))
+
+    if (!conn || !conn.isActive) return null
+
+    const oauth2 = this.getOAuth2Client()
+    oauth2.setCredentials({ refresh_token: this.crypto.decrypt(conn.refreshToken) })
+    return oauth2
   }
 
   // ─── Private helpers ──────────────────────────────────────────────────────

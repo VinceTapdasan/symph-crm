@@ -11,6 +11,6 @@ import { CalendarCryptoService } from './calendar-crypto.service'
     CalendarConnectionsService,
     CalendarEventsService,
   ],
-  exports: [CalendarConnectionsService, CalendarEventsService],
+  exports: [CalendarConnectionsService, CalendarEventsService, CalendarCryptoService],
 })
 export class CalendarModule {}

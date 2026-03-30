@@ -49,4 +49,7 @@ export const queryKeys = {
     events: (params: { from?: string; to?: string; dealId?: string }) =>
       ['calendar', 'events', params] as const,
   },
+  gmail: {
+    inbox: ['gmail', 'inbox'] as const,
+  },
 } as const

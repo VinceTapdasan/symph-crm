@@ -18,6 +18,7 @@ import { InternalModule } from './internal/internal.module'
 import { CalendarModule } from './calendar/calendar.module'
 import { UsersModule } from './users/users.module'
 import { AuditLogsModule } from './audit-logs/audit-logs.module'
+import { GmailModule } from './gmail/gmail.module'
 
 @Module({
   providers: [
@@ -42,6 +43,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module'
     InternalModule,
     UsersModule,
     AuditLogsModule,
+    GmailModule,
   ],
 })
 export class AppModule {}
