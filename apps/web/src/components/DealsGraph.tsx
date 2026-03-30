@@ -115,7 +115,10 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null)
   const viewportRef = useRef<{ W: number; H: number }>({ W: 900, H: 600 })
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
-  const matchedNodeIdsRef = useRef<Set<string> | null>(null)
+  // Stable refs for deals/companies — always synced in render body so the
+  // search effect can read latest data without taking them as dependencies.
+  const dealsRef = useRef(deals)
+  const companiesRef = useRef(companies)
   const [tooltip, setTooltip] = useState<Tooltip>(null)
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
 
@@ -166,6 +169,8 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
   }, [debouncedSearch, deals, companies])
 
   const matchCount = matchedNodeIds?.size ?? 0
+  dealsRef.current = deals
+  companiesRef.current = companies
 
   useEffect(() => {
     const svg = d3.select(svgRef.current!)
@@ -418,16 +423,19 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
   }, [companies, deals, onOpenDeal, onOpenBrand])
 
   // ── Search highlight + center (no zoom change) ────────────────────────────
+  //
+  // Depends only on debouncedSearch (a stable string primitive).
+  // deals/companies are accessed via stable refs so their reference churn on
+  // every parent re-render does NOT trigger this effect — eliminating flicker.
   useEffect(() => {
     const svg = d3.select(svgRef.current!)
     const nodesGroup = svg.select<SVGGElement>('g.root g.nodes')
     const linksGroup = svg.select('g.root g.links')
     if (nodesGroup.empty()) return
 
-    // Read from ref — stable dependency, won't re-fire on every deals/companies reference change
-    const ids = matchedNodeIdsRef.current
+    const q = debouncedSearch.trim().toLowerCase()
 
-    if (!ids) {
+    if (!q) {
       // No active search — restore full visibility
       nodesGroup.selectAll<SVGGElement, GraphNode>('g')
         .attr('visibility', 'visible')
@@ -438,12 +446,41 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
       return
     }
 
+    // Compute matching node IDs using stable refs (avoids dependency on deals/companies)
+    const ids = new Set<string>()
+    const dealsSnap = dealsRef.current
+    const companiesSnap = companiesRef.current
+
+    for (const deal of dealsSnap) {
+      if (
+        deal.title.toLowerCase().includes(q) ||
+        deal.stage.toLowerCase().includes(q) ||
+        (deal.servicesTags ?? []).some(s => s.toLowerCase().includes(q))
+      ) {
+        ids.add(`d-${deal.id}`)
+        if (deal.companyId) ids.add(`c-${deal.companyId}`)
+        else ids.add('c-unassigned')
+      }
+    }
+
+    for (const c of companiesSnap) {
+      if (
+        c.name.toLowerCase().includes(q) ||
+        (c.industry || '').toLowerCase().includes(q) ||
+        (c.domain || '').toLowerCase().includes(q)
+      ) {
+        ids.add(`c-${c.id}`)
+        for (const deal of dealsSnap) {
+          if (deal.companyId === c.id) ids.add(`d-${deal.id}`)
+        }
+      }
+    }
+
     // Hide non-matching nodes entirely, show only matches
     nodesGroup.selectAll<SVGGElement, GraphNode>('g')
       .attr('visibility', d => ids.has(d.id) ? 'visible' : 'hidden')
       .attr('opacity', 1)
 
-    // Hide non-matching links
     linksGroup.selectAll<SVGLineElement, GraphLink>('line')
       .attr('visibility', d => {
         const src = (d.source as GraphNode).id
@@ -465,17 +502,13 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
     if (matchedNodes.length === 0) return
 
     const { W, H } = viewportRef.current
-
-    // Compute centroid of matched nodes
     let cx = 0, cy = 0
     for (const n of matchedNodes) { cx += n.x!; cy += n.y! }
     cx /= matchedNodes.length
     cy /= matchedNodes.length
 
-    // Get current zoom scale and pan to centroid at same scale
     const currentTransform = d3.zoomTransform(svgRef.current!)
     const scale = currentTransform.k
-
     const targetTransform = d3.zoomIdentity
       .translate(W / 2, H / 2)
       .scale(scale)
@@ -487,7 +520,7 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
       .ease(d3.easeCubicInOut)
       .call(zoomRef.current.transform, targetTransform)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch])  // debouncedSearch is a stable string — only fires after 300ms debounce
+  }, [debouncedSearch])  // stable string primitive — only fires after 300ms debounce, never on deals/companies ref churn
 
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden bg-[#0f1117] select-none">
