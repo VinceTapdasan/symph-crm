@@ -398,7 +398,7 @@ function ReplyBox({
             'shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150',
             body.trim() && !mutation.isPending
               ? 'bg-primary text-white hover:bg-primary/90 active:scale-95'
-              : 'bg-slate-100 text-slate-300',
+              : 'bg-slate-100 dark:bg-white/[.06] text-slate-300',
           )}
           title="Send (Ctrl+Enter)"
         >
@@ -521,15 +521,15 @@ function InboxSkeleton() {
   return (
     <div className="flex flex-col">
       {Array.from({ length: 7 }).map((_, i) => (
-        <div key={i} className="px-3.5 py-3 border-b border-black/[.05] flex items-start gap-3 animate-pulse">
-          <div className="w-9 h-9 rounded-full bg-slate-100 shrink-0 mt-0.5" />
+        <div key={i} className="px-3.5 py-3 border-b border-black/[.05] dark:border-white/[.05] flex items-start gap-3 animate-pulse">
+          <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-white/[.08] shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1.5">
-              <div className="h-3 w-24 bg-slate-100 rounded" />
-              <div className="h-2.5 w-10 bg-slate-100 rounded" />
+              <div className="h-3 w-24 bg-slate-100 dark:bg-white/[.08] rounded" />
+              <div className="h-2.5 w-10 bg-slate-100 dark:bg-white/[.08] rounded" />
             </div>
-            <div className="h-2.5 w-40 bg-slate-100 rounded mb-1.5" />
-            <div className="h-2.5 w-full bg-slate-100 rounded" />
+            <div className="h-2.5 w-40 bg-slate-100 dark:bg-white/[.08] rounded mb-1.5" />
+            <div className="h-2.5 w-full bg-slate-100 dark:bg-white/[.08] rounded" />
           </div>
         </div>
       ))}
@@ -656,7 +656,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
             <InboxSkeleton />
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-16 px-6">
-              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/[.06] flex items-center justify-center">
                 <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className="text-slate-400">
                   <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
@@ -699,7 +699,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-white border border-black/[.06] shadow-[0_1px_3px_rgba(17,24,39,0.06)] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-white dark:bg-card border border-black/[.06] dark:border-white/[.06] shadow-[0_1px_3px_rgba(17,24,39,0.06)] flex items-center justify-center">
               <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" className="text-slate-300">
                 <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
               </svg>
