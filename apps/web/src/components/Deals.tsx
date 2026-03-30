@@ -10,6 +10,7 @@ import { CreateBrandModal } from './CreateBrandModal'
 import { CreateDealModal } from './CreateDealModal'
 import { DealsGraph } from './DealsGraph'
 import { ChevronsUpDown, ChevronsDownUp } from 'lucide-react'
+import { useUser } from '@/lib/hooks/use-user'
 
 type ViewMode = 'list' | 'graph'
 
@@ -257,6 +258,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
   const [showCreateBrand, setShowCreateBrand] = useState(false)
   const [showCreateDeal, setShowCreateDeal] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const { isSales } = useUser()
 
   const qc = useQueryClient()
 
@@ -457,27 +459,31 @@ export function Deals({ onOpenDeal }: DealsProps) {
             </button>
 
             {/* New Brand */}
-            <button
-              onClick={() => setShowCreateBrand(true)}
-              className="h-[30px] px-3 rounded-lg border border-black/[.08] dark:border-white/[.08] text-[12px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors flex items-center gap-1.5"
-            >
-              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              New Brand
-            </button>
+            {isSales && (
+              <>
+                <button
+                  onClick={() => setShowCreateBrand(true)}
+                  className="h-[30px] px-3 rounded-lg border border-black/[.08] dark:border-white/[.08] text-[12px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors flex items-center gap-1.5"
+                >
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  New Brand
+                </button>
 
-            {/* New Deal */}
-            <button
-              onClick={() => setShowCreateDeal(true)}
-              className="h-[30px] px-3 rounded-lg text-[12px] font-medium text-white transition-colors flex items-center gap-1.5"
-              style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
-            >
-              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              New Deal
-            </button>
+                {/* New Deal */}
+                <button
+                  onClick={() => setShowCreateDeal(true)}
+                  className="h-[30px] px-3 rounded-lg text-[12px] font-medium text-white transition-colors flex items-center gap-1.5"
+                  style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
+                >
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  New Deal
+                </button>
+              </>
+            )}
           </div>
         </div>
 

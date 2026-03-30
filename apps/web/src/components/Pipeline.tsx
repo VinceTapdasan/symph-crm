@@ -19,6 +19,7 @@ import { formatPeso } from '@/lib/utils'
 import { Avatar } from './Avatar'
 import { queryKeys } from '@/lib/query-keys'
 import { usePatchDealStage } from '@/lib/hooks/mutations'
+import { useUser } from '@/lib/hooks/use-user'
 
 // --- Types ---
 type ApiDeal = {
@@ -240,6 +241,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const scrolledRef = useRef(false)
+  const { isSales } = useUser()
 
   const { data: deals = [], isLoading } = useQuery({
     queryKey: queryKeys.deals.all,
@@ -394,7 +396,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
           </div>
         ) : (
           <DndContext
-            sensors={sensors}
+            sensors={isSales ? sensors : []}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >

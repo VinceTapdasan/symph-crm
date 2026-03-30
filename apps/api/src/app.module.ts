@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common'
+import { APP_GUARD } from '@nestjs/core'
 import { ConfigModule } from '@nestjs/config'
+import { RolesGuard } from './auth/roles.guard'
 import { DatabaseModule } from './database/database.module'
 import { StorageModule } from './storage/storage.module'
 import { DealsModule } from './deals/deals.module'
@@ -17,6 +19,10 @@ import { CalendarModule } from './calendar/calendar.module'
 import { UsersModule } from './users/users.module'
 
 @Module({
+  providers: [
+    // Global RBAC guard — mutations require SALES role, reads open to all
+    { provide: APP_GUARD, useClass: RolesGuard },
+  ],
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '../../.env' }),
     DatabaseModule,
