@@ -168,31 +168,31 @@ function ConversationRow({
     <button
       onClick={onClick}
       className={cn(
-        'w-full text-left px-3.5 py-3 border-b border-black/[.05] transition-colors duration-150 flex items-start gap-3',
+        'w-full text-left px-3.5 py-3 border-b border-black/[.05] dark:border-white/[.04] transition-colors duration-150 flex items-start gap-3',
         selected
-          ? 'bg-[rgba(108,99,255,0.06)] border-l-2 border-l-[#6c63ff]'
-          : 'hover:bg-slate-50 border-l-2 border-l-transparent',
+          ? 'bg-primary/[0.06] dark:bg-primary/[0.12] border-l-2 border-l-primary'
+          : 'hover:bg-slate-50 dark:hover:bg-white/[.03] border-l-2 border-l-transparent',
       )}
     >
       <div className="relative shrink-0 mt-0.5">
         <Avatar name={thread.from} email={thread.fromEmail} size={36} />
         {thread.unread && (
-          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#6c63ff] border-2 border-white" />
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-primary border-2 border-white" />
         )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2 mb-0.5">
-          <span className={cn('text-[12.5px] truncate', thread.unread ? 'font-semibold text-slate-900' : 'font-medium text-slate-700')}>
+          <span className={cn('text-[12.5px] truncate', thread.unread ? 'font-semibold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-slate-300')}>
             {thread.from}
           </span>
           <span className="text-[10.5px] text-slate-400 shrink-0 tabular-nums">
             {formatRelativeDate(thread.latestDate)}
           </span>
         </div>
-        <div className={cn('text-[12px] truncate mb-0.5', thread.unread ? 'font-medium text-slate-800' : 'text-slate-600')}>
+        <div className={cn('text-[12px] truncate mb-0.5', thread.unread ? 'font-medium text-slate-800 dark:text-slate-200' : 'text-slate-600 dark:text-slate-400')}>
           {thread.subject}
         </div>
-        <div className="text-[11px] text-slate-400 truncate leading-relaxed">{thread.snippet}</div>
+        <div className="text-[11px] text-slate-400 dark:text-slate-500 truncate leading-relaxed">{thread.snippet}</div>
       </div>
     </button>
   )
@@ -252,8 +252,8 @@ function ChatBubble({
           className={cn(
             'text-left rounded-2xl px-3.5 py-2.5 max-w-full transition-all duration-150',
             isMine
-              ? 'bg-[#6c63ff] text-white rounded-br-sm hover:bg-[#5b52e8]'
-              : 'bg-white border border-black/[.07] text-slate-800 rounded-bl-sm hover:bg-slate-50 shadow-[0_1px_2px_rgba(17,24,39,0.06)]',
+              ? 'bg-primary text-white rounded-br-sm hover:bg-primary/90'
+              : 'bg-card border border-black/[.07] dark:border-white/[.07] text-slate-800 dark:text-slate-200 rounded-bl-sm hover:bg-secondary shadow-[0_1px_2px_rgba(17,24,39,0.06)]',
           )}
         >
           {/* Preview: snippet */}
@@ -375,9 +375,9 @@ function ReplyBox({
   }
 
   return (
-    <div className="shrink-0 border-t border-black/[.06] bg-white px-4 py-3">
+    <div className="shrink-0 border-t border-black/[.06] dark:border-white/[.06] bg-card px-4 py-3">
       <div className={cn(
-        'flex items-end gap-2.5 rounded-xl border border-black/[.08] bg-slate-50/60 px-3 py-2.5 transition-colors focus-within:border-[#6c63ff]/40 focus-within:bg-white',
+        'flex items-end gap-2.5 rounded-xl border border-black/[.08] dark:border-white/[.08] bg-slate-50/60 dark:bg-white/[.03] px-3 py-2.5 transition-colors focus-within:border-primary/40 focus-within:bg-white dark:focus-within:bg-white/[.06]',
       )}>
         {myEmail && (
           <Avatar name={myEmail.split('@')[0]} email={myEmail} size={26} />
@@ -389,7 +389,7 @@ function ReplyBox({
           onKeyDown={handleKeyDown}
           placeholder={`Reply to ${thread.from}… (Ctrl+Enter to send)`}
           rows={1}
-          className="flex-1 min-w-0 text-[12.5px] text-slate-800 placeholder:text-slate-400 bg-transparent outline-none border-none resize-none leading-relaxed py-0.5 max-h-[120px]"
+          className="flex-1 min-w-0 text-[12.5px] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 bg-transparent outline-none border-none resize-none leading-relaxed py-0.5 max-h-[120px]"
         />
         <button
           onClick={handleSend}
@@ -397,7 +397,7 @@ function ReplyBox({
           className={cn(
             'shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150',
             body.trim() && !mutation.isPending
-              ? 'bg-[#6c63ff] text-white hover:bg-[#5b52e8] active:scale-95'
+              ? 'bg-primary text-white hover:bg-primary/90 active:scale-95'
               : 'bg-slate-100 text-slate-300',
           )}
           title="Send (Ctrl+Enter)"
@@ -440,11 +440,11 @@ function ChatView({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Chat header */}
-      <div className="shrink-0 px-5 py-3.5 border-b border-black/[.06] bg-white flex items-center gap-3">
+      <div className="shrink-0 px-5 py-3.5 border-b border-black/[.06] dark:border-white/[.06] bg-card flex items-center gap-3">
         <Avatar name={thread.from} email={thread.fromEmail} size={34} />
         <div className="flex-1 min-w-0">
-          <h2 className="text-[13px] font-semibold text-slate-900 truncate">{thread.from}</h2>
-          <p className="text-[11px] text-slate-400 truncate">{thread.subject}</p>
+          <h2 className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">{thread.from}</h2>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">{thread.subject}</p>
         </div>
         <button
           onClick={() =>
@@ -457,7 +457,7 @@ function ChatView({
               mode: 'reply',
             })
           }
-          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-semibold text-slate-600 dark:text-slate-300 hover:text-[#6c63ff] border border-black/[.08] hover:border-[#6c63ff]/40 rounded-lg transition-colors"
+          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-semibold text-slate-600 dark:text-slate-300 hover:text-primary border border-black/[.08] dark:border-white/[.08] hover:border-primary/40 rounded-lg transition-colors"
           title="Open full compose for this reply"
         >
           <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -468,7 +468,7 @@ function ChatView({
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto py-3 bg-slate-50/30">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto py-3 bg-background">
         {thread.messages.map((msg, i) => {
           const isMine = !!myEmail && msg.fromEmail.toLowerCase() === myEmail.toLowerCase()
           const prevMsg = thread.messages[i - 1]
@@ -500,25 +500,18 @@ function ChatView({
   )
 }
 
-function ConnectPrompt() {
+function ConnectBanner() {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-4 px-8 pb-12">
-      <div className="w-14 h-14 rounded-full bg-[rgba(108,99,255,0.08)] flex items-center justify-center">
-        <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#6c63ff" strokeWidth={1.5} strokeLinecap="round">
-          <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      </div>
-      <div className="text-center">
-        <div className="text-[13px] font-semibold text-slate-800 mb-1.5">Connect your Google account</div>
-        <div className="text-[12px] text-slate-400 leading-relaxed max-w-[260px]">
-          Inbox shows this month&apos;s team emails where you&apos;re CC&apos;d. Connect via Calendar to get started.
-        </div>
+    <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40 rounded-lg px-4 py-3 mx-4 mb-3">
+      <div className="min-w-0">
+        <p className="text-[13px] font-semibold text-blue-900 dark:text-blue-300">Connect Google to use Inbox</p>
+        <p className="text-[12px] text-blue-700 dark:text-blue-400 mt-0.5">Shows this month&apos;s team emails where you&apos;re CC&apos;d.</p>
       </div>
       <a
         href="/api/auth/google-calendar/connect"
-        className="px-4 py-2 bg-[#6c63ff] hover:bg-[#5b52e8] text-white text-[12px] font-semibold rounded-lg transition-colors active:scale-[0.98]"
+        className="ml-4 shrink-0 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-semibold rounded-lg transition-colors"
       >
-        Connect Google
+        Connect
       </a>
     </div>
   )
@@ -593,16 +586,19 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
   }
 
   return (
-    <div className="h-full flex overflow-hidden relative">
+    <div className="h-full flex flex-col overflow-hidden relative">
+      {/* Connect banner — shown when Google not connected */}
+      {needsReconnect && <ConnectBanner />}
 
+      <div className="flex-1 flex overflow-hidden">
       {/* Left panel — conversation list */}
-      <div className="w-[320px] shrink-0 border-r border-black/[.06] flex flex-col h-full bg-white">
+      <div className="w-[320px] shrink-0 border-r border-black/[.06] dark:border-white/[.06] flex flex-col h-full bg-white dark:bg-card">
 
         {/* Header */}
-        <div className="px-4 pt-4 pb-2.5 shrink-0 border-b border-black/[.05]">
+        <div className="px-4 pt-4 pb-2.5 shrink-0 border-b border-black/[.05] dark:border-white/[.05]">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h1 className="text-[13px] font-semibold text-slate-900">Inbox</h1>
+              <h1 className="text-[13px] font-semibold text-slate-900 dark:text-white">Inbox</h1>
               {!isLoading && !needsReconnect && (
                 <p className="text-[10.5px] text-slate-400 mt-0.5 tabular-nums">
                   {threads.length} conversation{threads.length !== 1 ? 's' : ''} this month
@@ -611,7 +607,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
             </div>
             <button
               onClick={() => openCompose({ to: [], cc: [], subject: '', mode: 'compose' })}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#6c63ff] hover:bg-[#5b52e8] text-white text-[11.5px] font-semibold rounded-lg transition-colors active:scale-[0.98]"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white text-[11.5px] font-semibold rounded-lg transition-colors active:scale-[0.98]"
             >
               <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
                 <path d="M12 5v14M5 12h14" />
@@ -629,7 +625,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search conversations…"
-              className="w-full pl-8 pr-3 py-[7px] text-[12px] bg-slate-50 border border-black/[.07] rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#6c63ff]/40 transition-colors"
+              className="w-full pl-8 pr-3 py-[7px] text-[12px] bg-slate-50 dark:bg-white/[.04] border border-black/[.07] dark:border-white/[.07] rounded-lg text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-primary/40 transition-colors"
             />
           </div>
 
@@ -640,7 +636,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
                 onClick={() => setFilter(tab)}
                 className={cn(
                   'px-3 py-1 rounded-full text-[11px] font-semibold capitalize transition-colors',
-                  filter === tab ? 'bg-[#6c63ff] text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200',
+                  filter === tab ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/[.10]',
                 )}
               >
                 {tab}
@@ -658,8 +654,6 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
             <InboxSkeleton />
-          ) : needsReconnect ? (
-            <ConnectPrompt />
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-16 px-6">
               <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
@@ -689,14 +683,14 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
         </div>
 
         {apiError && !needsReconnect && (
-          <div className="shrink-0 px-3.5 py-2.5 border-t border-red-100 bg-red-50">
-            <p className="text-[11px] text-red-600 leading-relaxed">{apiError}</p>
+          <div className="shrink-0 px-3.5 py-2.5 border-t border-red-100 dark:border-red-900/40 bg-red-50 dark:bg-red-950/30">
+            <p className="text-[11px] text-red-600 dark:text-red-400 leading-relaxed">{apiError}</p>
           </div>
         )}
       </div>
 
       {/* Right panel — chat view */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden bg-background">
         {selectedThread ? (
           <ChatView
             thread={selectedThread}
@@ -711,12 +705,14 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
               </svg>
             </div>
             <div className="text-center">
-              <div className="text-[13px] font-semibold text-slate-400">Select a conversation</div>
-              <div className="text-[11.5px] text-slate-300 mt-1">or compose a new message</div>
+              <div className="text-[13px] font-semibold text-slate-400 dark:text-slate-500">Select a conversation</div>
+              <div className="text-[11.5px] text-slate-300 dark:text-slate-600 mt-1">or compose a new message</div>
             </div>
           </div>
         )}
       </div>
+
+      </div>{/* end flex row */}
 
       {/* Floating compose window */}
       <ComposeWindow

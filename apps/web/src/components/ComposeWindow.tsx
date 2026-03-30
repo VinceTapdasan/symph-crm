@@ -98,7 +98,7 @@ function AddressInput({
 
   return (
     <div
-      className="flex items-start gap-1.5 px-3.5 py-2.5 border-b border-black/[.06] cursor-text"
+      className="flex items-start gap-1.5 px-3.5 py-2.5 border-b border-black/[.06] dark:border-white/[.06] cursor-text"
       onClick={() => inputRef.current?.focus()}
     >
       <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mt-[3px] shrink-0 w-6">
@@ -108,13 +108,13 @@ function AddressInput({
         {addresses.map((addr, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[rgba(108,99,255,0.08)] text-[#6c63ff] text-[11.5px] font-medium max-w-[200px]"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/[0.08] text-primary text-[11.5px] font-medium max-w-[200px]"
           >
             <span className="truncate">{parseDisplayName(addr)}</span>
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onChange(addresses.filter((_, j) => j !== i)) }}
-              className="shrink-0 w-3.5 h-3.5 rounded-full flex items-center justify-center hover:bg-[rgba(108,99,255,0.2)] transition-colors"
+              className="shrink-0 w-3.5 h-3.5 rounded-full flex items-center justify-center hover:bg-primary/20 transition-colors"
               aria-label={`Remove ${addr}`}
             >
               <svg width={8} height={8} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
@@ -133,7 +133,7 @@ function AddressInput({
           onBlur={() => commit(value)}
           onPaste={handlePaste}
           placeholder={addresses.length === 0 ? placeholder : ''}
-          className="flex-1 min-w-[120px] text-[12.5px] text-slate-800 placeholder:text-slate-400 bg-transparent outline-none border-none py-0.5"
+          className="flex-1 min-w-[120px] text-[12.5px] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 bg-transparent outline-none border-none py-0.5"
         />
       </div>
     </div>
@@ -214,7 +214,7 @@ export function ComposeWindow({
 
   return (
     <div
-      className="fixed bottom-0 right-6 z-50 w-[520px] max-w-[calc(100vw-1.5rem)] shadow-[0_8px_40px_rgba(0,0,0,0.18)] rounded-t-xl overflow-hidden bg-white border border-black/[.08] flex flex-col"
+      className="fixed bottom-0 right-6 z-50 w-[520px] max-w-[calc(100vw-1.5rem)] shadow-[0_8px_40px_rgba(0,0,0,0.28)] rounded-t-xl overflow-hidden bg-card border border-black/[.08] dark:border-white/[.08] flex flex-col"
       onKeyDown={handleKeyDown}
     >
       {/* Title bar */}
@@ -267,7 +267,7 @@ export function ComposeWindow({
             <div className="px-3.5 py-2 border-b border-black/[.06]">
               <button
                 onClick={() => setShowCc(true)}
-                className="text-[11px] font-medium text-slate-400 hover:text-[#6c63ff] transition-colors"
+                className="text-[11px] font-medium text-slate-400 dark:text-slate-500 hover:text-primary transition-colors"
               >
                 + Add Cc
               </button>
@@ -275,13 +275,13 @@ export function ComposeWindow({
           )}
 
           {/* Subject */}
-          <div className="px-3.5 border-b border-black/[.06]">
+          <div className="px-3.5 border-b border-black/[.06] dark:border-white/[.06]">
             <input
               type="text"
               value={subject}
               onChange={e => setSubject(e.target.value)}
               placeholder="Subject"
-              className="w-full py-2.5 text-[12.5px] text-slate-800 placeholder:text-slate-400 bg-transparent outline-none border-none"
+              className="w-full py-2.5 text-[12.5px] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 bg-transparent outline-none border-none"
             />
           </div>
 
@@ -292,16 +292,16 @@ export function ComposeWindow({
             onChange={e => setBody(e.target.value)}
             placeholder="Write your message…"
             rows={8}
-            className="flex-1 px-3.5 py-3 text-[12.5px] text-slate-800 placeholder:text-slate-400 bg-white outline-none border-none resize-none leading-relaxed"
+            className="flex-1 px-3.5 py-3 text-[12.5px] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 bg-card outline-none border-none resize-none leading-relaxed"
           />
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-3.5 py-2.5 border-t border-black/[.06] bg-slate-50/60 shrink-0">
+          <div className="flex items-center justify-between px-3.5 py-2.5 border-t border-black/[.06] dark:border-white/[.06] bg-slate-50/60 dark:bg-white/[.03] shrink-0">
             <div className="flex items-center gap-2">
               <button
                 onClick={handleSend}
                 disabled={sendMutation.isPending}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-[#6c63ff] hover:bg-[#5b52e8] disabled:opacity-60 text-white text-[12px] font-semibold rounded-lg transition-colors active:scale-[0.98]"
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-[12px] font-semibold rounded-lg transition-colors active:scale-[0.98]"
               >
                 {sendMutation.isPending ? (
                   <>
@@ -318,11 +318,11 @@ export function ComposeWindow({
                   </>
                 )}
               </button>
-              <span className="text-[10.5px] text-slate-400">Ctrl+Enter to send</span>
+              <span className="text-[10.5px] text-slate-400 dark:text-slate-500">Ctrl+Enter to send</span>
             </div>
             <button
               onClick={onClose}
-              className="w-7 h-7 flex items-center justify-center rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
               title="Discard"
             >
               <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
@@ -335,8 +335,8 @@ export function ComposeWindow({
 
           {/* Error */}
           {sendError && (
-            <div className="px-3.5 py-2 bg-red-50 border-t border-red-100">
-              <p className="text-[11px] text-red-600">{sendError}</p>
+            <div className="px-3.5 py-2 bg-red-50 dark:bg-red-950/30 border-t border-red-100 dark:border-red-900/40">
+              <p className="text-[11px] text-red-600 dark:text-red-400">{sendError}</p>
             </div>
           )}
         </>

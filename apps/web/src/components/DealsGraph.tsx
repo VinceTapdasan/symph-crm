@@ -115,6 +115,7 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null)
   const viewportRef = useRef<{ W: number; H: number }>({ W: 900, H: 600 })
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
+  const matchedNodeIdsRef = useRef<Set<string> | null>(null)
   const [tooltip, setTooltip] = useState<Tooltip>(null)
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
 
@@ -423,7 +424,10 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
     const linksGroup = svg.select('g.root g.links')
     if (nodesGroup.empty()) return
 
-    if (!matchedNodeIds) {
+    // Read from ref — stable dependency, won't re-fire on every deals/companies reference change
+    const ids = matchedNodeIdsRef.current
+
+    if (!ids) {
       // No active search — restore full visibility
       nodesGroup.selectAll<SVGGElement, GraphNode>('g')
         .attr('visibility', 'visible')
@@ -436,7 +440,7 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
 
     // Hide non-matching nodes entirely, show only matches
     nodesGroup.selectAll<SVGGElement, GraphNode>('g')
-      .attr('visibility', d => matchedNodeIds.has(d.id) ? 'visible' : 'hidden')
+      .attr('visibility', d => ids.has(d.id) ? 'visible' : 'hidden')
       .attr('opacity', 1)
 
     // Hide non-matching links
@@ -444,16 +448,16 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
       .attr('visibility', d => {
         const src = (d.source as GraphNode).id
         const tgt = (d.target as GraphNode).id
-        return matchedNodeIds.has(src) && matchedNodeIds.has(tgt) ? 'visible' : 'hidden'
+        return ids.has(src) && ids.has(tgt) ? 'visible' : 'hidden'
       })
       .attr('stroke-opacity', 0.35)
 
     // ── Center on matched nodes (keep current zoom scale) ─────────────────
-    if (matchedNodeIds.size === 0 || !zoomRef.current) return
+    if (ids.size === 0 || !zoomRef.current) return
 
     const matchedNodes: GraphNode[] = []
     nodesGroup.selectAll<SVGGElement, GraphNode>('g').each(d => {
-      if (matchedNodeIds.has(d.id) && d.x != null && d.y != null) {
+      if (ids.has(d.id) && d.x != null && d.y != null) {
         matchedNodes.push(d)
       }
     })
@@ -482,7 +486,8 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
       .duration(400)
       .ease(d3.easeCubicInOut)
       .call(zoomRef.current.transform, targetTransform)
-  }, [matchedNodeIds])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch])  // debouncedSearch is a stable string — only fires after 300ms debounce
 
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden bg-[#0f1117] select-none">
