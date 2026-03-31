@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { queryKeys } from '@/lib/query-keys'
 import { useUser } from '@/lib/hooks/use-user'
 import { ComposeWindow } from './ComposeWindow'
+import { MoreHorizontal, Archive, Trash2, Mail } from 'lucide-react'
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'
 
@@ -148,6 +149,28 @@ async function sendEmail(userId: string, dto: {
     throw new Error(err.message ?? 'Failed to send')
   }
   return res.json()
+}
+
+async function archiveThread(userId: string, threadId: string): Promise<void> {
+  const res = await fetch(`/api/gmail/threads/${threadId}/archive`, {
+    method: 'POST',
+    headers: { 'x-user-id': userId },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message ?? 'Failed to archive')
+  }
+}
+
+async function trashThread(userId: string, threadId: string): Promise<void> {
+  const res = await fetch(`/api/gmail/threads/${threadId}`, {
+    method: 'DELETE',
+    headers: { 'x-user-id': userId },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message ?? 'Failed to delete')
+  }
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -406,18 +429,149 @@ function ReplyBox({
   )
 }
 
+function ThreadActionsMenu({
+  thread,
+  userId,
+  myEmail,
+  onCompose,
+  onArchived,
+  onDeleted,
+}: {
+  thread: GmailThread
+  userId: string | null
+  myEmail: string | null
+  onCompose: (state: ComposeState) => void
+  onArchived: () => void
+  onDeleted: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+        setDeleteConfirm(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open])
+
+  const archiveMutation = useMutation({
+    mutationFn: () => archiveThread(userId ?? '', thread.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.gmail.inbox, exact: false })
+      setOpen(false)
+      onArchived()
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: () => trashThread(userId ?? '', thread.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.gmail.inbox, exact: false })
+      setOpen(false)
+      onDeleted()
+    },
+  })
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(o => !o); setDeleteConfirm(false) }}
+        className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[.08] transition-colors"
+        title="Thread actions"
+      >
+        <MoreHorizontal size={16} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-9 z-50 min-w-[180px] bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.1] rounded-lg shadow-lg py-1 animate-in fade-in-0 zoom-in-95 duration-100">
+          {/* Email (compose new to this thread) */}
+          <button
+            onClick={() => {
+              setOpen(false)
+              onCompose({
+                to: [myEmail ? thread.fromEmail : thread.fromEmail],
+                cc: [],
+                subject: replySubject(thread.subject),
+                threadId: thread.id,
+                inReplyTo: thread.messages.at(-1)?.rfcMessageId,
+                mode: 'reply',
+              })
+            }}
+            className="flex items-center gap-2.5 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+          >
+            <Mail size={13} className="text-slate-400" />
+            Email
+          </button>
+
+          {/* Archive */}
+          <button
+            onClick={() => archiveMutation.mutate()}
+            disabled={archiveMutation.isPending}
+            className="flex items-center gap-2.5 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors disabled:opacity-50"
+          >
+            <Archive size={13} className="text-slate-400" />
+            {archiveMutation.isPending ? 'Archiving…' : 'Archive'}
+          </button>
+
+          {/* Delete — two-step confirm */}
+          {!deleteConfirm ? (
+            <button
+              onClick={() => setDeleteConfirm(true)}
+              className="flex items-center gap-2.5 w-full px-3 py-1.5 text-[12px] text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+            >
+              <Trash2 size={13} />
+              Move to trash
+            </button>
+          ) : (
+            <div className="px-3 py-2 border-t border-black/[.04] dark:border-white/[.06]">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-2">Move to trash?</p>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => setDeleteConfirm(false)}
+                  className="flex-1 px-2 py-1 text-[11px] rounded-md border border-black/[.06] dark:border-white/[.08] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => deleteMutation.mutate()}
+                  disabled={deleteMutation.isPending}
+                  className="flex-1 px-2 py-1 text-[11px] rounded-md bg-red-600 hover:bg-red-700 text-white font-medium transition-colors disabled:opacity-50"
+                >
+                  {deleteMutation.isPending ? '…' : 'Trash'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ChatView({
   thread,
   myEmail,
   onCompose,
   onBack,
+  onArchived,
+  onDeleted,
 }: {
   thread: GmailThread
   myEmail: string | null
   onCompose: (state: ComposeState) => void
   onBack?: () => void
+  onArchived: () => void
+  onDeleted: () => void
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const { userId } = useUser()
 
   // Scroll to bottom when thread changes or messages update
   useEffect(() => {
@@ -466,6 +620,14 @@ function ChatView({
           </svg>
           Reply
         </button>
+        <ThreadActionsMenu
+          thread={thread}
+          userId={userId ?? null}
+          myEmail={myEmail}
+          onCompose={onCompose}
+          onArchived={onArchived}
+          onDeleted={onDeleted}
+        />
       </div>
 
       {/* Messages */}
@@ -765,6 +927,14 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
             myEmail={myEmail}
             onCompose={openCompose}
             onBack={() => setMobileView('list')}
+            onArchived={() => {
+              setSelectedId(null)
+              setMobileView('list')
+            }}
+            onDeleted={() => {
+              setSelectedId(null)
+              setMobileView('list')
+            }}
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center gap-4">

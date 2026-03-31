@@ -1,13 +1,15 @@
-import { Controller, Get, Post, Body, Req, HttpException, HttpStatus } from '@nestjs/common'
+import { Controller, Get, Post, Delete, Param, Body, Req, HttpCode, HttpException, HttpStatus } from '@nestjs/common'
 import type { Request } from 'express'
 import { GmailService, SendEmailDto } from './gmail.service'
 
 /**
- * GmailController — Gmail inbox + send endpoints.
+ * GmailController — Gmail inbox + send + archive/trash endpoints.
  *
- * GET  /api/gmail/inbox  — fetch this month's filtered threads
- * GET  /api/gmail/user   — get connected Google account email
- * POST /api/gmail/send   — send an email (new message or reply)
+ * GET    /api/gmail/inbox                  — fetch this month's filtered threads
+ * GET    /api/gmail/user                   — get connected Google account email
+ * POST   /api/gmail/send                   — send an email (new message or reply)
+ * POST   /api/gmail/threads/:id/archive    — archive a thread (remove INBOX label)
+ * DELETE /api/gmail/threads/:id            — trash a thread
  */
 @Controller()
 export class GmailController {
@@ -51,6 +53,38 @@ export class GmailController {
         err.message ?? 'Failed to send email',
         HttpStatus.BAD_REQUEST,
       )
+    }
+  }
+
+  /**
+   * POST /api/gmail/threads/:id/archive
+   * Archive a thread — removes INBOX label (keeps in All Mail).
+   */
+  @Post('gmail/threads/:id/archive')
+  @HttpCode(200)
+  async archive(@Req() req: Request, @Param('id') threadId: string) {
+    const userId = req.headers['x-user-id'] as string
+    try {
+      await this.gmail.archiveThread(userId, threadId)
+      return { success: true }
+    } catch (err: any) {
+      throw new HttpException(err.message ?? 'Failed to archive thread', HttpStatus.BAD_REQUEST)
+    }
+  }
+
+  /**
+   * DELETE /api/gmail/threads/:id
+   * Trash a thread — moves to Gmail Trash.
+   */
+  @Delete('gmail/threads/:id')
+  @HttpCode(200)
+  async trash(@Req() req: Request, @Param('id') threadId: string) {
+    const userId = req.headers['x-user-id'] as string
+    try {
+      await this.gmail.trashThread(userId, threadId)
+      return { success: true }
+    } catch (err: any) {
+      throw new HttpException(err.message ?? 'Failed to trash thread', HttpStatus.BAD_REQUEST)
     }
   }
 }

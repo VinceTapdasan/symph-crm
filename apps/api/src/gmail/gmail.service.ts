@@ -202,6 +202,35 @@ export class GmailService {
   }
 
   /**
+   * Archive a thread — removes INBOX label so it leaves the inbox but is not deleted.
+   */
+  async archiveThread(userId: string, threadId: string): Promise<void> {
+    if (!userId) throw new Error('Not authenticated')
+    const oauth2 = await this.connections.getAuthedOAuth2Client(userId)
+    if (!oauth2) throw new Error('Google account not connected.')
+    const gmail = google.gmail({ version: 'v1', auth: oauth2 })
+    await gmail.users.threads.modify({
+      userId: 'me',
+      id: threadId,
+      requestBody: { removeLabelIds: ['INBOX'] },
+    })
+  }
+
+  /**
+   * Trash a thread — moves it to Gmail Trash.
+   */
+  async trashThread(userId: string, threadId: string): Promise<void> {
+    if (!userId) throw new Error('Not authenticated')
+    const oauth2 = await this.connections.getAuthedOAuth2Client(userId)
+    if (!oauth2) throw new Error('Google account not connected.')
+    const gmail = google.gmail({ version: 'v1', auth: oauth2 })
+    await gmail.users.threads.trash({
+      userId: 'me',
+      id: threadId,
+    })
+  }
+
+  /**
    * Fetch this month's filtered inbox threads.
    */
   async getInbox(userId: string): Promise<InboxResponse> {
