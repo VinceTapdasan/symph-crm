@@ -16,7 +16,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import dynamic from 'next/dynamic'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { EmptyState } from './EmptyState'
@@ -29,8 +29,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { API_BASE } from '@/lib/constants'
 import type { ApiDocument } from '@/lib/types'
+import { useGetDeals, useGetProposals, useGetDocumentContent } from '@/lib/hooks/queries'
+import { useCreateDocument } from '@/lib/hooks/mutations'
+import { queryKeys } from '@/lib/query-keys'
 
 // Dynamic import — Tiptap uses ProseMirror (browser DOM only, SSR breaks)
 const ProposalEditor = dynamic(() => import('./ProposalEditor'), {
@@ -59,28 +61,9 @@ function NewProposalModal({
   const [dealId, setDealId] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const { data: deals = [] } = useQuery<{ id: string; title: string }[]>({
-    queryKey: ['deals'],
-    queryFn: () => fetch(`${API_BASE}/deals`).then(r => r.json()),
-  })
+  const { data: deals = [] } = useGetDeals()
 
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`${API_BASE}/documents`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': userId ?? '' },
-        body: JSON.stringify({
-          authorId: userId ?? '',
-          dealId: dealId || null,
-          type: 'proposal',
-          title: title || 'Untitled Proposal',
-          content: '',
-          version: 1,
-        }),
-      })
-      if (!res.ok) throw new Error(await res.text())
-      return res.json() as Promise<ApiDocument>
-    },
+  const mutation = useCreateDocument({
     onSuccess: (doc) => { onCreated(doc); onClose() },
     onError: (err: Error) => setError(err.message),
   })
@@ -126,7 +109,14 @@ function NewProposalModal({
               Cancel
             </button>
             <button
-              onClick={() => mutation.mutate()}
+              onClick={() => mutation.mutate({
+                authorId: userId ?? '',
+                dealId: dealId || null,
+                type: 'proposal',
+                title: title || 'Untitled Proposal',
+                content: '',
+                version: 1,
+              })}
               disabled={mutation.isPending}
               className="px-4 py-2 text-[13px] rounded-lg bg-slate-900 text-white font-medium disabled:opacity-40 hover:bg-slate-700"
             >
@@ -149,12 +139,7 @@ export function ProposalBuilder() {
   const [showVersions, setShowVersions] = useState(false)
 
   // All proposals — filter by type=proposal at the API level
-  const { data: allDocs = [], isLoading } = useQuery<ApiDocument[]>({
-    queryKey: ['documents', 'proposals'],
-    queryFn: () =>
-      fetch(`${API_BASE}/documents?type=proposal`, { headers: { 'x-user-id': userId ?? '' } }).then(r => r.json()),
-    enabled: !!userId,
-  })
+  const { data: allDocs = [], isLoading } = useGetProposals({ enabled: !!userId })
 
   const proposals = useMemo(
     () => allDocs.filter(d => d.type === 'proposal' && !d.parentId),
@@ -167,12 +152,7 @@ export function ProposalBuilder() {
   )
 
   // Fetch content for selected proposal
-  const { data: contentData } = useQuery<{ content: string }>({
-    queryKey: ['document-content', selectedId],
-    queryFn: () =>
-      fetch(`${API_BASE}/documents/${selectedId}/content`).then(r => r.json()),
-    enabled: !!selectedId,
-  })
+  const { data: contentData } = useGetDocumentContent(selectedId)
 
   const selected = proposals.find(p => p.id === selectedId)
 
@@ -293,7 +273,7 @@ export function ProposalBuilder() {
                 dealId={selected?.dealId ?? ''}
                 initialContent={contentData?.content ?? ''}
                 onVersionSaved={() => {
-                  qc.invalidateQueries({ queryKey: ['documents', 'proposals'] })
+                  qc.invalidateQueries({ queryKey: queryKeys.documents.proposals })
                   setShowVersions(true)
                 }}
               />
@@ -306,7 +286,7 @@ export function ProposalBuilder() {
         <NewProposalModal
           onClose={() => setShowNewModal(false)}
           onCreated={(doc) => {
-            qc.invalidateQueries({ queryKey: ['documents', 'proposals'] })
+            qc.invalidateQueries({ queryKey: queryKeys.documents.proposals })
             setSelectedId(doc.id)
           }}
           userId={userId}

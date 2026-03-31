@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { queryKeys } from '@/lib/query-keys'
-import { usePatchDealStage } from '@/lib/hooks/mutations'
+import { usePatchDealStage, useCreateDocument, useUploadDocumentFile } from '@/lib/hooks/mutations'
+import { useGetDeal, useGetCompany, useGetActivitiesByDeal, useGetDocumentsByDeal } from '@/lib/hooks/queries'
 import { useUser } from '@/lib/hooks/use-user'
 import { EmptyState } from './EmptyState'
 import { Avatar } from './Avatar'
@@ -20,9 +21,9 @@ import {
   cn, formatCurrencyFull, timeAgo, formatDate,
   getDaysInStage, getBrandColor, getInitials, getStageProgressIndex,
 } from '@/lib/utils'
-import type { ApiDealDetail, ApiCompanyDetail, ApiDocument, Activity } from '@/lib/types'
+import type { ApiDealDetail, ApiCompanyDetail } from '@/lib/types'
 import {
-  API_BASE, STAGE_LABELS, STAGE_COLORS, STAGE_ADVANCE_MAP,
+  STAGE_LABELS, STAGE_COLORS, STAGE_ADVANCE_MAP,
   PROGRESS_STAGES, ACTIVITY_LABELS, DOC_TYPE_LABELS, ACCEPTED_FILE_TYPES,
 } from '@/lib/constants'
 
@@ -182,36 +183,10 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
 
   // ── Queries ──────────────────────────────────────────────────────────────
 
-  const { data: deal, isLoading, isError } = useQuery<ApiDealDetail>({
-    queryKey: queryKeys.deals.detail(dealId),
-    queryFn: () =>
-      fetch(`${API_BASE}/deals/${dealId}`).then(r => {
-        if (!r.ok) throw new Error('Deal not found')
-        return r.json()
-      }),
-    retry: false,
-  })
-
-  const { data: company } = useQuery<ApiCompanyDetail>({
-    queryKey: queryKeys.companies.detail(deal?.companyId ?? ''),
-    queryFn: () =>
-      fetch(`${API_BASE}/companies/${deal!.companyId}`).then(r => r.json()),
-    enabled: !!deal?.companyId,
-  })
-
-  const { data: activities = [], isLoading: loadingActivities } = useQuery<Activity[]>({
-    queryKey: queryKeys.activities.byDeal(dealId),
-    queryFn: () =>
-      fetch(`${API_BASE}/activities?dealId=${dealId}&limit=30`).then(r => r.json()),
-    enabled: !!deal,
-  })
-
-  const { data: documents = [], isLoading: loadingDocs, refetch: refetchDocs } = useQuery<ApiDocument[]>({
-    queryKey: ['documents', 'deal', dealId],
-    queryFn: () =>
-      fetch(`${API_BASE}/documents?dealId=${dealId}`).then(r => r.json()),
-    enabled: !!deal,
-  })
+  const { data: deal, isLoading, isError } = useGetDeal(dealId)
+  const { data: company } = useGetCompany(deal?.companyId)
+  const { data: activities = [], isLoading: loadingActivities } = useGetActivitiesByDeal(dealId, { enabled: !!deal })
+  const { data: documents = [], isLoading: loadingDocs, refetch: refetchDocs } = useGetDocumentsByDeal(dealId, { enabled: !!deal })
 
   // ── Derived values ───────────────────────────────────────────────────────
 
@@ -256,61 +231,34 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
     })
   }, [dealId, patchStage, queryClient])
 
-  const handleAddNote = useCallback(async () => {
-    if (!noteText.trim() || !deal) return
-    if (!userId) { toast.error('Not authenticated'); return }
-    setAddingNote(true)
-    try {
-      const title = noteText.trim().split('\n')[0].slice(0, 100) || 'Note'
-      const res = await fetch(`${API_BASE}/documents`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
-        body: JSON.stringify({
-          dealId,
-          type: noteType,
-          title,
-          content: noteText.trim(),
-          authorId: userId,
-        }),
-      })
-      if (!res.ok) throw new Error('Failed to save note')
-      setNoteText('')
-      refetchDocs()
-      toast.success('Note saved')
-    } catch {
-      toast.error('Failed to save note')
-    } finally {
-      setAddingNote(false)
-    }
-  }, [noteText, noteType, deal, dealId, userId, refetchDocs])
+  const saveNote = useCreateDocument({
+    onSuccess: () => { setNoteText(''); void refetchDocs() },
+  })
 
-  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadFiles = useUploadDocumentFile({
+    onSuccess: () => { void refetchDocs() },
+    onSettled: () => {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    },
+  })
+
+  const handleAddNote = useCallback(() => {
+    if (!noteText.trim() || !deal || !userId) return
+    const title = noteText.trim().split('\n')[0].slice(0, 100) || 'Note'
+    setAddingNote(true)
+    saveNote.mutate(
+      { dealId, type: noteType, title, content: noteText.trim(), authorId: userId },
+      { onSettled: () => setAddingNote(false) },
+    )
+  }, [noteText, noteType, deal, dealId, userId, saveNote])
+
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files?.length || !deal || !userId) return
     setUploading(true)
-    try {
-      for (const file of Array.from(files)) {
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('dealId', dealId)
-        formData.append('authorId', userId)
-
-        const res = await fetch(`${API_BASE}/documents/upload`, {
-          method: 'POST',
-          headers: { 'x-user-id': userId },
-          body: formData,
-        })
-        if (!res.ok) throw new Error(`Failed to upload ${file.name}`)
-      }
-      refetchDocs()
-      toast.success(`${files.length} file${files.length > 1 ? 's' : ''} uploaded`)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Upload failed')
-    } finally {
-      setUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }
-  }, [deal, dealId, userId, refetchDocs])
+    uploadFiles.mutate({ dealId, authorId: userId, files: Array.from(files) })
+  }, [deal, dealId, userId, uploadFiles])
 
   // ── Render: loading / error ───────────────────────────────────────────────
 

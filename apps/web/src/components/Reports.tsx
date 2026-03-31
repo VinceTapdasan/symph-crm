@@ -1,18 +1,10 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from './EmptyState'
-import { queryKeys } from '@/lib/query-keys'
 import { formatCurrency } from '@/lib/utils'
-import { API_BASE, STAGE_LABELS, STAGE_COLORS } from '@/lib/constants'
-import type { PipelineSummary, ApiDeal } from '@/lib/types'
-
-async function fetchPipelineSummary(): Promise<PipelineSummary> {
-  const res = await fetch('/api/pipeline/summary')
-  if (!res.ok) throw new Error('Failed to fetch pipeline summary')
-  return res.json()
-}
+import { STAGE_LABELS, STAGE_COLORS } from '@/lib/constants'
+import { useGetPipelineSummary, useGetDeals } from '@/lib/hooks/queries'
 
 function Spinner() {
   return (
@@ -24,15 +16,8 @@ function Spinner() {
 }
 
 export function Reports() {
-  const { data: summary, isLoading } = useQuery({
-    queryKey: queryKeys.pipeline.summary,
-    queryFn: fetchPipelineSummary,
-  })
-
-  const { data: deals = [], isLoading: loadingDeals } = useQuery<ApiDeal[]>({
-    queryKey: queryKeys.deals.all,
-    queryFn: () => fetch(`${API_BASE}/deals`).then(r => r.json()),
-  })
+  const { data: summary, isLoading } = useGetPipelineSummary()
+  const { data: deals = [], isLoading: loadingDeals } = useGetDeals()
 
   const closedWon = summary?.dealsByStage.find(s => s.stage === 'closed_won')
   const closedLost = summary?.dealsByStage.find(s => s.stage === 'closed_lost')

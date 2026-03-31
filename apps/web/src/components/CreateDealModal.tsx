@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
+import { useGetProducts, useGetTiers } from '@/lib/hooks/queries'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -75,25 +76,8 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
   const qc = useQueryClient()
   const { userId } = useUser()
 
-  const { data: products = [] } = useQuery<ApiProduct[]>({
-    queryKey: queryKeys.products.all,
-    queryFn: async () => {
-      const res = await fetch('/api/products')
-      if (!res.ok) throw new Error('Failed to fetch products')
-      return res.json()
-    },
-    staleTime: Infinity,
-  })
-
-  const { data: tiers = [] } = useQuery<ApiTier[]>({
-    queryKey: queryKeys.tiers.all,
-    queryFn: async () => {
-      const res = await fetch('/api/tiers')
-      if (!res.ok) throw new Error('Failed to fetch tiers')
-      return res.json()
-    },
-    staleTime: Infinity,
-  })
+  const { data: products = [] } = useGetProducts()
+  const { data: tiers = [] } = useGetTiers()
 
   // Auto-select first product/tier when there's only one
   const effectiveProductId = productId || (products.length === 1 ? products[0].id : '')

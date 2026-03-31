@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
+import { useGetCompanies, useGetDeals } from '@/lib/hooks/queries'
 import { Input } from '@/components/ui/input'
 import { getInitials, getBrandColor, formatDealValue, totalNumericValue } from '@/lib/utils'
 import { STAGE_DISPLAY, STAGE_COLORS, STAGE_DOT, CLOSED_STAGE_IDS } from '@/lib/constants'
@@ -285,20 +286,6 @@ function DealRow({
   )
 }
 
-// --- Data fetching ---
-
-async function fetchCompanies(): Promise<ApiCompanyDetail[]> {
-  const res = await fetch('/api/companies')
-  if (!res.ok) throw new Error('Failed to fetch companies')
-  return res.json()
-}
-
-async function fetchDeals(): Promise<ApiDeal[]> {
-  const res = await fetch('/api/deals')
-  if (!res.ok) throw new Error('Failed to fetch deals')
-  return res.json()
-}
-
 // Re-export types for components that import from Deals.tsx (legacy)
 export type { ApiCompanyDetail as ApiCompany } from '@/lib/types'
 export type { ApiDeal } from '@/lib/types'
@@ -333,15 +320,8 @@ export function Deals({ onOpenDeal }: DealsProps) {
 
   const qc = useQueryClient()
 
-  const { data: companies = [], isLoading: loadingCompanies } = useQuery({
-    queryKey: ['companies'],
-    queryFn: fetchCompanies,
-  })
-
-  const { data: deals = [], isLoading: loadingDeals } = useQuery({
-    queryKey: ['deals'],
-    queryFn: fetchDeals,
-  })
+  const { data: companies = [], isLoading: loadingCompanies } = useGetCompanies()
+  const { data: deals = [], isLoading: loadingDeals } = useGetDeals()
 
   const isLoading = loadingCompanies || loadingDeals
 

@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { queryKeys } from '@/lib/query-keys'
 import { useUser } from '@/lib/hooks/use-user'
+import { useSendEmail } from '@/lib/hooks/mutations'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,21 +30,6 @@ export interface ComposeWindowProps {
   initialInReplyTo?: string
   /** "New Message" | "Reply" — affects title */
   mode?: 'compose' | 'reply'
-}
-
-// ─── API ─────────────────────────────────────────────────────────────────────
-
-async function sendEmailApi(userId: string, dto: SendEmailDto): Promise<{ messageId: string; threadId: string }> {
-  const res = await fetch('/api/gmail/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
-    body: JSON.stringify(dto),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message ?? 'Failed to send email')
-  }
-  return res.json()
 }
 
 // ─── AddressInput — chip-style multi-email input ─────────────────────────────
@@ -178,8 +164,7 @@ export function ComposeWindow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  const sendMutation = useMutation({
-    mutationFn: (dto: SendEmailDto) => sendEmailApi(userId ?? '', dto),
+  const sendMutation = useSendEmail({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.gmail.inbox })
       onClose()

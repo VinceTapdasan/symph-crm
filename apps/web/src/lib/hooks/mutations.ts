@@ -3,98 +3,18 @@
 // Rules:
 // - Every POST/PUT/PATCH/DELETE goes through a hook here
 // - Toast notifications fire on every success and error automatically
-// - Callers pass { onSuccess, onError } for invalidation and UI side-effects
-// - Toast shows BEFORE caller's onSuccess/onError runs
+// - Callers pass { onSuccess, onError } for component-specific side effects
+// - Toast fires BEFORE caller's onSuccess/onError
+// - No direct fetch() calls — always use api.post/put/patch/delete from lib/api.ts
 
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { api } from '@/lib/api'
+import type { CreateEventForm, ApiDocument } from '@/lib/types'
 
-// ─── Shared helpers ──────────────────────────────────────────────────────────
+// ─── Shared ───────────────────────────────────────────────────────────────────
 
 export type ApiError = { message: string; statusCode?: number }
-
-/**
- * Resolve the current user ID from the NextAuth session cookie.
- * We read it from the session endpoint so mutations have the user context
- * for the RolesGuard (x-user-id header).
- */
-let _cachedUserId: string | null = null
-let _cacheExpiry = 0
-
-async function resolveUserId(): Promise<string | null> {
-  if (_cachedUserId && Date.now() < _cacheExpiry) return _cachedUserId
-  try {
-    const res = await fetch('/api/auth/session')
-    if (!res.ok) return null
-    const session = await res.json()
-    _cachedUserId = session?.user?.id ?? null
-    _cacheExpiry = Date.now() + 60_000 // cache for 1 minute
-    return _cachedUserId
-  } catch {
-    return null
-  }
-}
-
-function authHeaders(userId: string | null): Record<string, string> {
-  return {
-    'Content-Type': 'application/json',
-    ...(userId ? { 'x-user-id': userId } : {}),
-  }
-}
-
-async function apiPost<T>(path: string, body: unknown): Promise<T> {
-  const userId = await resolveUserId()
-  const res = await fetch(path, {
-    method: 'POST',
-    headers: authHeaders(userId),
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({})) as { message?: string }
-    throw new Error(err.message || `POST ${path} failed (${res.status})`)
-  }
-  return res.json()
-}
-
-async function apiPut<T>(path: string, body: unknown): Promise<T> {
-  const userId = await resolveUserId()
-  const res = await fetch(path, {
-    method: 'PUT',
-    headers: authHeaders(userId),
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({})) as { message?: string }
-    throw new Error(err.message || `PUT ${path} failed (${res.status})`)
-  }
-  return res.json()
-}
-
-async function apiPatch<T>(path: string, body: unknown): Promise<T> {
-  const userId = await resolveUserId()
-  const res = await fetch(path, {
-    method: 'PATCH',
-    headers: authHeaders(userId),
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({})) as { message?: string }
-    throw new Error(err.message || `PATCH ${path} failed (${res.status})`)
-  }
-  return res.json()
-}
-
-async function apiDelete(path: string): Promise<void> {
-  const userId = await resolveUserId()
-  const res = await fetch(path, {
-    method: 'DELETE',
-    headers: authHeaders(userId),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({})) as { message?: string }
-    throw new Error(err.message || `DELETE ${path} failed (${res.status})`)
-  }
-}
 
 // Wraps mutation options to inject toast before caller's callbacks
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -132,7 +52,7 @@ export function useCreateCompany(
   options?: UseMutationOptions<unknown, Error, CreateCompanyInput>,
 ) {
   return useMutation({
-    mutationFn: (input: CreateCompanyInput) => apiPost('/api/companies', input),
+    mutationFn: (input: CreateCompanyInput) => api.post('/companies', input),
     ...withToast('Brand created', options),
   })
 }
@@ -141,7 +61,7 @@ export function useUpdateCompany(
   options?: UseMutationOptions<unknown, Error, { id: string; data: UpdateCompanyInput }>,
 ) {
   return useMutation({
-    mutationFn: ({ id, data }) => apiPut(`/api/companies/${id}`, data),
+    mutationFn: ({ id, data }) => api.put(`/companies/${id}`, data),
     ...withToast('Brand updated', options),
   })
 }
@@ -150,7 +70,7 @@ export function useDeleteCompany(
   options?: UseMutationOptions<void, Error, string>,
 ) {
   return useMutation({
-    mutationFn: (id: string) => apiDelete(`/api/companies/${id}`),
+    mutationFn: (id: string) => api.delete(`/companies/${id}`),
     ...withToast('Brand deleted', options),
   })
 }
@@ -178,7 +98,7 @@ export function useCreateDeal(
   options?: UseMutationOptions<unknown, Error, CreateDealInput>,
 ) {
   return useMutation({
-    mutationFn: (input: CreateDealInput) => apiPost('/api/deals', input),
+    mutationFn: (input: CreateDealInput) => api.post('/deals', input),
     ...withToast('Deal created', options),
   })
 }
@@ -187,7 +107,7 @@ export function useUpdateDeal(
   options?: UseMutationOptions<unknown, Error, { id: string; data: UpdateDealInput }>,
 ) {
   return useMutation({
-    mutationFn: ({ id, data }) => apiPut(`/api/deals/${id}`, data),
+    mutationFn: ({ id, data }) => api.put(`/deals/${id}`, data),
     ...withToast('Deal updated', options),
   })
 }
@@ -196,7 +116,7 @@ export function usePatchDealStage(
   options?: UseMutationOptions<unknown, Error, { id: string; stage: string }>,
 ) {
   return useMutation({
-    mutationFn: ({ id, stage }) => apiPatch(`/api/deals/${id}/stage`, { stage }),
+    mutationFn: ({ id, stage }) => api.patch(`/deals/${id}/stage`, { stage }),
     ...withToast('Stage updated', options),
   })
 }
@@ -205,7 +125,138 @@ export function useDeleteDeal(
   options?: UseMutationOptions<void, Error, string>,
 ) {
   return useMutation({
-    mutationFn: (id: string) => apiDelete(`/api/deals/${id}`),
+    mutationFn: (id: string) => api.delete(`/deals/${id}`),
     ...withToast('Deal deleted', options),
+  })
+}
+
+// ─── Document / Note mutations ────────────────────────────────────────────────
+
+export type AutoSaveInput = {
+  id: string
+  content: string
+  excerpt?: string
+  wordCount?: number
+}
+
+/**
+ * Silent auto-save — no toast. For debounced background saves (e.g. ProposalEditor).
+ * Use useUpdateDocument for explicit user-triggered saves that should show a toast.
+ */
+export function useAutoSaveDocument(
+  options?: UseMutationOptions<ApiDocument, Error, AutoSaveInput>,
+) {
+  return useMutation<ApiDocument, Error, AutoSaveInput>({
+    mutationFn: ({ id, ...data }) => api.put<ApiDocument>(`/documents/${id}`, data),
+    ...options, // No withToast — auto-save is a silent background operation
+  })
+}
+
+export type CreateDocumentInput = {
+  dealId?: string | null
+  type: string
+  title: string
+  content: string
+  authorId: string
+  parentId?: string | null
+  version?: number
+  excerpt?: string
+}
+
+export function useCreateDocument(
+  options?: UseMutationOptions<ApiDocument, Error, CreateDocumentInput>,
+) {
+  return useMutation<ApiDocument, Error, CreateDocumentInput>({
+    mutationFn: (input) => api.post<ApiDocument>('/documents', input),
+    ...withToast('Document saved', options),
+  })
+}
+
+export function useUpdateDocument(
+  options?: UseMutationOptions<ApiDocument, Error, { id: string; content: string; title?: string }>,
+) {
+  return useMutation<ApiDocument, Error, { id: string; content: string; title?: string }>({
+    mutationFn: ({ id, ...data }) => api.put<ApiDocument>(`/documents/${id}`, data),
+    ...withToast('Document updated', options),
+  })
+}
+
+export function useUploadDocumentFile(
+  options?: UseMutationOptions<ApiDocument[], Error, { dealId: string; authorId: string; files: File[] }>,
+) {
+  return useMutation<ApiDocument[], Error, { dealId: string; authorId: string; files: File[] }>({
+    mutationFn: async ({ dealId, authorId, files }) => {
+      const results: ApiDocument[] = []
+      for (const file of files) {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('dealId', dealId)
+        formData.append('authorId', authorId)
+        const doc = await api.upload<ApiDocument>('/documents/upload', formData)
+        results.push(doc)
+      }
+      return results
+    },
+    ...withToast('Files uploaded', options),
+  })
+}
+
+// ─── Calendar mutations ───────────────────────────────────────────────────────
+
+export function useCreateCalendarEvent(
+  options?: UseMutationOptions<unknown, Error, CreateEventForm>,
+) {
+  return useMutation({
+    mutationFn: (data: CreateEventForm) => {
+      const startAt = new Date(`${data.startDate}T${data.startTime}`).toISOString()
+      const endAt = new Date(`${data.endDate}T${data.endTime}`).toISOString()
+      return api.post('/calendar/events', {
+        title: data.title,
+        description: data.description || undefined,
+        location: data.location || undefined,
+        eventType: data.eventType,
+        startAt,
+        endAt,
+      })
+    },
+    ...withToast('Event created', options),
+  })
+}
+
+// ─── Gmail mutations ──────────────────────────────────────────────────────────
+
+export type SendEmailInput = {
+  to: string[]
+  cc?: string[]
+  subject: string
+  body: string
+  threadId?: string
+  inReplyTo?: string
+}
+
+export function useSendEmail(
+  options?: UseMutationOptions<{ messageId: string; threadId: string }, Error, SendEmailInput>,
+) {
+  return useMutation<{ messageId: string; threadId: string }, Error, SendEmailInput>({
+    mutationFn: (dto) => api.post<{ messageId: string; threadId: string }>('/gmail/send', dto),
+    ...withToast('Email sent', options),
+  })
+}
+
+export function useArchiveEmailThread(
+  options?: UseMutationOptions<void, Error, string>,
+) {
+  return useMutation<void, Error, string>({
+    mutationFn: (threadId: string) => api.post<void>(`/gmail/threads/${threadId}/archive`, {}),
+    ...withToast('Archived', options),
+  })
+}
+
+export function useDeleteEmailThread(
+  options?: UseMutationOptions<void, Error, string>,
+) {
+  return useMutation<void, Error, string>({
+    mutationFn: (threadId: string) => api.delete<void>(`/gmail/threads/${threadId}`),
+    ...withToast('Deleted', options),
   })
 }

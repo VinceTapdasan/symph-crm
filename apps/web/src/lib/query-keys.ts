@@ -14,6 +14,14 @@ type DealsFilterParams = {
   limit?: number
 }
 
+type AuditFilterParams = {
+  entityType?: string
+  action?: string
+  performedBy?: string
+  limit: number
+  offset: number
+}
+
 export const queryKeys = {
   companies: {
     all: ['companies'] as const,
@@ -52,5 +60,20 @@ export const queryKeys = {
   gmail: {
     inbox: ['gmail', 'inbox'] as const,
     user: ['gmail', 'user'] as const,
+  },
+  users: {
+    all: ['users'] as const,
+    detail: (id: string) => ['users', id] as const,
+  },
+  audit: {
+    all: ['audit-logs'] as const,
+    filtered: (params: AuditFilterParams) => ['audit-logs', params] as const,
+  },
+  documents: {
+    all: ['documents'] as const,
+    byDeal: (dealId: string) => ['documents', 'deal', dealId] as const,
+    byType: (type: string) => ['documents', type] as const,
+    proposals: ['documents', 'proposals'] as const,
+    content: (id: string) => ['document-content', id] as const,
   },
 } as const

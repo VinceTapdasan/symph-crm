@@ -12,12 +12,13 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
+import { useGetDeals, useGetCompanies, useGetUsers } from '@/lib/hooks/queries'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { cn, formatPeso, getAdvanceTargets, getMoveBackTargets } from '@/lib/utils'
 import type { ApiDeal, ApiCompany, ApiUser } from '@/lib/types'
 import {
-  API_BASE, KANBAN_STAGES, COLUMN_TO_STAGE, STAGE_ORDER,
+  KANBAN_STAGES, COLUMN_TO_STAGE, STAGE_ORDER,
   STAGE_ADVANCE_MAP, CLOSED_STAGE_IDS,
 } from '@/lib/constants'
 import { Avatar } from './Avatar'
@@ -402,23 +403,6 @@ function DroppableColumn({ col, children }: { col: (typeof KANBAN_STAGES)[number
   )
 }
 
-// --- Fetch ---
-async function fetchDeals(): Promise<ApiDeal[]> {
-  const res = await fetch('/api/deals')
-  if (!res.ok) throw new Error('Failed to fetch deals')
-  return res.json()
-}
-async function fetchCompanies(): Promise<ApiCompany[]> {
-  const res = await fetch('/api/companies')
-  if (!res.ok) throw new Error('Failed to fetch companies')
-  return res.json()
-}
-async function fetchUsers(): Promise<ApiUser[]> {
-  const res = await fetch('/api/users')
-  if (!res.ok) throw new Error('Failed to fetch users')
-  return res.json()
-}
-
 // --- Pipeline ---
 export function Pipeline({ onOpenDeal }: PipelineProps) {
   const [activeDealId, setActiveDealId] = useState<string | null>(null)
@@ -437,20 +421,9 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   const scrolledRef = useRef(false)
   const { isSales } = useUser()
 
-  const { data: deals = [], isLoading } = useQuery({
-    queryKey: queryKeys.deals.all,
-    queryFn: fetchDeals,
-  })
-
-  const { data: companies = [] } = useQuery({
-    queryKey: queryKeys.companies.all,
-    queryFn: fetchCompanies,
-  })
-
-  const { data: users = [] } = useQuery({
-    queryKey: ['users'] as const,
-    queryFn: fetchUsers,
-  })
+  const { data: deals = [], isLoading } = useGetDeals()
+  const { data: companies = [] } = useGetCompanies()
+  const { data: users = [] } = useGetUsers()
 
   const companyMap = useMemo(() => {
     const m = new Map<string, string>()

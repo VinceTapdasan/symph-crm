@@ -1,18 +1,20 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'next/navigation'
 import {
   cn, htmlToText, cleanEmailBody, formatRelativeDate, formatChatTime, formatDateSeparator,
   isSameDay, getInitials, avatarColor, parseDisplayName, replySubject,
 } from '@/lib/utils'
-import type { GmailMessage, GmailThread, InboxResponse, FilterTab } from '@/lib/types'
+import type { GmailMessage, GmailThread, FilterTab } from '@/lib/types'
 import { API_BASE } from '@/lib/constants'
 import { queryKeys } from '@/lib/query-keys'
 import { useUser } from '@/lib/hooks/use-user'
 import { ComposeWindow } from './ComposeWindow'
 import { MoreHorizontal, Archive, Trash2, Mail } from 'lucide-react'
+import { useGetInbox, useGetGmailUser } from '@/lib/hooks/queries'
+import { useSendEmail, useArchiveEmailThread, useDeleteEmailThread } from '@/lib/hooks/mutations'
 
 interface ComposeState {
   to: string[]
@@ -21,66 +23,6 @@ interface ComposeState {
   threadId?: string
   inReplyTo?: string
   mode: 'compose' | 'reply'
-}
-
-// ─── API ─────────────────────────────────────────────────────────────────────
-
-async function fetchInbox(userId: string): Promise<InboxResponse> {
-  const res = await fetch('/api/gmail/inbox', {
-    headers: { 'x-user-id': userId },
-  })
-  if (!res.ok) throw new Error('Failed to fetch inbox')
-  return res.json()
-}
-
-async function fetchGmailUser(userId: string): Promise<{ email: string | null; needsReconnect?: boolean }> {
-  const res = await fetch('/api/gmail/user', {
-    headers: { 'x-user-id': userId },
-  })
-  if (!res.ok) return { email: null }
-  return res.json()
-}
-
-async function sendEmail(userId: string, dto: {
-  to: string[]
-  cc?: string[]
-  subject: string
-  body: string
-  threadId?: string
-  inReplyTo?: string
-}): Promise<{ messageId: string; threadId: string }> {
-  const res = await fetch('/api/gmail/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
-    body: JSON.stringify(dto),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message ?? 'Failed to send')
-  }
-  return res.json()
-}
-
-async function archiveThread(userId: string, threadId: string): Promise<void> {
-  const res = await fetch(`/api/gmail/threads/${threadId}/archive`, {
-    method: 'POST',
-    headers: { 'x-user-id': userId },
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message ?? 'Failed to archive')
-  }
-}
-
-async function trashThread(userId: string, threadId: string): Promise<void> {
-  const res = await fetch(`/api/gmail/threads/${threadId}`, {
-    method: 'DELETE',
-    headers: { 'x-user-id': userId },
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message ?? 'Failed to delete')
-  }
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -237,8 +179,7 @@ function ReplyBox({
 
   const lastMsg = thread.messages[thread.messages.length - 1]
 
-  const mutation = useMutation({
-    mutationFn: (dto: Parameters<typeof sendEmail>[1]) => sendEmail(userId ?? '', dto),
+  const mutation = useSendEmail({
     onSuccess: () => {
       setBody('')
       setError(null)
@@ -353,8 +294,7 @@ function ThreadActionsMenu({
     return () => document.removeEventListener('mousedown', handleClick)
   }, [open])
 
-  const archiveMutation = useMutation({
-    mutationFn: () => archiveThread(userId ?? '', thread.id),
+  const archiveMutation = useArchiveEmailThread({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.gmail.inbox, exact: false })
       setOpen(false)
@@ -362,8 +302,7 @@ function ThreadActionsMenu({
     },
   })
 
-  const deleteMutation = useMutation({
-    mutationFn: () => trashThread(userId ?? '', thread.id),
+  const deleteMutation = useDeleteEmailThread({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.gmail.inbox, exact: false })
       setOpen(false)
@@ -404,7 +343,7 @@ function ThreadActionsMenu({
 
           {/* Archive */}
           <button
-            onClick={() => archiveMutation.mutate()}
+            onClick={() => archiveMutation.mutate(thread.id)}
             disabled={archiveMutation.isPending}
             className="flex items-center gap-2.5 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors disabled:opacity-50"
           >
@@ -432,7 +371,7 @@ function ThreadActionsMenu({
                   Cancel
                 </button>
                 <button
-                  onClick={() => deleteMutation.mutate()}
+                  onClick={() => deleteMutation.mutate(thread.id)}
                   disabled={deleteMutation.isPending}
                   className="flex-1 px-2 py-1 text-[11px] rounded-md bg-red-600 hover:bg-red-700 text-white font-medium transition-colors disabled:opacity-50"
                 >
@@ -629,21 +568,8 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const { data, isLoading } = useQuery({
-    queryKey: [...queryKeys.gmail.inbox, userId],
-    queryFn: () => fetchInbox(userId ?? ''),
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-    enabled: !!userId,
-  })
-
-  const { data: gmailUser } = useQuery({
-    queryKey: [...queryKeys.gmail.user, userId],
-    queryFn: () => fetchGmailUser(userId ?? ''),
-    staleTime: 60 * 60 * 1000, // 1 hour — email doesn't change
-    retry: false,
-    enabled: !!userId,
-  })
+  const { data, isLoading } = useGetInbox(userId)
+  const { data: gmailUser } = useGetGmailUser(userId)
 
   const threads = data?.threads ?? []
   const needsReconnect = data?.needsReconnect ?? false

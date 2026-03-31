@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useGetAuditLogs, useGetUsers } from '@/lib/hooks/queries'
 import { type ColumnDef } from '@tanstack/react-table'
 import { DataTable, SortableHeader } from './ui/data-table'
 import { Avatar } from './Avatar'
@@ -16,33 +16,6 @@ import {
 import { formatFullDate, describeAuditDetails, userDisplayName } from '@/lib/utils'
 import { AUDIT_ACTION_CONFIG, ENTITY_LABEL, AUDIT_PAGE_SIZE } from '@/lib/constants'
 import type { AuditLogEntry, AuditLogsResponse, ApiUser } from '@/lib/types'
-
-// ── Data fetching ────────────────────────────────────────────────────────────
-
-async function fetchAuditLogs(params: {
-  entityType?: string
-  action?: string
-  performedBy?: string
-  limit: number
-  offset: number
-}): Promise<AuditLogsResponse> {
-  const sp = new URLSearchParams()
-  if (params.entityType) sp.set('entityType', params.entityType)
-  if (params.action) sp.set('action', params.action)
-  if (params.performedBy) sp.set('performedBy', params.performedBy)
-  sp.set('limit', String(params.limit))
-  sp.set('offset', String(params.offset))
-
-  const res = await fetch(`/api/audit-logs?${sp}`)
-  if (!res.ok) throw new Error('Failed to fetch audit logs')
-  return res.json()
-}
-
-async function fetchUsers(): Promise<ApiUser[]> {
-  const res = await fetch('/api/users')
-  if (!res.ok) throw new Error('Failed to fetch users')
-  return res.json()
-}
 
 // ── Column definitions ──────────────────────────────────────────────────────
 
@@ -152,22 +125,15 @@ export function AuditLogs() {
   const [userFilter, setUserFilter] = useState<string>('all')
   const [page, setPage] = useState(0)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['audit-logs', entityFilter, actionFilter, userFilter, page],
-    queryFn: () => fetchAuditLogs({
-      entityType: entityFilter !== 'all' ? entityFilter : undefined,
-      action: actionFilter !== 'all' ? actionFilter : undefined,
-      performedBy: userFilter !== 'all' ? userFilter : undefined,
-      limit: AUDIT_PAGE_SIZE,
-      offset: page * AUDIT_PAGE_SIZE,
-    }),
-  })
-
-  const { data: users = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: fetchUsers,
-    staleTime: 5 * 60 * 1000,
-  })
+  const auditParams = {
+    entityType: entityFilter !== 'all' ? entityFilter : undefined,
+    action: actionFilter !== 'all' ? actionFilter : undefined,
+    performedBy: userFilter !== 'all' ? userFilter : undefined,
+    limit: AUDIT_PAGE_SIZE,
+    offset: page * AUDIT_PAGE_SIZE,
+  }
+  const { data, isLoading } = useGetAuditLogs(auditParams)
+  const { data: users = [] } = useGetUsers({ staleTime: 5 * 60 * 1000 })
 
   const rows = data?.rows ?? []
   const total = data?.total ?? 0

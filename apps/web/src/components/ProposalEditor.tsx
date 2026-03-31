@@ -23,7 +23,7 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { cn } from '@/lib/utils'
 import { useUser } from '@/lib/hooks/use-user'
-import { API_BASE } from '@/lib/constants'
+import { useAutoSaveDocument, useCreateDocument } from '@/lib/hooks/mutations'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -76,6 +76,9 @@ export default function ProposalEditor({ documentId, dealId, initialContent, onV
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isSavingRef = useRef(false)
 
+  const autoSave = useAutoSaveDocument()
+  const createVersion = useCreateDocument()
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -113,56 +116,41 @@ export default function ProposalEditor({ documentId, dealId, initialContent, onV
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     isDirtyRef.current = true
     setSaveStatus('saving')
-    saveTimerRef.current = setTimeout(async () => {
+    saveTimerRef.current = setTimeout(() => {
       if (isSavingRef.current) return
       isSavingRef.current = true
-      try {
-        const excerpt = html.replace(/<[^>]+>/g, '').slice(0, 500)
-        const res = await fetch(`${API_BASE}/documents/${documentId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'x-user-id': userId ?? '' },
-          body: JSON.stringify({
-            content: html,
-            excerpt,
-            wordCount,
-            updatedAt: new Date().toISOString(),
-          }),
-        })
-        if (res.ok) isDirtyRef.current = false
-        setSaveStatus(res.ok ? 'saved' : 'error')
-      } catch {
-        setSaveStatus('error')
-      } finally {
-        isSavingRef.current = false
-      }
+      const excerpt = html.replace(/<[^>]+>/g, '').slice(0, 500)
+      autoSave.mutate(
+        { id: documentId, content: html, excerpt, wordCount },
+        {
+          onSuccess: () => { isDirtyRef.current = false; setSaveStatus('saved') },
+          onError: () => setSaveStatus('error'),
+          onSettled: () => { isSavingRef.current = false },
+        },
+      )
     }, 2000)
-  }, [documentId, wordCount, userId])
+  }, [documentId, wordCount, autoSave])
 
   // ── Save Version ────────────────────────────────────────────────────────
 
-  const saveVersion = useCallback(async () => {
-    if (!editor) return
+  const handleSaveVersion = useCallback(() => {
+    if (!editor || !userId) return
     const html = editor.getHTML()
-
-    const res = await fetch(`${API_BASE}/documents`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-user-id': userId ?? '' },
-      body: JSON.stringify({
+    createVersion.mutate(
+      {
         dealId,
-        authorId: userId ?? '',
+        authorId: userId,
         type: 'proposal',
         title: `Version — ${new Date().toLocaleString('en-PH')}`,
         content: html,
         parentId: documentId,
         excerpt: html.replace(/<[^>]+>/g, '').slice(0, 500),
-      }),
-    })
-
-    if (res.ok) {
-      isDirtyRef.current = false
-      onVersionSaved?.()
-    }
-  }, [editor, dealId, documentId, onVersionSaved, userId])
+      },
+      {
+        onSuccess: () => { isDirtyRef.current = false; onVersionSaved?.() },
+      },
+    )
+  }, [editor, dealId, documentId, onVersionSaved, userId, createVersion])
 
   // ── Unsaved changes guard ─────────────────────────────────────────────
   // Warn user before tab close / browser navigation when there are unsaved edits
@@ -233,7 +221,7 @@ export default function ProposalEditor({ documentId, dealId, initialContent, onV
             {saveStatus === 'idle' && 'No changes'}
           </span>
           <button
-            onClick={saveVersion}
+            onClick={handleSaveVersion}
             className="px-3 py-1 text-[12px] border border-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[.06] dark:bg-white/[.06] text-slate-700 dark:text-slate-300 font-medium"
           >
             Save Version

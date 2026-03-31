@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback, useEffect, useRef, type CSSProperties } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'next/navigation'
 import { cn, toDateKey, formatTime, getWeekStart, monthRange, weekRange } from '@/lib/utils'
 import type { ApiCalendarEvent, CalendarStatus, CreateEventForm, CalendarView } from '@/lib/types'
@@ -10,6 +10,8 @@ import {
   EVENT_TYPE_COLORS, EVENT_TYPE_BADGE, EVENT_TYPE_HEX, TIME_SLOTS, HOURS, HOUR_PX,
 } from '@/lib/constants'
 import { queryKeys } from '@/lib/query-keys'
+import { useGetCalendarStatus, useGetCalendarEvents } from '@/lib/hooks/queries'
+import { useCreateCalendarEvent } from '@/lib/hooks/mutations'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { EmptyState } from './EmptyState'
@@ -190,25 +192,7 @@ function CreateEventModal({
   })
   const [error, setError] = useState<string | null>(null)
 
-  const mutation = useMutation({
-    mutationFn: async (data: CreateEventForm) => {
-      const startAt = new Date(`${data.startDate}T${data.startTime}`).toISOString()
-      const endAt = new Date(`${data.endDate}T${data.endTime}`).toISOString()
-      const res = await fetch(`${API_BASE}/calendar/events`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': userId ?? '' },
-        body: JSON.stringify({
-          title: data.title,
-          description: data.description || undefined,
-          location: data.location || undefined,
-          eventType: data.eventType,
-          startAt,
-          endAt,
-        }),
-      })
-      if (!res.ok) throw new Error(await res.text())
-      return res.json()
-    },
+  const mutation = useCreateCalendarEvent({
     onSuccess: () => { onCreated(); onClose() },
     onError: (err: Error) => setError(err.message),
   })
@@ -570,21 +554,11 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
   const from = view === 'month' ? mFrom : wFrom
   const to = view === 'month' ? mTo : wTo
 
-  const { data: status } = useQuery<CalendarStatus>({
-    queryKey: queryKeys.calendar.status,
-    queryFn: () =>
-      fetch(`${API_BASE}/auth/google-calendar/status`, { headers: { 'x-user-id': userId ?? '' } }).then(r => r.json()),
-    enabled: !!userId,
-  })
-
-  const { data: events = [] } = useQuery<ApiCalendarEvent[]>({
-    queryKey: queryKeys.calendar.events({ from, to }),
-    queryFn: () =>
-      fetch(`${API_BASE}/calendar/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, {
-        headers: { 'x-user-id': userId ?? '' },
-      }).then(r => r.json()),
-    enabled: !!status?.connected,
-  })
+  const { data: status } = useGetCalendarStatus({ enabled: !!userId })
+  const { data: events = [] } = useGetCalendarEvents(
+    { from, to },
+    { enabled: !!status?.connected },
+  )
 
   const eventsByDate = useMemo(() => {
     const map: Record<string, ApiCalendarEvent[]> = {}
