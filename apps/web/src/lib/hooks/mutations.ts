@@ -13,10 +13,40 @@ import { toast } from 'sonner'
 
 export type ApiError = { message: string; statusCode?: number }
 
+/**
+ * Resolve the current user ID from the NextAuth session cookie.
+ * We read it from the session endpoint so mutations have the user context
+ * for the RolesGuard (x-user-id header).
+ */
+let _cachedUserId: string | null = null
+let _cacheExpiry = 0
+
+async function resolveUserId(): Promise<string | null> {
+  if (_cachedUserId && Date.now() < _cacheExpiry) return _cachedUserId
+  try {
+    const res = await fetch('/api/auth/session')
+    if (!res.ok) return null
+    const session = await res.json()
+    _cachedUserId = session?.user?.id ?? null
+    _cacheExpiry = Date.now() + 60_000 // cache for 1 minute
+    return _cachedUserId
+  } catch {
+    return null
+  }
+}
+
+function authHeaders(userId: string | null): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    ...(userId ? { 'x-user-id': userId } : {}),
+  }
+}
+
 async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  const userId = await resolveUserId()
   const res = await fetch(path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(userId),
     body: JSON.stringify(body),
   })
   if (!res.ok) {
@@ -27,9 +57,10 @@ async function apiPost<T>(path: string, body: unknown): Promise<T> {
 }
 
 async function apiPut<T>(path: string, body: unknown): Promise<T> {
+  const userId = await resolveUserId()
   const res = await fetch(path, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(userId),
     body: JSON.stringify(body),
   })
   if (!res.ok) {
@@ -40,9 +71,10 @@ async function apiPut<T>(path: string, body: unknown): Promise<T> {
 }
 
 async function apiPatch<T>(path: string, body: unknown): Promise<T> {
+  const userId = await resolveUserId()
   const res = await fetch(path, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(userId),
     body: JSON.stringify(body),
   })
   if (!res.ok) {
@@ -53,7 +85,11 @@ async function apiPatch<T>(path: string, body: unknown): Promise<T> {
 }
 
 async function apiDelete(path: string): Promise<void> {
-  const res = await fetch(path, { method: 'DELETE' })
+  const userId = await resolveUserId()
+  const res = await fetch(path, {
+    method: 'DELETE',
+    headers: authHeaders(userId),
+  })
   if (!res.ok) {
     const err = await res.json().catch(() => ({})) as { message?: string }
     throw new Error(err.message || `DELETE ${path} failed (${res.status})`)

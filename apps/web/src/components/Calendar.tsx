@@ -178,8 +178,8 @@ function EventDetailPanel({
           </button>
         </div>
 
-        {/* Body */}
-        <div className="px-4 py-4 space-y-3">
+        {/* Body — scrollable to prevent overflow on long attendee lists */}
+        <div className="px-4 py-4 space-y-3 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 120px)' }}>
           <h2 className="text-[15px] font-semibold text-slate-900 dark:text-white leading-snug">
             {event.title}
           </h2>
@@ -203,7 +203,7 @@ function EventDetailPanel({
           {event.attendeeEmails.length > 0 && (
             <div className="flex items-start gap-2.5 text-[12.5px] text-slate-600 dark:text-slate-400">
               <Users size={14} className="shrink-0 mt-0.5" />
-              <div className="space-y-0.5">
+              <div className="space-y-0.5 max-h-[200px] overflow-y-auto">
                 {event.attendeeEmails.map(email => (
                   <div key={email}>{email}</div>
                 ))}

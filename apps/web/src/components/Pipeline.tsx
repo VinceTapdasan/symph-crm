@@ -85,28 +85,72 @@ const STAGE_ADVANCE_MAP: Record<string, string> = {
 
 const CLOSED_IDS = new Set(['closed_won', 'closed_lost'])
 
+/** Get all stages a deal can advance to (forward only, excluding current) */
+function getAdvanceTargets(currentStage: string): { id: string; label: string; color: string; dbStage: string }[] {
+  const currentOrder = STAGE_ORDER[currentStage] ?? 0
+  return KANBAN_STAGES
+    .filter(col => {
+      const colOrder = STAGE_ORDER[COLUMN_TO_STAGE[col.id]] ?? 0
+      return colOrder > currentOrder
+    })
+    .map(col => ({ id: col.id, label: col.label, color: col.color, dbStage: COLUMN_TO_STAGE[col.id] }))
+}
+
+/** Get all stages a deal can move back to (backward, excluding current) */
+function getMoveBackTargets(currentStage: string): { id: string; label: string; color: string; dbStage: string }[] {
+  const currentOrder = STAGE_ORDER[currentStage] ?? 0
+  return KANBAN_STAGES
+    .filter(col => {
+      const colOrder = STAGE_ORDER[COLUMN_TO_STAGE[col.id]] ?? 0
+      return colOrder < currentOrder
+    })
+    .map(col => ({ id: col.id, label: col.label, color: col.color, dbStage: COLUMN_TO_STAGE[col.id] }))
+}
+
+// --- Spinner ---
+function Spinner({ size = 14 }: { size?: number }) {
+  return (
+    <div
+      className="rounded-full border-2 border-current/30 border-t-current animate-spin"
+      style={{ width: size, height: size }}
+    />
+  )
+}
+
 // --- CardActionsMenu ---
 function CardActionsMenu({
+  deal,
   currentStage,
   onOpen,
   onDelete,
   onAdvance,
+  onAdvanceTo,
+  onMoveTo,
   onAssign,
   isSales,
   users,
+  isAdvancing,
 }: {
+  deal: ApiDeal
   currentStage: string
   onOpen: () => void
   onDelete: () => void
   onAdvance: () => void
+  onAdvanceTo: (stage: string) => void
+  onMoveTo: (stage: string) => void
   onAssign: (name: string) => void
   isSales: boolean
   users: ApiUser[]
+  isAdvancing: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [showAssign, setShowAssign] = useState(false)
+  const [showAdvanceTo, setShowAdvanceTo] = useState(false)
+  const [showMoveTo, setShowMoveTo] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const canAdvance = !!STAGE_ADVANCE_MAP[currentStage]
+  const advanceTargets = getAdvanceTargets(currentStage)
+  const moveBackTargets = getMoveBackTargets(currentStage)
 
   useEffect(() => {
     if (!open) return
@@ -114,6 +158,8 @@ function CardActionsMenu({
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false)
         setShowAssign(false)
+        setShowAdvanceTo(false)
+        setShowMoveTo(false)
       }
     }
     document.addEventListener('mousedown', handleClick)
@@ -123,16 +169,16 @@ function CardActionsMenu({
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={(e) => { e.stopPropagation(); setOpen(o => !o); setShowAssign(false) }}
+        onClick={(e) => { e.stopPropagation(); setOpen(o => !o); setShowAssign(false); setShowAdvanceTo(false); setShowMoveTo(false) }}
         className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[.08] transition-colors"
       >
         <MoreHorizontal size={14} />
       </button>
       {open && (
-        <div className="absolute right-0 top-7 z-50 min-w-[160px] bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.1] rounded-lg shadow-lg py-1 animate-in fade-in-0 zoom-in-95 duration-100">
+        <div className="absolute right-0 top-7 z-50 min-w-[180px] bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.1] rounded-lg shadow-lg py-1 animate-in fade-in-0 zoom-in-95 duration-100">
           {/* Assign */}
           <button
-            onClick={(e) => { e.stopPropagation(); setShowAssign(v => !v) }}
+            onClick={(e) => { e.stopPropagation(); setShowAssign(v => !v); setShowAdvanceTo(false); setShowMoveTo(false) }}
             className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
           >
             <span className="flex items-center gap-2"><UserIcon size={12} /> Assign</span>
@@ -157,14 +203,70 @@ function CardActionsMenu({
             </div>
           )}
 
-          {/* Advance */}
+          {/* Advance (next stage, no confirmation, shows spinner) */}
           {canAdvance && (
             <button
-              onClick={(e) => { e.stopPropagation(); setOpen(false); onAdvance() }}
-              className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+              onClick={(e) => { e.stopPropagation(); onAdvance() }}
+              disabled={isAdvancing}
+              className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors disabled:opacity-50"
             >
-              <ChevronRight size={12} /> Advance
+              {isAdvancing ? <Spinner size={12} /> : <ChevronRight size={12} />}
+              {isAdvancing ? 'Advancing…' : 'Advance'}
             </button>
+          )}
+
+          {/* Advance to... (choose target stage) */}
+          {advanceTargets.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowAdvanceTo(v => !v); setShowAssign(false); setShowMoveTo(false) }}
+                className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+              >
+                <span className="flex items-center gap-2"><ChevronRight size={12} /> Advance to…</span>
+                <ChevronDown size={11} className={cn('text-slate-400 transition-transform duration-150', showAdvanceTo && 'rotate-180')} />
+              </button>
+              {showAdvanceTo && (
+                <div className="border-t border-black/[.04] dark:border-white/[.06] max-h-[200px] overflow-y-auto">
+                  {advanceTargets.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={(e) => { e.stopPropagation(); setOpen(false); onAdvanceTo(t.dbStage) }}
+                      className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Move to previous stage */}
+          {moveBackTargets.length > 0 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowMoveTo(v => !v); setShowAssign(false); setShowAdvanceTo(false) }}
+                className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+              >
+                <span className="flex items-center gap-2"><ChevronDown size={12} className="rotate-90" /> Move back…</span>
+                <ChevronDown size={11} className={cn('text-slate-400 transition-transform duration-150', showMoveTo && 'rotate-180')} />
+              </button>
+              {showMoveTo && (
+                <div className="border-t border-black/[.04] dark:border-white/[.06] max-h-[200px] overflow-y-auto">
+                  {moveBackTargets.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={(e) => { e.stopPropagation(); setOpen(false); onMoveTo(t.dbStage) }}
+                      className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           {/* Open deal */}
@@ -198,9 +300,12 @@ function DealCard({
   onClick,
   onDelete,
   onAdvance,
+  onAdvanceTo,
+  onMoveTo,
   onAssign,
   isSales,
   users,
+  isAdvancing,
 }: {
   deal: ApiDeal
   colColor: string
@@ -208,9 +313,12 @@ function DealCard({
   onClick: () => void
   onDelete?: () => void
   onAdvance?: () => void
+  onAdvanceTo?: (stage: string) => void
+  onMoveTo?: (stage: string) => void
   onAssign?: (name: string) => void
   isSales?: boolean
   users?: ApiUser[]
+  isAdvancing?: boolean
 }) {
   const isWon = deal.stage === 'closed_won'
   const isLost = deal.stage === 'closed_lost'
@@ -238,15 +346,19 @@ function DealCard({
           {brandName}
         </span>
         <div className="flex items-center gap-1">
-          {onDelete !== undefined && onAdvance !== undefined && onAssign !== undefined && (
+          {onDelete !== undefined && onAdvance !== undefined && onAssign !== undefined && onAdvanceTo !== undefined && onMoveTo !== undefined && (
             <CardActionsMenu
+              deal={deal}
               currentStage={deal.stage}
               onOpen={onClick}
               onDelete={onDelete}
               onAdvance={onAdvance}
+              onAdvanceTo={onAdvanceTo}
+              onMoveTo={onMoveTo}
               onAssign={onAssign}
               isSales={isSales ?? false}
               users={users ?? []}
+              isAdvancing={isAdvancing ?? false}
             />
           )}
           <span className={cn(
@@ -299,7 +411,7 @@ function DealCard({
 
 // --- DraggableDealCard —wraps DealCard without touching it ---
 function DraggableDealCard({
-  deal, colColor, brandName, onClick, onDelete, onAdvance, onAssign, isSales, users,
+  deal, colColor, brandName, onClick, onDelete, onAdvance, onAdvanceTo, onMoveTo, onAssign, isSales, users, isAdvancing,
 }: {
   deal: ApiDeal
   colColor: string
@@ -307,9 +419,12 @@ function DraggableDealCard({
   onClick: () => void
   onDelete?: () => void
   onAdvance?: () => void
+  onAdvanceTo?: (stage: string) => void
+  onMoveTo?: (stage: string) => void
   onAssign?: (name: string) => void
   isSales?: boolean
   users?: ApiUser[]
+  isAdvancing?: boolean
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: deal.id })
   const style = transform
@@ -331,9 +446,12 @@ function DraggableDealCard({
         onClick={onClick}
         onDelete={onDelete}
         onAdvance={onAdvance}
+        onAdvanceTo={onAdvanceTo}
+        onMoveTo={onMoveTo}
         onAssign={onAssign}
         isSales={isSales}
         users={users}
+        isAdvancing={isAdvancing}
       />
     </div>
   )
@@ -383,7 +501,8 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   const [amFilter, setAmFilter] = useState<string | null>(null)
   const [amDropdownOpen, setAmDropdownOpen] = useState(false)
   const [deleteConfirmDealId, setDeleteConfirmDealId] = useState<string | null>(null)
-  const [advanceConfirmDealId, setAdvanceConfirmDealId] = useState<string | null>(null)
+  const [moveConfirm, setMoveConfirm] = useState<{ dealId: string; targetStage: string; dealTitle: string } | null>(null)
+  const [advancingDealId, setAdvancingDealId] = useState<string | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const amDropdownRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
@@ -483,30 +602,90 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
     })
   }, [deleteConfirmDealId, deleteDeal, queryClient])
 
+  /** Advance to the immediate next stage (no confirmation, spinner in menu) */
   const handleAdvanceDeal = useCallback((dealId: string, currentStage: string) => {
     const nextStage = STAGE_ADVANCE_MAP[currentStage]
     if (!nextStage) return
-    setAdvanceConfirmDealId(dealId)
-  }, [])
-
-  const confirmAdvance = useCallback(() => {
-    if (!advanceConfirmDealId) return
-    const deal = deals.find(d => d.id === advanceConfirmDealId)
-    if (!deal) return
-    const nextStage = STAGE_ADVANCE_MAP[deal.stage]
-    if (!nextStage) return
+    setAdvancingDealId(dealId)
     const previousDeals = queryClient.getQueryData<ApiDeal[]>(queryKeys.deals.all)
     queryClient.setQueryData<ApiDeal[]>(queryKeys.deals.all, old =>
-      old?.map(d => d.id === advanceConfirmDealId ? { ...d, stage: nextStage } : d) ?? []
+      old?.map(d => d.id === dealId ? { ...d, stage: nextStage } : d) ?? []
     )
-    patchStage.mutate({ id: advanceConfirmDealId, stage: nextStage }, {
+    patchStage.mutate({ id: dealId, stage: nextStage }, {
       onError: () => queryClient.setQueryData(queryKeys.deals.all, previousDeals),
       onSettled: () => {
-        setAdvanceConfirmDealId(null)
+        setAdvancingDealId(null)
         queryClient.invalidateQueries({ queryKey: queryKeys.deals.all })
       },
     })
-  }, [advanceConfirmDealId, deals, patchStage, queryClient])
+  }, [patchStage, queryClient])
+
+  /**
+   * Advance to a specific forward stage.
+   * All intermediate stages are applied sequentially so activity logs stay correct.
+   */
+  const handleAdvanceTo = useCallback(async (dealId: string, targetStage: string) => {
+    const deal = deals.find(d => d.id === dealId)
+    if (!deal) return
+    setAdvancingDealId(dealId)
+    // Build the chain of intermediate stages
+    const stages: string[] = []
+    let current = deal.stage
+    while (current && current !== targetStage) {
+      const next = STAGE_ADVANCE_MAP[current]
+      if (!next) break
+      stages.push(next)
+      current = next
+    }
+    // If the target wasn't reached through the chain, just jump directly
+    if (stages[stages.length - 1] !== targetStage) {
+      stages.push(targetStage)
+    }
+    // Optimistic UI: jump to target
+    const previousDeals = queryClient.getQueryData<ApiDeal[]>(queryKeys.deals.all)
+    queryClient.setQueryData<ApiDeal[]>(queryKeys.deals.all, old =>
+      old?.map(d => d.id === dealId ? { ...d, stage: targetStage } : d) ?? []
+    )
+    try {
+      // Apply each intermediate stage sequentially
+      for (const stage of stages) {
+        await new Promise<void>((resolve, reject) => {
+          patchStage.mutate({ id: dealId, stage }, {
+            onSuccess: () => resolve(),
+            onError: (err) => reject(err),
+          })
+        })
+      }
+    } catch {
+      queryClient.setQueryData(queryKeys.deals.all, previousDeals)
+    } finally {
+      setAdvancingDealId(null)
+      queryClient.invalidateQueries({ queryKey: queryKeys.deals.all })
+    }
+  }, [deals, patchStage, queryClient])
+
+  /** Move deal back to a previous stage — shows confirmation modal */
+  const handleMoveTo = useCallback((dealId: string, targetStage: string) => {
+    const deal = deals.find(d => d.id === dealId)
+    if (!deal) return
+    setMoveConfirm({ dealId, targetStage, dealTitle: deal.title })
+  }, [deals])
+
+  const confirmMove = useCallback(() => {
+    if (!moveConfirm) return
+    const { dealId, targetStage } = moveConfirm
+    const previousDeals = queryClient.getQueryData<ApiDeal[]>(queryKeys.deals.all)
+    queryClient.setQueryData<ApiDeal[]>(queryKeys.deals.all, old =>
+      old?.map(d => d.id === dealId ? { ...d, stage: targetStage } : d) ?? []
+    )
+    patchStage.mutate({ id: dealId, stage: targetStage }, {
+      onError: () => queryClient.setQueryData(queryKeys.deals.all, previousDeals),
+      onSettled: () => {
+        setMoveConfirm(null)
+        queryClient.invalidateQueries({ queryKey: queryKeys.deals.all })
+      },
+    })
+  }, [moveConfirm, patchStage, queryClient])
 
   const handleAssignDeal = useCallback((dealId: string, assignedTo: string) => {
     const previousDeals = queryClient.getQueryData<ApiDeal[]>(queryKeys.deals.all)
@@ -567,7 +746,11 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
     if (currentCol?.id === over.id) return
     const currentOrder = STAGE_ORDER[deal.stage] ?? 0
     const targetOrder = STAGE_ORDER[targetStage] ?? 0
-    if (targetOrder < currentOrder) return
+    // Backward drag → show confirmation modal instead of direct move
+    if (targetOrder < currentOrder) {
+      setMoveConfirm({ dealId: deal.id, targetStage, dealTitle: deal.title })
+      return
+    }
     const previousDeals = queryClient.getQueryData<ApiDeal[]>(queryKeys.deals.all)
     queryClient.setQueryData<ApiDeal[]>(queryKeys.deals.all, old =>
       old?.map(d => d.id === deal.id ? { ...d, stage: targetStage } : d) ?? []
@@ -748,8 +931,11 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                           onClick={() => onOpenDeal(d.id)}
                           onDelete={() => handleDeleteDeal(d.id)}
                           onAdvance={() => handleAdvanceDeal(d.id, d.stage)}
+                          onAdvanceTo={(stage) => handleAdvanceTo(d.id, stage)}
+                          onMoveTo={(stage) => handleMoveTo(d.id, stage)}
                           onAssign={(name) => handleAssignDeal(d.id, name)}
                           isSales={isSales}
+                          isAdvancing={advancingDealId === d.id}
                         />
                       ))
                     )}
@@ -800,30 +986,38 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
         </div>
       )}
 
-      {/* Advance confirmation modal */}
-      {advanceConfirmDealId && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="w-full sm:w-[420px] bg-white dark:bg-[#1e1e21] rounded-lg shadow-xl p-4 animate-in slide-in-from-bottom duration-150">
-            <h2 className="text-[14px] font-semibold text-slate-900 dark:text-white mb-1">Advance deal?</h2>
-            <p className="text-[12px] text-slate-600 dark:text-slate-400 mb-4">The deal will be moved to the next pipeline stage.</p>
-            <div className="flex items-center gap-2 justify-end">
-              <button
-                onClick={() => setAdvanceConfirmDealId(null)}
-                className="px-3.5 py-1.5 text-[12px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[.06] rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmAdvance}
-                disabled={patchStage.isPending}
-                className="px-3.5 py-1.5 text-[12px] font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-60 rounded-lg transition-colors active:scale-[0.98]"
-              >
-                {patchStage.isPending ? 'Advancing…' : 'Advance'}
-              </button>
+      {/* Move-back confirmation modal */}
+      {moveConfirm && (() => {
+        const targetCol = KANBAN_STAGES.find(c => c.matches.includes(moveConfirm.targetStage))
+        return (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-150">
+            <div className="w-full sm:w-[420px] bg-white dark:bg-[#1e1e21] rounded-lg shadow-xl p-4 animate-in slide-in-from-bottom duration-150">
+              <h2 className="text-[14px] font-semibold text-slate-900 dark:text-white mb-1">Move deal back?</h2>
+              <p className="text-[12px] text-slate-600 dark:text-slate-400 mb-4">
+                Moving <span className="font-semibold text-slate-900 dark:text-white">{moveConfirm.dealTitle}</span> to{' '}
+                <span className="font-semibold" style={{ color: targetCol?.color }}>
+                  {targetCol?.label ?? moveConfirm.targetStage}
+                </span>?
+              </p>
+              <div className="flex items-center gap-2 justify-end">
+                <button
+                  onClick={() => setMoveConfirm(null)}
+                  className="px-3.5 py-1.5 text-[12px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[.06] rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmMove}
+                  disabled={patchStage.isPending}
+                  className="px-3.5 py-1.5 text-[12px] font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-60 rounded-lg transition-colors active:scale-[0.98]"
+                >
+                  {patchStage.isPending ? 'Moving…' : 'Move'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }
