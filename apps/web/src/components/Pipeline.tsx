@@ -427,7 +427,6 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [amFilter, setAmFilter] = useState<string | null>(null)
   const [amDropdownOpen, setAmDropdownOpen] = useState(false)
-  const [amSearch, setAmSearch] = useState('')
   const [deleteConfirmDealId, setDeleteConfirmDealId] = useState<string | null>(null)
   const [moveConfirm, setMoveConfirm] = useState<{ dealId: string; targetStage: string; dealTitle: string } | null>(null)
   const [advancingDealId, setAdvancingDealId] = useState<string | null>(null)
@@ -476,10 +475,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   useEffect(() => {
     if (!amDropdownOpen) return
     function handleClick(e: MouseEvent) {
-      if (amDropdownRef.current && !amDropdownRef.current.contains(e.target as Node)) {
-        setAmDropdownOpen(false)
-        setAmSearch('')
-      }
+      if (amDropdownRef.current && !amDropdownRef.current.contains(e.target as Node)) setAmDropdownOpen(false)
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
@@ -785,7 +781,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
           {/* AM filter dropdown */}
           <div ref={amDropdownRef} className="relative">
             <button
-              onClick={() => { setAmDropdownOpen(o => !o); setAmSearch('') }}
+              onClick={() => setAmDropdownOpen(o => !o)}
               className={cn(
                 'bg-white dark:bg-[#1e1e21] border rounded-lg px-3 py-[5px] text-[12px] font-medium hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors duration-150 cursor-pointer flex items-center gap-1.5',
                 amFilter
@@ -797,46 +793,28 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
               <ChevronDown size={12} />
             </button>
             {amDropdownOpen && (
-              <div className="absolute right-0 top-9 z-50 w-[200px] bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.1] rounded-lg shadow-lg animate-in fade-in-0 zoom-in-95 duration-100 flex flex-col overflow-hidden">
-                {/* Search */}
-                <div className="px-2.5 py-2 border-b border-black/[.06] dark:border-white/[.07] shrink-0">
-                  <input
-                    autoFocus
-                    value={amSearch}
-                    onChange={e => setAmSearch(e.target.value)}
-                    placeholder="Search AMs…"
-                    className="w-full text-[12px] bg-slate-50 dark:bg-white/[.05] border border-black/[.06] dark:border-white/[.07] rounded-md px-2.5 py-1.5 outline-none placeholder:text-slate-400 text-slate-800 dark:text-white"
-                  />
-                </div>
-                <div className="overflow-y-auto max-h-[200px] py-1">
+              <div className="absolute right-0 top-9 z-50 min-w-[160px] bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.1] rounded-lg shadow-lg py-1 animate-in fade-in-0 zoom-in-95 duration-100 max-h-[240px] overflow-y-auto">
+                <button
+                  onClick={() => { setAmFilter(null); setAmDropdownOpen(false) }}
+                  className={cn(
+                    'w-full px-3 py-1.5 text-[12px] text-left hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors',
+                    !amFilter ? 'font-semibold text-primary' : 'text-slate-700 dark:text-slate-300'
+                  )}
+                >
+                  All AMs
+                </button>
+                {amOptions.map(o => (
                   <button
-                    onClick={() => { setAmFilter(null); setAmDropdownOpen(false); setAmSearch('') }}
+                    key={o.id}
+                    onClick={() => { setAmFilter(o.id); setAmDropdownOpen(false) }}
                     className={cn(
                       'w-full px-3 py-1.5 text-[12px] text-left hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors',
-                      !amFilter ? 'font-semibold text-primary' : 'text-slate-700 dark:text-slate-300'
+                      amFilter === o.id ? 'font-semibold text-primary' : 'text-slate-700 dark:text-slate-300'
                     )}
                   >
-                    All AMs
+                    {o.label}
                   </button>
-                  {amOptions
-                    .filter(o => o.label.toLowerCase().includes(amSearch.toLowerCase()))
-                    .map(o => (
-                      <button
-                        key={o.id}
-                        onClick={() => { setAmFilter(o.id); setAmDropdownOpen(false); setAmSearch('') }}
-                        className={cn(
-                          'w-full px-3 py-1.5 text-[12px] text-left hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors',
-                          amFilter === o.id ? 'font-semibold text-primary' : 'text-slate-700 dark:text-slate-300'
-                        )}
-                      >
-                        {o.label}
-                      </button>
-                    ))
-                  }
-                  {amOptions.filter(o => o.label.toLowerCase().includes(amSearch.toLowerCase())).length === 0 && (
-                    <p className="px-3 py-2 text-[11px] text-slate-400">No AMs found</p>
-                  )}
-                </div>
+                ))}
               </div>
             )}
           </div>
