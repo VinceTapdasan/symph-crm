@@ -215,10 +215,11 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
     return m
   }, [users])
 
-  // deal.assignedTo stores a user UUID — resolve to display name
+  // deal.assignedTo stores a user UUID — resolve to display name + full user
   const amDisplayName = deal?.assignedTo
     ? (userNameMap.get(deal.assignedTo) ?? deal.assignedTo)
     : null
+  const amUser = deal?.assignedTo ? users.find(u => u.id === deal.assignedTo) : null
 
   // ── Notes vs Resources split ─────────────────────────────────────────────
   // Resources: docs uploaded to the /resources/ bucket path
@@ -892,7 +893,12 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
               >
                 {amDisplayName ? (
                   <>
-                    <Avatar name={amDisplayName} size={34} />
+                    <Avatar
+                      name={amDisplayName}
+                      email={amUser?.email ?? undefined}
+                      src={amUser?.image ?? undefined}
+                      size={34}
+                    />
                     <div className="text-left min-w-0 flex-1">
                       <p className="text-[13px] font-semibold text-slate-800 dark:text-white truncate">{amDisplayName}</p>
                       <p className="text-[11px] text-slate-400">Account Manager</p>
@@ -942,7 +948,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                               : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06]'
                           )}
                         >
-                          <Avatar name={u.name || u.email} size={18} />
+                          <Avatar name={u.name || u.email} email={u.email ?? undefined} src={u.image ?? undefined} size={18} />
                           <span className="truncate">{u.name || u.email}</span>
                           {u.id === deal.assignedTo && (
                             <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="ml-auto shrink-0"><polyline points="20 6 9 17 4 12" /></svg>
