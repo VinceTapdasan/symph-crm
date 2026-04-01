@@ -131,13 +131,18 @@ export class CalendarConnectionsService {
 
     try {
       // Incremental sync if we have a syncToken
+      // Full sync window: start of current month → now + 30 days (so past events this month are included)
+      const monthStart = new Date()
+      monthStart.setDate(1)
+      monthStart.setHours(0, 0, 0, 0)
+
       const listParams: calendar_v3.Params$Resource$Events$List = {
         calendarId: 'primary',
         singleEvents: true,
         ...(conn.syncToken
           ? { syncToken: conn.syncToken }
           : {
-              timeMin: new Date().toISOString(),
+              timeMin: monthStart.toISOString(),
               timeMax: new Date(Date.now() + SYNC_WINDOW_DAYS * 86400000).toISOString(),
               maxResults: 250,
             }),

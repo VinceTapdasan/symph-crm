@@ -149,6 +149,27 @@ function QuickActionRow({
   )
 }
 
+/** Parse deal_stage:xxx tag from a document's tags array */
+function parseDocStage(tags?: string[] | null): string | null {
+  if (!tags) return null
+  const tag = tags.find(t => t.startsWith('deal_stage:'))
+  return tag ? tag.slice('deal_stage:'.length) : null
+}
+
+/** Small colored stage pill */
+function StagePill({ stage }: { stage: string }) {
+  const color = STAGE_COLORS[stage] ?? '#94a3b8'
+  const label = STAGE_LABELS[stage] ?? stage
+  return (
+    <span
+      className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md shrink-0"
+      style={{ background: `${color}18`, color }}
+    >
+      {label}
+    </span>
+  )
+}
+
 /** Accepted upload MIME types for resource files */
 const RESOURCE_ACCEPT_LIST = [
   'application/pdf',
@@ -163,6 +184,8 @@ const RESOURCE_ACCEPT_LIST = [
 ]
 const RESOURCE_ACCEPT = RESOURCE_ACCEPT_LIST.join(',')
 
+type ViewMode = 'list' | 'grid'
+
 type DealDetailProps = {
   dealId: string
   onBack: () => void
@@ -173,6 +196,9 @@ type DealDetailProps = {
 
 export function DealDetail({ dealId, onBack }: DealDetailProps) {
   const [activeTab, setActiveTab] = useState<'notes' | 'resources' | 'timeline'>('notes')
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [noteTypeFilter, setNoteTypeFilter] = useState<string>('all')
+  const [resourceExtFilter, setResourceExtFilter] = useState<string>('all')
   const [noteText, setNoteText] = useState('')
   const [noteType, setNoteType] = useState<string>('general')
   const [addingNote, setAddingNote] = useState(false)
@@ -228,6 +254,27 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
   const resourceDocs = documents.filter(d => d.storagePath?.includes('/resources/'))
   const noteDocs = documents.filter(d => !d.storagePath?.includes('/resources/'))
 
+  // ── Filtered docs ────────────────────────────────────────────────────────
+  const filteredNotes = useMemo(() => {
+    if (noteTypeFilter === 'all') return noteDocs
+    return noteDocs.filter(d => d.type === noteTypeFilter)
+  }, [noteDocs, noteTypeFilter])
+
+  const filteredResources = useMemo(() => {
+    if (resourceExtFilter === 'all') return resourceDocs
+    return resourceDocs.filter(d => {
+      const ext = d.tags?.find(t => !['resources', 'notes'].includes(t) && !t.startsWith('deal_stage:'))?.toUpperCase() ?? ''
+      if (resourceExtFilter === 'image') return ['JPEG', 'JPG', 'PNG', 'WEBP', 'GIF'].includes(ext)
+      return ext === resourceExtFilter.toUpperCase()
+    })
+  }, [resourceDocs, resourceExtFilter])
+
+  // ── Unique note types for filter ─────────────────────────────────────────
+  const noteTypes = useMemo(() => {
+    const types = new Set(noteDocs.map(d => d.type))
+    return Array.from(types)
+  }, [noteDocs])
+
   // ── Handlers ─────────────────────────────────────────────────────────────
 
   const handleAdvance = useCallback(() => {
@@ -282,7 +329,14 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
     const title = combined.split('\n')[0].slice(0, 100) || 'Note'
     setAddingNote(true)
     saveNote.mutate(
-      { dealId, type: noteType, title, content: combined, authorId: userId },
+      {
+        dealId,
+        type: noteType,
+        title,
+        content: combined,
+        authorId: userId,
+        tags: [`deal_stage:${deal.stage}`],
+      },
       { onSettled: () => setAddingNote(false) },
     )
   }, [noteText, notePasteChips, noteType, deal, dealId, userId, saveNote])
@@ -342,7 +396,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
     const files = e.target.files
     if (!files?.length || !deal || !userId) return
     setUploading(true)
-    uploadFiles.mutate({ dealId, authorId: userId, files: Array.from(files) })
+    uploadFiles.mutate({ dealId, authorId: userId, files: Array.from(files), dealStage: deal.stage })
   }, [deal, dealId, userId, uploadFiles])
 
   // ── Render: loading / error ───────────────────────────────────────────────
@@ -379,6 +433,20 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
       </div>
     )
   }
+
+  // ── View toggle icons ─────────────────────────────────────────────────────
+  const ListIcon = () => (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+      <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+    </svg>
+  )
+  const GridIcon = () => (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+      <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+      <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+    </svg>
+  )
 
   // ── Render: deal content ──────────────────────────────────────────────────
 
@@ -470,36 +538,99 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
 
         {/* Left: tabs + content */}
         <div className="flex-1 min-w-0 bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-[0_1px_4px_rgba(0,0,0,0.04)] overflow-hidden">
-          {/* Tab bar */}
-          <div className="flex border-b border-black/[.06] dark:border-white/[.08]">
-            {([
-              { id: 'notes', label: 'Notes', count: noteDocs.length },
-              { id: 'resources', label: 'Resources', count: resourceDocs.length },
-              { id: 'timeline', label: 'Timeline', count: activities.length },
-            ] as const).map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'flex items-center gap-1.5 px-4 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  activeTab === tab.id
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                )}
-              >
-                {tab.label}
-                {tab.count !== null && tab.count > 0 && (
-                  <span className={cn(
-                    'text-[10px] font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center',
+          {/* Tab bar — includes filters + view toggle flushed right */}
+          <div className="flex items-center border-b border-black/[.06] dark:border-white/[.08] gap-0 pr-2">
+            {/* Tabs */}
+            <div className="flex flex-1">
+              {([
+                { id: 'notes', label: 'Notes', count: noteDocs.length },
+                { id: 'resources', label: 'Resources', count: resourceDocs.length },
+                { id: 'timeline', label: 'Timeline', count: activities.length },
+              ] as const).map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-4 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors',
                     activeTab === tab.id
-                      ? 'bg-primary text-white'
-                      : 'bg-slate-100 dark:bg-white/[.08] text-slate-500'
-                  )}>
-                    {tab.count}
-                  </span>
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                  )}
+                >
+                  {tab.label}
+                  {tab.count !== null && tab.count > 0 && (
+                    <span className={cn(
+                      'text-[10px] font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center',
+                      activeTab === tab.id
+                        ? 'bg-primary text-white'
+                        : 'bg-slate-100 dark:bg-white/[.08] text-slate-500'
+                    )}>
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Right controls — filter + view toggle (hidden for timeline) */}
+            {activeTab !== 'timeline' && (
+              <div className="flex items-center gap-1 shrink-0">
+                {/* Type / ext filter */}
+                {activeTab === 'notes' && noteTypes.length > 1 && (
+                  <select
+                    value={noteTypeFilter}
+                    onChange={e => setNoteTypeFilter(e.target.value)}
+                    className="text-[11px] text-slate-500 dark:text-slate-400 bg-transparent border-none outline-none cursor-pointer py-1 pr-1 pl-1"
+                  >
+                    <option value="all">All types</option>
+                    {noteTypes.map(t => (
+                      <option key={t} value={t}>{DOC_TYPE_LABELS[t] ?? t}</option>
+                    ))}
+                  </select>
                 )}
-              </button>
-            ))}
+                {activeTab === 'resources' && (
+                  <select
+                    value={resourceExtFilter}
+                    onChange={e => setResourceExtFilter(e.target.value)}
+                    className="text-[11px] text-slate-500 dark:text-slate-400 bg-transparent border-none outline-none cursor-pointer py-1 pr-1 pl-1"
+                  >
+                    <option value="all">All files</option>
+                    <option value="pdf">PDF</option>
+                    <option value="docx">DOCX</option>
+                    <option value="image">Images</option>
+                  </select>
+                )}
+
+                {/* Divider */}
+                <div className="w-px h-4 bg-black/[.06] dark:bg-white/[.08] mx-1" />
+
+                {/* List / Grid toggle */}
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    'w-7 h-7 rounded-md flex items-center justify-center transition-colors',
+                    viewMode === 'list'
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04]'
+                  )}
+                  title="List view"
+                >
+                  <ListIcon />
+                </button>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={cn(
+                    'w-7 h-7 rounded-md flex items-center justify-center transition-colors',
+                    viewMode === 'grid'
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04]'
+                  )}
+                  title="Grid view"
+                >
+                  <GridIcon />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* ── Notes tab ─────────────────────────────────────────────────── */}
@@ -591,64 +722,130 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                 </div>
               </div>
 
-              {/* Notes list */}
+              {/* Notes list / grid */}
               {loadingDocs ? (
                 <div className="p-8 flex items-center justify-center">
                   <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                 </div>
-              ) : noteDocs.length === 0 ? (
+              ) : filteredNotes.length === 0 ? (
                 <div className="py-10 text-center">
-                  <p className="text-[13px] text-slate-400">No notes yet</p>
-                  <p className="text-[11px] text-slate-300 mt-0.5">Add the first note above</p>
+                  <p className="text-[13px] text-slate-400">
+                    {noteTypeFilter !== 'all' ? 'No notes match this filter' : 'No notes yet'}
+                  </p>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    {noteTypeFilter !== 'all' ? '' : 'Add the first note above'}
+                  </p>
                 </div>
-              ) : (
-                <div className="divide-y divide-black/[.04] dark:divide-white/[.05]">
-                  {noteDocs.map(doc => (
-                    <div
-                      key={doc.id}
-                      className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/[.02] transition-colors group cursor-pointer"
-                      onClick={() => setViewingDoc(doc)}
-                    >
-                      {/* Obsidian-style file icon */}
-                      <div className="mt-0.5 shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-primary/50 transition-colors">
-                        <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
-                          <line x1="16" y1="13" x2="8" y2="13" />
-                          <line x1="16" y1="17" x2="8" y2="17" />
-                          <polyline points="10 9 9 9 8 9" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        {/* Note name — primary, Obsidian-style */}
-                        <p className="text-[13px] font-semibold text-slate-800 dark:text-white truncate leading-tight group-hover:text-primary transition-colors">
+              ) : viewMode === 'grid' ? (
+                /* Grid view */
+                <div className="p-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {filteredNotes.map(doc => {
+                    const docStage = parseDocStage(doc.tags)
+                    const authorName = doc.authorId ? (userNameMap.get(doc.authorId) ?? null) : null
+                    const authorUser = doc.authorId ? users.find(u => u.id === doc.authorId) : null
+                    return (
+                      <div
+                        key={doc.id}
+                        className="group rounded-lg border border-black/[.06] dark:border-white/[.08] p-3 cursor-pointer hover:border-primary/30 hover:bg-primary/[.02] transition-all flex flex-col gap-1.5"
+                        onClick={() => setViewingDoc(doc)}
+                      >
+                        {/* Icon + type */}
+                        <div className="flex items-center justify-between">
+                          <div className="text-slate-300 dark:text-slate-600 group-hover:text-primary/50 transition-colors">
+                            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                              <polyline points="14 2 14 8 20 8" />
+                            </svg>
+                          </div>
+                          {docStage && <StagePill stage={docStage} />}
+                        </div>
+                        {/* Title */}
+                        <p className="text-[12px] font-semibold text-slate-800 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                           {doc.title}
                         </p>
+                        {/* Excerpt */}
                         {doc.excerpt && (
-                          <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">
+                          <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed flex-1">
                             {doc.excerpt}
                           </p>
                         )}
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/[.06] text-slate-500">
+                        {/* Footer: type badge + author + date */}
+                        <div className="flex items-center gap-1.5 mt-auto pt-1 flex-wrap">
+                          <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/[.06] text-slate-500 shrink-0">
                             {DOC_TYPE_LABELS[doc.type] ?? doc.type}
                           </span>
-                          <span className="text-[10px] text-slate-400">
-                            {new Date(doc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
+                          {authorUser && (
+                            <div className="flex items-center gap-1 min-w-0">
+                              <Avatar name={authorUser.name || authorUser.email} email={authorUser.email ?? undefined} src={authorUser.image ?? undefined} size={12} />
+                              <span className="text-[9px] text-slate-400 truncate">{authorName?.split(' ')[0]}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                /* List view */
+                <div className="divide-y divide-black/[.04] dark:divide-white/[.05]">
+                  {filteredNotes.map(doc => {
+                    const docStage = parseDocStage(doc.tags)
+                    const authorName = doc.authorId ? (userNameMap.get(doc.authorId) ?? null) : null
+                    const authorUser = doc.authorId ? users.find(u => u.id === doc.authorId) : null
+                    return (
+                      <div
+                        key={doc.id}
+                        className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/[.02] transition-colors group cursor-pointer"
+                        onClick={() => setViewingDoc(doc)}
+                      >
+                        {/* Obsidian-style file icon */}
+                        <div className="mt-0.5 shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-primary/50 transition-colors">
+                          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                            <polyline points="10 9 9 9 8 9" />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          {/* Note name */}
+                          <p className="text-[13px] font-semibold text-slate-800 dark:text-white truncate leading-tight group-hover:text-primary transition-colors">
+                            {doc.title}
+                          </p>
+                          {doc.excerpt && (
+                            <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">
+                              {doc.excerpt}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/[.06] text-slate-500 shrink-0">
+                              {DOC_TYPE_LABELS[doc.type] ?? doc.type}
+                            </span>
+                            {docStage && <StagePill stage={docStage} />}
+                            {authorUser && (
+                              <div className="flex items-center gap-1">
+                                <Avatar name={authorUser.name || authorUser.email} email={authorUser.email ?? undefined} src={authorUser.image ?? undefined} size={14} />
+                                <span className="text-[10px] text-slate-400">{authorName?.split(' ')[0] ?? 'AM'}</span>
+                              </div>
+                            )}
+                            <span className="text-[10px] text-slate-400">
+                              {new Date(doc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
+                            </span>
+                          </div>
+                        </div>
+                        {/* View hint */}
+                        <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
+                          <span className="text-[10px] font-medium text-primary flex items-center gap-0.5">
+                            View
+                            <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                              <polyline points="9 18 15 12 9 6" />
+                            </svg>
                           </span>
                         </div>
                       </div>
-                      {/* View hint */}
-                      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
-                        <span className="text-[10px] font-medium text-primary flex items-center gap-0.5">
-                          View
-                          <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                            <polyline points="9 18 15 12 9 6" />
-                          </svg>
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -686,7 +883,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                     const accepted = Array.from(files).filter(f => RESOURCE_ACCEPT_LIST.includes(f.type))
                     if (!accepted.length) return
                     setUploading(true)
-                    uploadFiles.mutate({ dealId, authorId: userId, files: accepted })
+                    uploadFiles.mutate({ dealId, authorId: userId, files: accepted, dealStage: deal.stage })
                   }}
                 >
                   {uploading ? (
@@ -709,57 +906,122 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                 </label>
               </div>
 
-              {/* Uploaded resource files list */}
+              {/* Uploaded resource files */}
               {loadingDocs ? (
                 <div className="flex items-center justify-center py-6">
                   <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                 </div>
-              ) : resourceDocs.length > 0 ? (
-                <div className="mb-4">
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Uploaded Files</p>
-                  <div className="divide-y divide-black/[.04] dark:divide-white/[.05] border border-black/[.06] dark:border-white/[.08] rounded-lg overflow-hidden">
-                    {resourceDocs.map(doc => {
-                      const ext = doc.tags?.find(t => !['resources', 'notes'].includes(t))?.toUpperCase() ?? 'FILE'
-                      const isImg = ['JPEG', 'JPG', 'PNG', 'WEBP', 'GIF'].includes(ext)
-                      return (
-                        <div
-                          key={doc.id}
-                          className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-white/[.02] transition-colors group cursor-pointer"
-                          onClick={() => setViewingDoc(doc)}
-                        >
-                          {/* File type indicator */}
-                          <div className={cn(
-                            'w-8 h-8 rounded-md flex items-center justify-center shrink-0 text-[9px] font-bold',
-                            isImg
-                              ? 'bg-purple-50 dark:bg-purple-500/[.12] text-purple-600 dark:text-purple-400'
-                              : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
-                          )}>
-                            {ext.slice(0, 4)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[12px] font-medium text-slate-800 dark:text-white truncate group-hover:text-primary transition-colors">
-                              {doc.title}
-                            </p>
-                            <p className="text-[10px] text-slate-400 mt-0.5">
-                              {new Date(doc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                              {doc.wordCount ? ` · ${doc.wordCount} words extracted` : ''}
-                            </p>
-                          </div>
-                          {/* View arrow */}
-                          <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-[10px] font-medium text-primary flex items-center gap-0.5">
-                              View
-                              <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                                <polyline points="9 18 15 12 9 6" />
-                              </svg>
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              ) : null}
+              ) : filteredResources.length > 0 ? (
+                  viewMode === 'grid' ? (
+                    /* Resources grid view */
+                    <div className="mb-4">
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Uploaded Files</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {filteredResources.map(doc => {
+                          const ext = doc.tags?.find(t => !['resources', 'notes'].includes(t) && !t.startsWith('deal_stage:'))?.toUpperCase() ?? 'FILE'
+                          const isImg = ['JPEG', 'JPG', 'PNG', 'WEBP', 'GIF'].includes(ext)
+                          const docStage = parseDocStage(doc.tags)
+                          const authorUser = doc.authorId ? users.find(u => u.id === doc.authorId) : null
+                          const authorName = doc.authorId ? (userNameMap.get(doc.authorId) ?? null) : null
+                          return (
+                            <div
+                              key={doc.id}
+                              className="group rounded-lg border border-black/[.06] dark:border-white/[.08] p-3 cursor-pointer hover:border-primary/30 hover:bg-primary/[.02] transition-all flex flex-col gap-2"
+                              onClick={() => setViewingDoc(doc)}
+                            >
+                              {/* File icon */}
+                              <div className="flex items-center justify-between">
+                                <div className={cn(
+                                  'w-10 h-10 rounded-lg flex items-center justify-center text-[10px] font-bold',
+                                  isImg
+                                    ? 'bg-purple-50 dark:bg-purple-500/[.12] text-purple-600 dark:text-purple-400'
+                                    : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
+                                )}>
+                                  {ext.slice(0, 4)}
+                                </div>
+                                {docStage && <StagePill stage={docStage} />}
+                              </div>
+                              {/* Filename */}
+                              <p className="text-[12px] font-medium text-slate-800 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                                {doc.title}
+                              </p>
+                              {/* Footer: author + date */}
+                              <div className="flex items-center gap-1.5 mt-auto">
+                                {authorUser && (
+                                  <>
+                                    <Avatar name={authorUser.name || authorUser.email} email={authorUser.email ?? undefined} src={authorUser.image ?? undefined} size={12} />
+                                    <span className="text-[9px] text-slate-400 truncate">{authorName?.split(' ')[0]}</span>
+                                  </>
+                                )}
+                                <span className="text-[9px] text-slate-400 ml-auto shrink-0">
+                                  {new Date(doc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Resources list view */
+                    <div className="mb-4">
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Uploaded Files</p>
+                      <div className="divide-y divide-black/[.04] dark:divide-white/[.05] border border-black/[.06] dark:border-white/[.08] rounded-lg overflow-hidden">
+                        {filteredResources.map(doc => {
+                          const ext = doc.tags?.find(t => !['resources', 'notes'].includes(t) && !t.startsWith('deal_stage:'))?.toUpperCase() ?? 'FILE'
+                          const isImg = ['JPEG', 'JPG', 'PNG', 'WEBP', 'GIF'].includes(ext)
+                          const docStage = parseDocStage(doc.tags)
+                          const authorUser = doc.authorId ? users.find(u => u.id === doc.authorId) : null
+                          const authorName = doc.authorId ? (userNameMap.get(doc.authorId) ?? null) : null
+                          return (
+                            <div
+                              key={doc.id}
+                              className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-white/[.02] transition-colors group cursor-pointer"
+                              onClick={() => setViewingDoc(doc)}
+                            >
+                              {/* File type indicator */}
+                              <div className={cn(
+                                'w-8 h-8 rounded-md flex items-center justify-center shrink-0 text-[9px] font-bold',
+                                isImg
+                                  ? 'bg-purple-50 dark:bg-purple-500/[.12] text-purple-600 dark:text-purple-400'
+                                  : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
+                              )}>
+                                {ext.slice(0, 4)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[12px] font-medium text-slate-800 dark:text-white truncate group-hover:text-primary transition-colors">
+                                  {doc.title}
+                                </p>
+                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                  {docStage && <StagePill stage={docStage} />}
+                                  {authorUser && (
+                                    <div className="flex items-center gap-1">
+                                      <Avatar name={authorUser.name || authorUser.email} email={authorUser.email ?? undefined} src={authorUser.image ?? undefined} size={12} />
+                                      <span className="text-[10px] text-slate-400">{authorName?.split(' ')[0] ?? 'AM'}</span>
+                                    </div>
+                                  )}
+                                  <span className="text-[10px] text-slate-400">
+                                    {new Date(doc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    {doc.wordCount ? ` · ${doc.wordCount} words` : ''}
+                                  </span>
+                                </div>
+                              </div>
+                              {/* View arrow */}
+                              <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="text-[10px] font-medium text-primary flex items-center gap-0.5">
+                                  View
+                                  <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                                    <polyline points="9 18 15 12 9 6" />
+                                  </svg>
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                ) : null}
 
               {/* Quick links from deal fields */}
               {(deal.proposalLink || deal.demoLink) && (
@@ -791,10 +1053,10 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
               )}
 
               {/* Empty state */}
-              {!deal.proposalLink && !deal.demoLink && resourceDocs.length === 0 && !loadingDocs && (
+              {!deal.proposalLink && !deal.demoLink && filteredResources.length === 0 && !loadingDocs && (
                 <div className="py-4 text-center">
                   <p className="text-[11px] text-slate-300 dark:text-slate-600">
-                    Uploaded files and links will appear here
+                    {resourceExtFilter !== 'all' ? 'No files match this filter' : 'Uploaded files and links will appear here'}
                   </p>
                 </div>
               )}
@@ -899,78 +1161,116 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
           {/* Account Manager */}
           <SidebarSection title="Account Manager">
             <div ref={assignRef} className="relative">
-              {/* Current AM — click to open assign dropdown */}
-              <button
-                onClick={() => setShowAssignDropdown(v => !v)}
-                className="flex items-center gap-2.5 w-full rounded-lg hover:bg-slate-50 dark:hover:bg-white/[.04] px-1 py-1 -mx-1 transition-colors group"
-              >
-                {amDisplayName ? (
-                  <>
-                    <Avatar
-                      name={amDisplayName}
-                      email={amUser?.email ?? undefined}
-                      src={amUser?.image ?? undefined}
-                      size={34}
-                    />
-                    <div className="text-left min-w-0 flex-1">
-                      <p className="text-[13px] font-semibold text-slate-800 dark:text-white truncate">{amDisplayName}</p>
-                      <p className="text-[11px] text-slate-400">Account Manager</p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-[34px] h-[34px] rounded-full border-2 border-dashed border-slate-200 dark:border-white/[.12] flex items-center justify-center shrink-0">
-                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-300 dark:text-slate-600">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                      </svg>
-                    </div>
-                    <span className="text-[12px] text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
-                      Click to assign
-                    </span>
-                  </>
-                )}
-                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-300 dark:text-slate-600 shrink-0 ml-auto">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
-
-              {/* Assign dropdown */}
-              {showAssignDropdown && (
-                <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.1] rounded-lg shadow-lg overflow-hidden animate-in fade-in-0 zoom-in-95 duration-100">
-                  {users.length === 0 ? (
-                    <div className="px-3 py-3 text-[11px] text-slate-400 italic text-center">No team members found</div>
+              {isTerminal ? (
+                /* Locked: won/lost deals cannot have AM reassigned */
+                <div className="flex items-center gap-2.5 px-1 py-1 -mx-1 rounded-lg">
+                  {amDisplayName ? (
+                    <>
+                      <Avatar
+                        name={amDisplayName}
+                        email={amUser?.email ?? undefined}
+                        src={amUser?.image ?? undefined}
+                        size={34}
+                      />
+                      <div className="text-left min-w-0 flex-1">
+                        <p className="text-[13px] font-semibold text-slate-800 dark:text-white truncate">{amDisplayName}</p>
+                        <p className="text-[11px] text-slate-400">Account Manager</p>
+                      </div>
+                    </>
                   ) : (
-                    <div className="max-h-[180px] overflow-y-auto py-1">
-                      {amDisplayName && (
-                        <button
-                          onClick={() => handleAssignAM('')}
-                          className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-red-500 hover:bg-red-50 dark:hover:bg-red-500/[.08] transition-colors"
-                        >
-                          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                          Unassign
-                        </button>
+                    <>
+                      <div className="w-[34px] h-[34px] rounded-full border-2 border-dashed border-slate-200 dark:border-white/[.12] flex items-center justify-center shrink-0">
+                        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-300 dark:text-slate-600">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+                        </svg>
+                      </div>
+                      <span className="text-[12px] text-slate-400">Unassigned</span>
+                    </>
+                  )}
+                  {/* Lock indicator */}
+                  <div className="ml-auto shrink-0" title={`Cannot reassign AM — deal is ${deal.stage === 'closed_won' ? 'won' : 'lost'}`}>
+                    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-300 dark:text-slate-600">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </div>
+                </div>
+              ) : (
+                /* Normal: click to assign */
+                <>
+                  <button
+                    onClick={() => setShowAssignDropdown(v => !v)}
+                    className="flex items-center gap-2.5 w-full rounded-lg hover:bg-slate-50 dark:hover:bg-white/[.04] px-1 py-1 -mx-1 transition-colors group"
+                  >
+                    {amDisplayName ? (
+                      <>
+                        <Avatar
+                          name={amDisplayName}
+                          email={amUser?.email ?? undefined}
+                          src={amUser?.image ?? undefined}
+                          size={34}
+                        />
+                        <div className="text-left min-w-0 flex-1">
+                          <p className="text-[13px] font-semibold text-slate-800 dark:text-white truncate">{amDisplayName}</p>
+                          <p className="text-[11px] text-slate-400">Account Manager</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-[34px] h-[34px] rounded-full border-2 border-dashed border-slate-200 dark:border-white/[.12] flex items-center justify-center shrink-0">
+                          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-300 dark:text-slate-600">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+                          </svg>
+                        </div>
+                        <span className="text-[12px] text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
+                          Click to assign
+                        </span>
+                      </>
+                    )}
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-300 dark:text-slate-600 shrink-0 ml-auto">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+
+                  {/* Assign dropdown */}
+                  {showAssignDropdown && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.1] rounded-lg shadow-lg overflow-hidden animate-in fade-in-0 zoom-in-95 duration-100">
+                      {users.length === 0 ? (
+                        <div className="px-3 py-3 text-[11px] text-slate-400 italic text-center">No team members found</div>
+                      ) : (
+                        <div className="max-h-[180px] overflow-y-auto py-1">
+                          {amDisplayName && (
+                            <button
+                              onClick={() => handleAssignAM('')}
+                              className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-red-500 hover:bg-red-50 dark:hover:bg-red-500/[.08] transition-colors"
+                            >
+                              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                              Unassign
+                            </button>
+                          )}
+                          {users.map(u => (
+                            <button
+                              key={u.id}
+                              onClick={() => handleAssignAM(u.id)}
+                              className={cn(
+                                'flex items-center gap-2 w-full px-3 py-1.5 text-[12px] transition-colors',
+                                u.id === deal.assignedTo
+                                  ? 'text-primary bg-primary/[.06]'
+                                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06]'
+                              )}
+                            >
+                              <Avatar name={u.name || u.email} email={u.email ?? undefined} src={u.image ?? undefined} size={18} />
+                              <span className="truncate">{u.name || u.email}</span>
+                              {u.id === deal.assignedTo && (
+                                <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="ml-auto shrink-0"><polyline points="20 6 9 17 4 12" /></svg>
+                              )}
+                            </button>
+                          ))}
+                        </div>
                       )}
-                      {users.map(u => (
-                        <button
-                          key={u.id}
-                          onClick={() => handleAssignAM(u.id)}
-                          className={cn(
-                            'flex items-center gap-2 w-full px-3 py-1.5 text-[12px] transition-colors',
-                            u.id === deal.assignedTo
-                              ? 'text-primary bg-primary/[.06]'
-                              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06]'
-                          )}
-                        >
-                          <Avatar name={u.name || u.email} email={u.email ?? undefined} src={u.image ?? undefined} size={18} />
-                          <span className="truncate">{u.name || u.email}</span>
-                          {u.id === deal.assignedTo && (
-                            <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="ml-auto shrink-0"><polyline points="20 6 9 17 4 12" /></svg>
-                          )}
-                        </button>
-                      ))}
                     </div>
                   )}
-                </div>
+                </>
               )}
             </div>
           </SidebarSection>

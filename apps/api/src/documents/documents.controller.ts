@@ -72,6 +72,7 @@ export class DocumentsController {
     @UploadedFile() file: Express.Multer.File | undefined,
     @Body('dealId') dealId: string,
     @Body('authorId') authorId: string,
+    @Body('dealStage') dealStage?: string,
     @Headers('x-user-id') userId?: string,
   ) {
     if (!file) throw new BadRequestException('No file provided')
@@ -110,6 +111,9 @@ export class DocumentsController {
     const safeName = titleBase.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60)
     const storagePath = `deals/${dealId}/${bucket}/${timestamp}-${safeName}.${isTextNote ? 'md' : ext}`
 
+    const tags = [bucket, baseMime.split('/')[1] ?? ext]
+    if (dealStage) tags.push(`deal_stage:${dealStage}`)
+
     return this.documentsService.create(
       {
         dealId,
@@ -118,7 +122,7 @@ export class DocumentsController {
         title: titleBase,
         storagePath,
         content,
-        tags: [bucket, baseMime.split('/')[1] ?? ext],
+        tags,
       },
       userId ?? authorId,
     )

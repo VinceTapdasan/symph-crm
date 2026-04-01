@@ -161,6 +161,8 @@ export type CreateDocumentInput = {
   parentId?: string | null
   version?: number
   excerpt?: string
+  /** Stage tags appended at time of creation so the document shows a stage badge */
+  tags?: string[]
 }
 
 export function useCreateDocument(
@@ -182,16 +184,17 @@ export function useUpdateDocument(
 }
 
 export function useUploadDocumentFile(
-  options?: UseMutationOptions<ApiDocument[], Error, { dealId: string; authorId: string; files: File[] }>,
+  options?: UseMutationOptions<ApiDocument[], Error, { dealId: string; authorId: string; files: File[]; dealStage?: string }>,
 ) {
-  return useMutation<ApiDocument[], Error, { dealId: string; authorId: string; files: File[] }>({
-    mutationFn: async ({ dealId, authorId, files }) => {
+  return useMutation<ApiDocument[], Error, { dealId: string; authorId: string; files: File[]; dealStage?: string }>({
+    mutationFn: async ({ dealId, authorId, files, dealStage }) => {
       const results: ApiDocument[] = []
       for (const file of files) {
         const formData = new FormData()
         formData.append('file', file)
         formData.append('dealId', dealId)
         formData.append('authorId', authorId)
+        if (dealStage) formData.append('dealStage', dealStage)
         const doc = await api.upload<ApiDocument>('/documents/upload', formData)
         results.push(doc)
       }

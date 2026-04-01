@@ -77,6 +77,7 @@ function CardActionsMenu({
   const [showAdvanceTo, setShowAdvanceTo] = useState(false)
   const [showMoveTo, setShowMoveTo] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const isTerminal = currentStage === 'closed_won' || currentStage === 'closed_lost'
   const canAdvance = !!STAGE_ADVANCE_MAP[currentStage]
   const advanceTargets = getAdvanceTargets(currentStage)
   const moveBackTargets = getMoveBackTargets(currentStage)
@@ -105,31 +106,48 @@ function CardActionsMenu({
       </button>
       {open && (
         <div className="absolute right-0 top-7 z-50 min-w-[180px] bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.1] rounded-lg shadow-lg py-1 animate-in fade-in-0 zoom-in-95 duration-100">
-          {/* Assign */}
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowAssign(v => !v); setShowAdvanceTo(false); setShowMoveTo(false) }}
-            className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
-          >
-            <span className="flex items-center gap-2"><UserIcon size={12} /> Assign</span>
-            <ChevronRight size={11} className={cn('text-slate-400 transition-transform duration-150', showAssign && 'rotate-90')} />
-          </button>
-          {showAssign && (
-            <div className="border-t border-black/[.04] dark:border-white/[.06] max-h-[144px] overflow-y-auto">
-              {users.length === 0 ? (
-                <div className="px-3 py-2 text-[11px] text-slate-400 italic">No team members</div>
-              ) : (
-                users.map(u => (
-                  <button
-                    key={u.id}
-                    onClick={(e) => { e.stopPropagation(); setOpen(false); setShowAssign(false); onAssign(u.id, u.name || u.email) }}
-                    className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
-                  >
-                    <Avatar name={u.name || u.email} size={16} />
-                    {u.name || u.email}
-                  </button>
-                ))
-              )}
+          {/* Assign — locked for won/lost deals */}
+          {isTerminal ? (
+            <div
+              className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] text-slate-400 dark:text-slate-600 cursor-not-allowed select-none"
+              title="Cannot reassign AM — deal is won/lost"
+            >
+              <span className="flex items-center gap-2">
+                <UserIcon size={12} /> Assign
+              </span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 dark:text-slate-600">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
             </div>
+          ) : (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowAssign(v => !v); setShowAdvanceTo(false); setShowMoveTo(false) }}
+                className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+              >
+                <span className="flex items-center gap-2"><UserIcon size={12} /> Assign</span>
+                <ChevronRight size={11} className={cn('text-slate-400 transition-transform duration-150', showAssign && 'rotate-90')} />
+              </button>
+              {showAssign && (
+                <div className="border-t border-black/[.04] dark:border-white/[.06] max-h-[144px] overflow-y-auto">
+                  {users.length === 0 ? (
+                    <div className="px-3 py-2 text-[11px] text-slate-400 italic">No team members</div>
+                  ) : (
+                    users.map(u => (
+                      <button
+                        key={u.id}
+                        onClick={(e) => { e.stopPropagation(); setOpen(false); setShowAssign(false); onAssign(u.id, u.name || u.email) }}
+                        className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                      >
+                        <Avatar name={u.name || u.email} size={16} />
+                        {u.name || u.email}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </>
           )}
 
           {/* Advance (next stage, no confirmation, shows spinner) */}
