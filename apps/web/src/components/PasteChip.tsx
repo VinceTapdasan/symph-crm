@@ -4,9 +4,9 @@
  * PasteChip — Claude.ai-style paste card.
  *
  * When a user pastes bulk text, intercept it and show this chip instead of
- * dumping it inline. The chip shows a word-wrapped preview with a "PASTED"
- * badge at the bottom. Click to open PastePreviewModal with the full content.
- * X button (visible on hover) dismisses the chip.
+ * dumping it inline. The chip shows a compact word-wrapped preview with a
+ * "PASTED" badge at the bottom. Click to open PastePreviewModal with the full
+ * content. X button (visible on hover) dismisses the chip.
  */
 
 import { useEffect, useRef } from 'react'
@@ -20,25 +20,25 @@ type PasteChipProps = {
 }
 
 export function PasteChip({ text, onRemove, onClick }: PasteChipProps) {
-  // Up to ~280 chars of preview — enough for ~6 lines at this font size
-  const preview = text.slice(0, 280) + (text.length > 280 ? '…' : '')
+  // Up to ~180 chars of preview — ~4 compact lines
+  const preview = text.slice(0, 180) + (text.length > 180 ? '…' : '')
 
   return (
-    <div className="px-4 pt-3 pb-0">
-      <div className="relative inline-block max-w-[210px] group">
+    <div className="px-3 pt-2.5 pb-0">
+      <div className="relative inline-block max-w-[190px] group">
         {/* Card — clickable to expand */}
         <button
           type="button"
           onClick={onClick}
-          className="w-full text-left p-3 rounded-xl bg-slate-100 dark:bg-white/[.06] border border-black/[.08] dark:border-white/[.10] hover:border-black/20 dark:hover:border-white/20 transition-colors"
+          className="w-full text-left px-2.5 py-2 rounded-lg bg-slate-100 dark:bg-white/[.06] border border-black/[.08] dark:border-white/[.10] hover:border-black/20 dark:hover:border-white/20 transition-colors"
         >
           {/* Word-wrapped preview text */}
-          <p className="text-[12px] text-slate-500 dark:text-slate-400 leading-[1.55] line-clamp-6 break-words">
+          <p className="text-[11.5px] text-slate-500 dark:text-slate-400 leading-[1.5] line-clamp-4 break-words">
             {preview}
           </p>
           {/* PASTED badge */}
-          <div className="mt-2.5">
-            <span className="text-[9.5px] font-semibold tracking-[0.12em] uppercase text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-white/[.15] rounded px-1.5 py-0.5">
+          <div className="mt-2">
+            <span className="text-[9px] font-semibold tracking-[0.12em] uppercase text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-white/[.15] rounded px-1.5 py-0.5">
               PASTED
             </span>
           </div>

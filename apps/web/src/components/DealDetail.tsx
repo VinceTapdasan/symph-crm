@@ -177,8 +177,8 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
   const [addingNote, setAddingNote] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [viewingDoc, setViewingDoc] = useState<ApiDocument | null>(null)
-  const [notePasteChip, setNotePasteChip] = useState<string | null>(null)
-  const [showNotePastePreview, setShowNotePastePreview] = useState(false)
+  const [notePasteChips, setNotePasteChips] = useState<string[]>([])
+  const [notePastePreviewText, setNotePastePreviewText] = useState<string | null>(null)
   const [showAssignDropdown, setShowAssignDropdown] = useState(false)
   const assignRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -259,7 +259,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
   }, [dealId, patchStage, queryClient])
 
   const saveNote = useCreateDocument({
-    onSuccess: () => { setNoteText(''); setNotePasteChip(null); void refetchDocs() },
+    onSuccess: () => { setNoteText(''); setNotePasteChips([]); void refetchDocs() },
   })
 
   const uploadFiles = useUploadDocumentFile({
@@ -271,10 +271,9 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
   })
 
   const handleAddNote = useCallback(() => {
-    // Combine typed text + paste chip (if any)
-    const combined = notePasteChip
-      ? noteText.trim() ? `${noteText.trim()}\n\n${notePasteChip}` : notePasteChip
-      : noteText.trim()
+    // Join typed text + all paste chips
+    const parts = [...(noteText.trim() ? [noteText.trim()] : []), ...notePasteChips].filter(Boolean)
+    const combined = parts.join('\n\n')
     if (!combined || !deal || !userId) return
     const title = combined.split('\n')[0].slice(0, 100) || 'Note'
     setAddingNote(true)
@@ -282,13 +281,13 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
       { dealId, type: noteType, title, content: combined, authorId: userId },
       { onSettled: () => setAddingNote(false) },
     )
-  }, [noteText, notePasteChip, noteType, deal, dealId, userId, saveNote])
+  }, [noteText, notePasteChips, noteType, deal, dealId, userId, saveNote])
 
   const handleNotePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const text = e.clipboardData.getData('text/plain')
     if (text && (text.length > 80 || text.includes('\n'))) {
       e.preventDefault()
-      setNotePasteChip(text)
+      setNotePasteChips(prev => [...prev, text])
     }
   }, [])
 
@@ -376,6 +375,11 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
       {/* Document viewer modal */}
       {viewingDoc && (
         <DocumentViewerModal doc={viewingDoc} onClose={() => setViewingDoc(null)} />
+      )}
+
+      {/* Paste preview modal — ESC-closable, shows full pasted content */}
+      {notePastePreviewText && (
+        <PastePreviewModal text={notePastePreviewText} onClose={() => setNotePastePreviewText(null)} />
       )}
 
       {/* Back */}
@@ -492,21 +496,24 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
               {/* Note input */}
               <div className="p-4 border-b border-black/[.05] dark:border-white/[.06]">
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Add Note</p>
-                {/* Paste chip — shown when bulk text is pasted */}
-                {notePasteChip && (
-                  <div className="mb-2 -mx-1">
-                    <PasteChip
-                      text={notePasteChip}
-                      onRemove={() => setNotePasteChip(null)}
-                      onClick={() => setShowNotePastePreview(true)}
-                    />
+                {/* Paste chips — stacked when multiple pastes occur */}
+                {notePasteChips.length > 0 && (
+                  <div className="mb-2 flex flex-wrap -mx-1">
+                    {notePasteChips.map((chip, i) => (
+                      <PasteChip
+                        key={i}
+                        text={chip}
+                        onRemove={() => setNotePasteChips(prev => prev.filter((_, idx) => idx !== i))}
+                        onClick={() => setNotePastePreviewText(chip)}
+                      />
+                    ))}
                   </div>
                 )}
                 <textarea
                   value={noteText}
                   onChange={e => setNoteText(e.target.value)}
                   onPaste={handleNotePaste}
-                  placeholder={notePasteChip ? 'Add context (optional)…' : 'Add notes, paste a transcript, drop a link…'}
+                  placeholder={notePasteChips.length > 0 ? 'Add context (optional)…' : 'Add notes, paste a transcript, drop a link…'}
                   rows={3}
                   className="w-full text-[13px] text-slate-800 dark:text-white bg-slate-50 dark:bg-white/[.04] border border-black/[.06] dark:border-white/[.08] rounded-lg px-3 py-2.5 placeholder:text-slate-400 resize-none outline-none focus:outline-none focus:border-primary/40 transition-colors"
                 />
@@ -525,7 +532,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                   </Select>
                   <button
                     onClick={handleAddNote}
-                    disabled={(!noteText.trim() && !notePasteChip) || addingNote}
+                    disabled={(!noteText.trim() && notePasteChips.length === 0) || addingNote}
                     className="px-4 py-1.5 rounded-lg bg-primary text-white text-[12px] font-semibold disabled:opacity-40 hover:bg-primary/90 transition-colors"
                   >
                     {addingNote ? 'Saving\u2026' : 'Add'}

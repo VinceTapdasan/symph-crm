@@ -287,9 +287,9 @@ export function Chat({ dealId }: { dealId?: string }) {
   // Live AnalyserNode — passed to AudioVisualizer while recording
   const [liveAnalyser, setLiveAnalyser] = useState<AnalyserNode | null>(null)
 
-  // Paste chip — bulk text pastes are captured as a chip, not inserted inline
-  const [pasteChip, setPasteChip] = useState<string | null>(null)
-  const [showPastePreview, setShowPastePreview] = useState(false)
+  // Paste chips — each bulk paste creates a new chip (array, not singular)
+  const [pasteChips, setPasteChips] = useState<string[]>([])
+  const [pastePreviewText, setPastePreviewText] = useState<string | null>(null)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -397,11 +397,11 @@ export function Chat({ dealId }: { dealId?: string }) {
       return
     }
 
-    // Bulk text paste → chip (replaces any previous chip)
+    // Bulk text paste → add a new chip (stacks, doesn't replace)
     const text = e.clipboardData.getData('text/plain')
     if (text && (text.length > 80 || text.includes('\n'))) {
       e.preventDefault()
-      setPasteChip(text)
+      setPasteChips(prev => [...prev, text])
     }
   }, [setImageAttachment])
 
@@ -503,7 +503,7 @@ export function Chat({ dealId }: { dealId?: string }) {
     setMessages(prev => [...prev, userMsg])
     setInput('')
     setPendingAttachment(null)
-    setPasteChip(null)
+    setPasteChips([])
     if (attachment?.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
     setTyping(true)
     setApiError(null)
@@ -642,10 +642,9 @@ export function Chat({ dealId }: { dealId?: string }) {
 
   function handleSubmit() {
     const trimmed = input.trim()
-    // If there's a paste chip, append it to (or use it as) the message text
-    const textToSend = pasteChip
-      ? trimmed ? `${trimmed}\n\n${pasteChip}` : pasteChip
-      : trimmed
+    // Join all paste chips + typed text into one message
+    const parts = [...(trimmed ? [trimmed] : []), ...pasteChips].filter(Boolean)
+    const textToSend = parts.join('\n\n')
     if ((!textToSend && !pendingAttachment) || typing) return
     sendMessage(textToSend, pendingAttachment ?? undefined)
   }
@@ -657,7 +656,7 @@ export function Chat({ dealId }: { dealId?: string }) {
     }
   }
 
-  const canSubmit = (input.trim() || pendingAttachment || pasteChip) && !typing
+  const canSubmit = (input.trim() || pendingAttachment || pasteChips.length > 0) && !typing
 
   // ── Input box ────────────────────────────────────────────────────────────
 
@@ -685,16 +684,21 @@ export function Chat({ dealId }: { dealId?: string }) {
           <AttachmentPreview attachment={pendingAttachment} onRemove={clearAttachment} />
         )}
 
-        {/* Paste chip */}
-        {pasteChip && !recording && (
-          <PasteChip
-            text={pasteChip}
-            onRemove={() => setPasteChip(null)}
-            onClick={() => setShowPastePreview(true)}
-          />
+        {/* Paste chips — stacked, each independently removable */}
+        {pasteChips.length > 0 && !recording && (
+          <div className="flex flex-wrap gap-x-0">
+            {pasteChips.map((chip, i) => (
+              <PasteChip
+                key={i}
+                text={chip}
+                onRemove={() => setPasteChips(prev => prev.filter((_, idx) => idx !== i))}
+                onClick={() => setPastePreviewText(chip)}
+              />
+            ))}
+          </div>
         )}
 
-        <div className={cn('px-4 pt-4 pb-2', (pendingAttachment || pasteChip || recording) && 'pt-2')}>
+        <div className={cn('px-4 pt-4 pb-2', (pendingAttachment || pasteChips.length > 0 || recording) && 'pt-3')}>
           <textarea
             ref={inputRef}
             value={input}
@@ -846,8 +850,8 @@ export function Chat({ dealId }: { dealId?: string }) {
             </div>
           </div>
         </div>
-        {showPastePreview && pasteChip && (
-          <PastePreviewModal text={pasteChip} onClose={() => setShowPastePreview(false)} />
+        {pastePreviewText && (
+          <PastePreviewModal text={pastePreviewText} onClose={() => setPastePreviewText(null)} />
         )}
       </>
     )
@@ -895,8 +899,8 @@ export function Chat({ dealId }: { dealId?: string }) {
         )}
         {inputBox}
       </div>
-      {showPastePreview && pasteChip && (
-        <PastePreviewModal text={pasteChip} onClose={() => setShowPastePreview(false)} />
+      {pastePreviewText && (
+        <PastePreviewModal text={pastePreviewText} onClose={() => setPastePreviewText(null)} />
       )}
     </div>
   )
