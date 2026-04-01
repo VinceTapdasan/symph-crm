@@ -7,7 +7,7 @@
  * detect navigation _start_ (not just completion). Route change completion is
  * detected via usePathname() + useSearchParams().
  *
- * Light mode: slate-900 bar.  Dark mode: white bar.
+ * Uses the app's primary color in both light and dark mode.
  *
  * Add <TopLoader /> inside <Providers> (above {children}) so it sits at the top
  * of every page without being re-mounted on navigation.
@@ -138,7 +138,7 @@ function TopLoaderInner() {
               ? 'width 250ms ease-in-out'
               : 'none',
         }}
-        className="bg-slate-900 dark:bg-white"
+        className="bg-primary"
       />
     </div>
   )

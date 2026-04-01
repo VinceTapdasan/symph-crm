@@ -397,34 +397,30 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
             </div>
           </div>
 
-          {/* Right: Value + stage + advance */}
-          <div className="flex items-center gap-3 sm:shrink-0">
-            <div className="sm:text-right">
-              <div className="text-[22px] sm:text-[26px] font-bold tabular-nums text-primary leading-tight">
-                {formatCurrencyFull(deal.value)}
-              </div>
-              <div className="mt-0.5">
-                <span
-                  className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ background: `${stageColor}18`, color: stageColor }}
-                >
-                  {stageLabel}
-                </span>
-              </div>
+          {/* Right: Value → stage → advance (stacked, right-aligned) */}
+          <div className="flex flex-col items-end gap-1.5 sm:shrink-0">
+            <div className="text-[22px] sm:text-[26px] font-bold tabular-nums text-primary leading-tight">
+              {formatCurrencyFull(deal.value)}
             </div>
+            <span
+              className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+              style={{ background: `${stageColor}18`, color: stageColor }}
+            >
+              {stageLabel}
+            </span>
             {nextStage && (
               <button
                 onClick={handleAdvance}
                 disabled={patchStage.isPending}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-[13px] text-white transition-opacity disabled:opacity-60 shrink-0"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold text-[12px] text-white transition-opacity disabled:opacity-60 shrink-0 mt-0.5"
                 style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
               >
                 {patchStage.isPending ? (
-                  <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                 ) : (
                   <>
                     Advance
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                       <polyline points="9 18 15 12 9 6" />
                     </svg>
                   </>
