@@ -427,6 +427,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [amFilter, setAmFilter] = useState<string | null>(null)
   const [amDropdownOpen, setAmDropdownOpen] = useState(false)
+  const [amSearch, setAmSearch] = useState('')
   const [deleteConfirmDealId, setDeleteConfirmDealId] = useState<string | null>(null)
   const [moveConfirm, setMoveConfirm] = useState<{ dealId: string; targetStage: string; dealTitle: string } | null>(null)
   const [advancingDealId, setAdvancingDealId] = useState<string | null>(null)
@@ -475,37 +476,49 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   useEffect(() => {
     if (!amDropdownOpen) return
     function handleClick(e: MouseEvent) {
-      if (amDropdownRef.current && !amDropdownRef.current.contains(e.target as Node)) setAmDropdownOpen(false)
+      if (amDropdownRef.current && !amDropdownRef.current.contains(e.target as Node)) {
+        setAmDropdownOpen(false)
+        setAmSearch('')
+      }
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [amDropdownOpen])
 
-  const amNames = useMemo(() => {
-    const names = new Set<string>()
+  // amOptions: unique AMs across all deals, UUIDs resolved to display names
+  const amOptions = useMemo(() => {
+    const ids = new Set<string>()
     for (const d of deals) {
-      if (d.assignedTo) names.add(d.assignedTo)
+      if (d.assignedTo) ids.add(d.assignedTo)
     }
-    return Array.from(names).sort()
-  }, [deals])
+    return Array.from(ids)
+      .map(id => {
+        const user = users.find(u => u.id === id)
+        return { id, label: user?.name ?? user?.email ?? id }
+      })
+      .sort((a, b) => a.label.localeCompare(b.label))
+  }, [deals, users])
 
   const filteredDeals = useMemo(() => {
     let result = deals
     if (search.trim()) {
       const q = search.toLowerCase()
-      result = result.filter(d =>
-        d.title.toLowerCase().includes(q) ||
-        d.stage.toLowerCase().includes(q) ||
-        (d.servicesTags ?? []).some(s => s.toLowerCase().includes(q)) ||
-        (d.assignedTo || '').toLowerCase().includes(q) ||
-        (companyMap.get(d.companyId) || '').toLowerCase().includes(q)
-      )
+      result = result.filter(d => {
+        const amLabel = amOptions.find(o => o.id === d.assignedTo)?.label ?? ''
+        return (
+          d.title.toLowerCase().includes(q) ||
+          d.stage.toLowerCase().includes(q) ||
+          (d.servicesTags ?? []).some(s => s.toLowerCase().includes(q)) ||
+          amLabel.toLowerCase().includes(q) ||
+          (companyMap.get(d.companyId) || '').toLowerCase().includes(q)
+        )
+      })
     }
     if (amFilter) {
       result = result.filter(d => d.assignedTo === amFilter)
     }
     return result
-  }, [deals, search, amFilter, companyMap])
+  }, [deals, search, amFilter, amOptions, companyMap])
 
   const handleDeleteDeal = useCallback((dealId: string) => {
     setDeleteConfirmDealId(dealId)
@@ -772,7 +785,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
           {/* AM filter dropdown */}
           <div ref={amDropdownRef} className="relative">
             <button
-              onClick={() => setAmDropdownOpen(o => !o)}
+              onClick={() => { setAmDropdownOpen(o => !o); setAmSearch('') }}
               className={cn(
                 'bg-white dark:bg-[#1e1e21] border rounded-lg px-3 py-[5px] text-[12px] font-medium hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors duration-150 cursor-pointer flex items-center gap-1.5',
                 amFilter
@@ -780,32 +793,50 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                   : 'border-black/[.08] dark:border-white/[.08] text-slate-700 dark:text-slate-300'
               )}
             >
-              {amFilter || 'All AMs'}
+              {amFilter ? (amOptions.find(o => o.id === amFilter)?.label ?? 'AM') : 'All AMs'}
               <ChevronDown size={12} />
             </button>
             {amDropdownOpen && (
-              <div className="absolute right-0 top-9 z-50 min-w-[160px] bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.1] rounded-lg shadow-lg py-1 animate-in fade-in-0 zoom-in-95 duration-100 max-h-[240px] overflow-y-auto">
-                <button
-                  onClick={() => { setAmFilter(null); setAmDropdownOpen(false) }}
-                  className={cn(
-                    'w-full px-3 py-1.5 text-[12px] text-left hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors',
-                    !amFilter ? 'font-semibold text-primary' : 'text-slate-700 dark:text-slate-300'
-                  )}
-                >
-                  All AMs
-                </button>
-                {amNames.map(name => (
+              <div className="absolute right-0 top-9 z-50 w-[200px] bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.1] rounded-lg shadow-lg animate-in fade-in-0 zoom-in-95 duration-100 flex flex-col overflow-hidden">
+                {/* Search */}
+                <div className="px-2.5 py-2 border-b border-black/[.06] dark:border-white/[.07] shrink-0">
+                  <input
+                    autoFocus
+                    value={amSearch}
+                    onChange={e => setAmSearch(e.target.value)}
+                    placeholder="Search AMs…"
+                    className="w-full text-[12px] bg-slate-50 dark:bg-white/[.05] border border-black/[.06] dark:border-white/[.07] rounded-md px-2.5 py-1.5 outline-none placeholder:text-slate-400 text-slate-800 dark:text-white"
+                  />
+                </div>
+                <div className="overflow-y-auto max-h-[200px] py-1">
                   <button
-                    key={name}
-                    onClick={() => { setAmFilter(name); setAmDropdownOpen(false) }}
+                    onClick={() => { setAmFilter(null); setAmDropdownOpen(false); setAmSearch('') }}
                     className={cn(
                       'w-full px-3 py-1.5 text-[12px] text-left hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors',
-                      amFilter === name ? 'font-semibold text-primary' : 'text-slate-700 dark:text-slate-300'
+                      !amFilter ? 'font-semibold text-primary' : 'text-slate-700 dark:text-slate-300'
                     )}
                   >
-                    {name}
+                    All AMs
                   </button>
-                ))}
+                  {amOptions
+                    .filter(o => o.label.toLowerCase().includes(amSearch.toLowerCase()))
+                    .map(o => (
+                      <button
+                        key={o.id}
+                        onClick={() => { setAmFilter(o.id); setAmDropdownOpen(false); setAmSearch('') }}
+                        className={cn(
+                          'w-full px-3 py-1.5 text-[12px] text-left hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors',
+                          amFilter === o.id ? 'font-semibold text-primary' : 'text-slate-700 dark:text-slate-300'
+                        )}
+                      >
+                        {o.label}
+                      </button>
+                    ))
+                  }
+                  {amOptions.filter(o => o.label.toLowerCase().includes(amSearch.toLowerCase())).length === 0 && (
+                    <p className="px-3 py-2 text-[11px] text-slate-400">No AMs found</p>
+                  )}
+                </div>
               </div>
             )}
           </div>
