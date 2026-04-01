@@ -53,6 +53,8 @@ interface DataTableProps<TData, TValue> {
   /** Placeholder shown when table is empty */
   emptyMessage?: string
   emptyDescription?: string
+  /** Called when a row is clicked */
+  onRowClick?: (row: TData) => void
 }
 
 export function DataTable<TData, TValue>({
@@ -61,6 +63,7 @@ export function DataTable<TData, TValue>({
   globalFilter,
   emptyMessage = 'No results found',
   emptyDescription,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -105,7 +108,9 @@ export function DataTable<TData, TValue>({
               key={row.id}
               className={cn(
                 'hover:bg-slate-50/50 dark:hover:bg-white/[.02] transition-colors',
+                onRowClick && 'cursor-pointer',
               )}
+              onClick={onRowClick ? () => onRowClick(row.original) : undefined}
             >
               {row.getVisibleCells().map(cell => (
                 <TableCell key={cell.id}>

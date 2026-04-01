@@ -22,12 +22,14 @@ import {
   STAGE_ADVANCE_MAP, CLOSED_STAGE_IDS,
 } from '@/lib/constants'
 import { Avatar } from './Avatar'
+import { CreateDealModal } from './CreateDealModal'
+import { CreateBrandModal } from './CreateBrandModal'
 import { queryKeys } from '@/lib/query-keys'
 import { usePatchDealStage, useDeleteDeal, useUpdateDeal } from '@/lib/hooks/mutations'
 import { useUser } from '@/lib/hooks/use-user'
 import {
   MoreHorizontal, Search, X, Trash2, ExternalLink,
-  ChevronDown, ChevronRight, User as UserIcon,
+  ChevronDown, ChevronRight, User as UserIcon, Paperclip, Plus,
 } from 'lucide-react'
 
 type PipelineProps = {
@@ -322,14 +324,27 @@ function DealCard({
         </div>
       )}
 
-      {/* Value + AM */}
+      {/* Value + AM + doc indicator */}
       <div className="flex items-center justify-between pt-2 border-t border-black/[.05] dark:border-white/[.08]">
         <span className="text-[15px] font-bold tabular-nums" style={{ color: colColor }}>
           {deal.value ? formatPeso(parseFloat(deal.value)) : '—'}
         </span>
-        <div className="flex items-center gap-1">
-          <Avatar name={amName} size={20} />
-          <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">{amName}</span>
+        <div className="flex items-center gap-2">
+          {(deal.documentCount ?? 0) > 0 && (
+            <div
+              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[.08]"
+              title={`${deal.documentCount} resource${(deal.documentCount ?? 0) !== 1 ? 's' : ''} attached`}
+            >
+              <Paperclip size={10} className="text-slate-400 shrink-0" />
+              <span className="text-[10px] font-medium text-slate-500 tabular-nums">
+                {deal.documentCount}
+              </span>
+            </div>
+          )}
+          <div className="flex items-center gap-1">
+            <Avatar name={amName} size={20} />
+            <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">{amName}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -413,6 +428,8 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   const [deleteConfirmDealId, setDeleteConfirmDealId] = useState<string | null>(null)
   const [moveConfirm, setMoveConfirm] = useState<{ dealId: string; targetStage: string; dealTitle: string } | null>(null)
   const [advancingDealId, setAdvancingDealId] = useState<string | null>(null)
+  const [showCreateDeal, setShowCreateDeal] = useState(false)
+  const [showCreateBrand, setShowCreateBrand] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const amDropdownRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
@@ -665,6 +682,27 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      {/* Modals */}
+      {showCreateDeal && (
+        <CreateDealModal
+          companies={companies}
+          onClose={() => setShowCreateDeal(false)}
+          onCreated={() => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.deals.all })
+            setShowCreateDeal(false)
+          }}
+        />
+      )}
+      {showCreateBrand && (
+        <CreateBrandModal
+          onClose={() => setShowCreateBrand(false)}
+          onCreated={() => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.companies.all })
+            setShowCreateBrand(false)
+          }}
+        />
+      )}
+
       {/* Stats + actions */}
       <div className="flex items-center justify-between gap-2 px-4 py-2.5 shrink-0">
         {isLoading ? (
@@ -708,6 +746,25 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
             >
               <Search size={12} /> Search
             </button>
+          )}
+
+          {/* New Deal / New Brand (sales only) */}
+          {isSales && (
+            <>
+              <button
+                onClick={() => setShowCreateBrand(true)}
+                className="bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.08] rounded-lg px-3 py-[5px] text-[12px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors flex items-center gap-1.5"
+              >
+                <Plus size={12} /> Brand
+              </button>
+              <button
+                onClick={() => setShowCreateDeal(true)}
+                className="rounded-lg px-3 py-[5px] text-[12px] font-medium text-white transition-colors flex items-center gap-1.5"
+                style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
+              >
+                <Plus size={12} /> Deal
+              </button>
+            </>
           )}
 
           {/* AM filter dropdown */}

@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common'
-import { eq, desc, and, ilike, gte, lte } from 'drizzle-orm'
-import { deals } from '@symph-crm/database'
+import { eq, desc, and, ilike, gte, lte, inArray, isNull, count, sql } from 'drizzle-orm'
+import { deals, documents, users } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
 import { AuditLogsService } from '../audit-logs/audit-logs.service'
@@ -35,7 +35,40 @@ export class DealsService {
       ? this.db.select().from(deals).where(and(...conditions)).orderBy(desc(deals.createdAt)).limit(limit)
       : this.db.select().from(deals).orderBy(desc(deals.createdAt)).limit(limit)
 
-    return query
+    const rawDeals = await query
+    if (rawDeals.length === 0) return []
+
+    // Batch-fetch document counts for all returned deal IDs
+    const dealIds = rawDeals.map(d => d.id)
+    const docCounts = await this.db
+      .select({ dealId: documents.dealId, cnt: count() })
+      .from(documents)
+      .where(and(
+        inArray(documents.dealId, dealIds as [string, ...string[]]),
+        isNull(documents.deletedAt),
+      ))
+      .groupBy(documents.dealId)
+
+    const docCountMap = new Map(docCounts.map(r => [r.dealId, r.cnt]))
+
+    // Batch-fetch user names for all unique createdBy values
+    const creatorIds = [
+      ...new Set(rawDeals.map(d => d.createdBy).filter((id): id is string => !!id)),
+    ]
+    const userRows = creatorIds.length > 0
+      ? await this.db
+          .select({ id: users.id, name: users.name })
+          .from(users)
+          .where(inArray(users.id, creatorIds as [string, ...string[]]))
+      : []
+
+    const userNameMap = new Map(userRows.map(u => [u.id, u.name]))
+
+    return rawDeals.map(d => ({
+      ...d,
+      documentCount: docCountMap.get(d.id) ?? 0,
+      createdByName: d.createdBy ? (userNameMap.get(d.createdBy) ?? null) : null,
+    }))
   }
 
   async findByCompany(companyId: string) {

@@ -90,17 +90,15 @@ export class DocumentsService {
       .values({ ...rest, storagePath, excerpt, wordCount })
       .returning()
 
-    // Audit logging for proposal documents
-    if (doc.type === 'proposal') {
-      this.auditLogs.log({
-        action: 'create',
-        auditType: 'proposal_created',
-        entityType: 'proposal',
-        entityId: doc.id,
-        performedBy: performedBy ?? rest.authorId ?? undefined,
-        details: { title: doc.title, dealId: doc.dealId },
-      }).catch(() => {})
-    }
+    // Audit every document creation (proposals get a distinct auditType)
+    this.auditLogs.log({
+      action: 'create',
+      auditType: doc.type === 'proposal' ? 'proposal_created' : 'document_created',
+      entityType: doc.type === 'proposal' ? 'proposal' : 'document',
+      entityId: doc.id,
+      performedBy: performedBy ?? rest.authorId ?? undefined,
+      details: { title: doc.title, type: doc.type, dealId: doc.dealId },
+    }).catch(() => {})
 
     return doc
   }
@@ -134,15 +132,19 @@ export class DocumentsService {
       .where(eq(documents.id, id))
       .returning()
 
-    // Audit logging for proposal documents
-    if (doc?.type === 'proposal') {
+    // Audit every document update (proposals get a distinct auditType)
+    if (doc) {
       this.auditLogs.log({
         action: 'update',
-        auditType: 'proposal_updated',
-        entityType: 'proposal',
+        auditType: doc.type === 'proposal' ? 'proposal_updated' : 'document_updated',
+        entityType: doc.type === 'proposal' ? 'proposal' : 'document',
         entityId: id,
         performedBy: performedBy ?? undefined,
-        details: { title: doc.title, fields: Object.keys(rest).filter(k => k !== 'updatedAt') },
+        details: {
+          title: doc.title,
+          type: doc.type,
+          fields: Object.keys(rest).filter(k => k !== 'updatedAt'),
+        },
       }).catch(() => {})
     }
 

@@ -24,6 +24,10 @@ export type ApiDeal = {
   closedReason: string | null
   createdAt: string
   updatedAt?: string
+  /** Number of documents attached to this deal (injected by deals.service findAll) */
+  documentCount?: number
+  /** Display name of the user who created this deal (injected by deals.service findAll) */
+  createdByName?: string | null
 }
 
 /** Extended deal returned by /deals/:id — includes relations */
@@ -52,6 +56,8 @@ export type ApiCompanyDetail = ApiCompany & {
   hqLocation: string | null
   logoUrl: string | null
   createdAt: string
+  /** User ID who created this company/brand — returned by the API */
+  createdBy?: string | null
 }
 
 // ── Users ────────────────────────────────────────────────────────────────────

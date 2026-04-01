@@ -2,23 +2,34 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useGetCompanies, useGetDeals } from '@/lib/hooks/queries'
+import { useGetCompanies, useGetDeals, useGetUsers } from '@/lib/hooks/queries'
 import { Input } from '@/components/ui/input'
 import { getInitials, getBrandColor, formatDealValue, totalNumericValue } from '@/lib/utils'
 import { STAGE_DISPLAY, STAGE_COLORS, STAGE_DOT, CLOSED_STAGE_IDS } from '@/lib/constants'
 import type { ApiCompanyDetail, ApiDeal } from '@/lib/types'
+import type { ColumnDef } from '@tanstack/react-table'
+import { DataTable, SortableHeader } from './ui/data-table'
 import { Avatar } from './Avatar'
 import { EmptyState } from './EmptyState'
 import { CreateBrandModal } from './CreateBrandModal'
 import { CreateDealModal } from './CreateDealModal'
 import { DealsGraph } from './DealsGraph'
-import { ChevronsUpDown, ChevronsDownUp } from 'lucide-react'
+import { ChevronsUpDown, ChevronsDownUp, Paperclip } from 'lucide-react'
 import { useUser } from '@/lib/hooks/use-user'
 import { useEscapeKey } from '@/lib/hooks/use-escape-key'
 
-type ViewMode = 'list' | 'graph'
+type ViewMode = 'list' | 'table' | 'graph'
 
-// --- Sub-components ---
+// ── DataTable brand row type ──────────────────────────────────────────────────
+
+type BrandTableRow = {
+  company: ApiCompanyDetail
+  color: string
+  dealCount: number
+  documentCount: number
+  totalValue: number
+  createdByName: string | null
+}
 
 type BrandGroup = {
   company: ApiCompanyDetail
@@ -157,6 +168,127 @@ function BrandDetailModal({
         </div>
       </div>
     </div>
+  )
+}
+
+// ── BrandsDataTable ───────────────────────────────────────────────────────────
+
+function BrandsDataTable({
+  rows,
+  onRowClick,
+  search,
+}: {
+  rows: BrandTableRow[]
+  onRowClick: (row: BrandTableRow) => void
+  search: string
+}) {
+  const columns: ColumnDef<BrandTableRow>[] = [
+    {
+      id: 'brand',
+      accessorFn: r => r.company.name,
+      header: ({ column }) => <SortableHeader column={column}>Brand</SortableHeader>,
+      cell: ({ row }) => {
+        const r = row.original
+        return (
+          <div className="flex items-center gap-2.5 py-0.5">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[12px] font-bold shrink-0"
+              style={{ background: `${r.color}18`, color: r.color }}
+            >
+              {getInitials(r.company.name)}
+            </div>
+            <div className="min-w-0">
+              <div className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">
+                {r.company.name}
+              </div>
+              {(r.company.industry || r.company.domain) && (
+                <div className="text-[11px] text-slate-400 truncate">
+                  {r.company.industry || r.company.domain}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      },
+      size: 240,
+    },
+    {
+      id: 'createdBy',
+      accessorFn: r => r.createdByName ?? '—',
+      header: ({ column }) => <SortableHeader column={column}>Created By</SortableHeader>,
+      cell: ({ getValue }) => {
+        const name = getValue<string>()
+        return (
+          <div className="flex items-center gap-1.5">
+            {name !== '—' && <Avatar name={name} size={20} />}
+            <span className="text-[12px] text-slate-700 dark:text-slate-300">{name}</span>
+          </div>
+        )
+      },
+      size: 160,
+    },
+    {
+      id: 'dealCount',
+      accessorKey: 'dealCount',
+      header: ({ column }) => <SortableHeader column={column}>Deals</SortableHeader>,
+      cell: ({ getValue }) => (
+        <span className="text-[12px] font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
+          {getValue<number>()}
+        </span>
+      ),
+      size: 80,
+    },
+    {
+      id: 'documentCount',
+      accessorKey: 'documentCount',
+      header: ({ column }) => (
+        <SortableHeader column={column}>
+          <Paperclip size={12} className="shrink-0" />
+          Resources
+        </SortableHeader>
+      ),
+      cell: ({ getValue }) => {
+        const n = getValue<number>()
+        return (
+          <div className="flex items-center gap-1">
+            {n > 0 ? (
+              <span className="text-[12px] font-semibold text-primary tabular-nums">{n}</span>
+            ) : (
+              <span className="text-[12px] text-slate-300 dark:text-slate-600">—</span>
+            )}
+          </div>
+        )
+      },
+      size: 100,
+    },
+    {
+      id: 'totalValue',
+      accessorKey: 'totalValue',
+      header: ({ column }) => <SortableHeader column={column}>Pipeline Value</SortableHeader>,
+      cell: ({ getValue }) => {
+        const v = getValue<number>()
+        return (
+          <span
+            className="text-[13px] font-semibold tabular-nums"
+            style={{ color: v > 0 ? undefined : undefined }}
+          >
+            {v > 0 ? formatDealValue(String(v)) : '—'}
+          </span>
+        )
+      },
+      size: 140,
+    },
+  ]
+
+  return (
+    <DataTable
+      columns={columns}
+      data={rows}
+      globalFilter={search}
+      onRowClick={onRowClick}
+      emptyMessage="No brands found"
+      emptyDescription="Try adjusting your search"
+    />
   )
 }
 
@@ -322,8 +454,16 @@ export function Deals({ onOpenDeal }: DealsProps) {
 
   const { data: companies = [], isLoading: loadingCompanies } = useGetCompanies()
   const { data: deals = [], isLoading: loadingDeals } = useGetDeals()
+  const { data: users = [] } = useGetUsers()
 
   const isLoading = loadingCompanies || loadingDeals
+
+  // Map userId → display name for Created By column
+  const userNameMap = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const u of users) if (u.name) m.set(u.id, u.name)
+    return m
+  }, [users])
 
   const companyMap = useMemo(() => {
     const m = new Map<string, ApiCompanyDetail>()
@@ -377,6 +517,27 @@ export function Deals({ onOpenDeal }: DealsProps) {
 
     return result.sort((a, b) => b.totalValue - a.totalValue)
   }, [deals, companyMap])
+
+  // ── DataTable brand rows ─────────────────────────────────────────────────
+  const brandTableRows = useMemo<BrandTableRow[]>(() => {
+    return groups.map(g => ({
+      company: g.company,
+      color: g.color,
+      dealCount: g.deals.length,
+      documentCount: g.deals.reduce((sum, d) => sum + (d.documentCount ?? 0), 0),
+      totalValue: g.totalValue,
+      createdByName: g.company.createdBy ? (userNameMap.get(g.company.createdBy) ?? null) : null,
+    }))
+  }, [groups, userNameMap])
+
+  const filteredTableRows = useMemo<BrandTableRow[]>(() => {
+    if (!search.trim()) return brandTableRows
+    const q = search.toLowerCase()
+    return brandTableRows.filter(r =>
+      r.company.name.toLowerCase().includes(q) ||
+      (r.createdByName ?? '').toLowerCase().includes(q)
+    )
+  }, [brandTableRows, search])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return groups
@@ -481,6 +642,15 @@ export function Deals({ onOpenDeal }: DealsProps) {
                 List
               </button>
               <button
+                onClick={() => setViewMode('table')}
+                className={`h-[26px] px-2.5 rounded-lg text-[12px] font-medium transition-all flex items-center gap-1.5 ${viewMode === 'table' ? 'bg-white dark:bg-[#1e1e21] text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'}`}
+              >
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="3" y1="15" x2="21" y2="15" /><line x1="9" y1="9" x2="9" y2="21" />
+                </svg>
+                Table
+              </button>
+              <button
                 onClick={() => setViewMode('graph')}
                 className={`h-[26px] px-2.5 rounded-lg text-[12px] font-medium transition-all flex items-center gap-1.5 ${viewMode === 'graph' ? 'bg-white dark:bg-[#1e1e21] text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'}`}
               >
@@ -564,6 +734,17 @@ export function Deals({ onOpenDeal }: DealsProps) {
             <EmptyState
               title="No deals yet"
               description="Create a brand and add your first deal to start tracking your pipeline"
+            />
+          </div>
+        )}
+
+        {/* Table view */}
+        {!isLoading && deals.length > 0 && viewMode === 'table' && (
+          <div className="flex-1 overflow-y-auto bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+            <BrandsDataTable
+              rows={filteredTableRows}
+              onRowClick={(row) => setBrandModalId(row.company.id)}
+              search={search}
             />
           </div>
         )}
