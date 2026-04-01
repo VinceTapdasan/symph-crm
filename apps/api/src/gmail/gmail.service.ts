@@ -246,9 +246,13 @@ export class GmailService {
     }
 
     const now = new Date()
-    const afterDate = `${now.getFullYear()}/${now.getMonth() + 1}/1`
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    // Gmail query date format: YYYY/M/D (no leading zeros)
+    const afterDate = `${monthStart.getFullYear()}/${monthStart.getMonth() + 1}/${monthStart.getDate()}`
     const fromQuery = INBOX_SENDERS.map(e => `from:${e}`).join(' OR ')
     const query = `(${fromQuery}) after:${afterDate}`
+
+    this.logger.log(`Gmail query: "${query}"`)
 
     try {
       const gmail = google.gmail({ version: 'v1', auth: oauth2 })
@@ -259,12 +263,18 @@ export class GmailService {
         maxResults: 100,
       })
 
+      this.logger.log(`Gmail thread list returned ${listRes.data.threads?.length ?? 0} threads`)
+
       const threadItems = listRes.data.threads ?? []
       if (threadItems.length === 0) {
+        this.logger.log('No threads found in query results')
         return { threads: [], fetchedAt: new Date().toISOString() }
       }
 
+      this.logger.log(`Processing ${threadItems.length} threads...`)
       const threads: GmailThread[] = []
+      let processedCount = 0
+      let filteredOutCount = 0
 
       await Promise.allSettled(
         threadItems.map(async (item) => {
@@ -276,7 +286,12 @@ export class GmailService {
             })
 
             const rawMessages = threadRes.data.messages ?? []
-            if (rawMessages.length === 0) return
+            if (rawMessages.length === 0) {
+              this.logger.debug(`Thread ${item.id}: no messages`)
+              return
+            }
+
+            this.logger.debug(`Thread ${item.id}: ${rawMessages.length} messages`)
 
             const messages: GmailMessage[] = []
 
@@ -288,7 +303,11 @@ export class GmailService {
               const ccList = parseEmailList(ccRaw)
 
               // Exclude message if no CC
-              if (ccList.length === 0) continue
+              if (ccList.length === 0) {
+                this.logger.debug(`Message ${msg.id}: filtered out (no CC)`)
+                filteredOutCount++
+                continue
+              }
 
               const fromRaw = getHeader(headers, 'From')
               const fromParsed = parseEmailAddress(fromRaw)
@@ -344,6 +363,7 @@ export class GmailService {
         (a, b) => new Date(b.latestDate).getTime() - new Date(a.latestDate).getTime(),
       )
 
+      this.logger.log(`Inbox: ${threads.length} threads returned (filtered ${filteredOutCount} messages)`)
       return { threads, fetchedAt: new Date().toISOString() }
     } catch (err: any) {
       const message = err?.message ?? String(err)

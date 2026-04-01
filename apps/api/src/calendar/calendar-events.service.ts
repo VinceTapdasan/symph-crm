@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common'
+import { Injectable, Inject, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
 import { eq, and, gte, lte, desc } from 'drizzle-orm'
 import { google } from 'googleapis'
 import { calendarEvents, userCalendarConnections } from '@symph-crm/database'
@@ -22,6 +22,8 @@ export type UpdateEventDto = Partial<CreateEventDto>
 
 @Injectable()
 export class CalendarEventsService {
+  private readonly logger = new Logger(CalendarEventsService.name)
+
   constructor(
     @Inject(DB) private db: Database,
     private crypto: CalendarCryptoService,
@@ -52,30 +54,50 @@ export class CalendarEventsService {
   }
 
   async findAll(userId: string, params: { from?: string; to?: string; dealId?: string } = {}) {
-    const conditions = [eq(calendarEvents.userId, userId)]
-    if (params.from) {
-      const fromDate = new Date(params.from)
-      conditions.push(gte(calendarEvents.startAt, fromDate))
-    }
-    if (params.to) {
-      const toDate = new Date(params.to)
-      conditions.push(lte(calendarEvents.startAt, toDate))
-    }
-    if (params.dealId) conditions.push(eq(calendarEvents.dealId, params.dealId))
+    try {
+      // Validate and parse date parameters
+      let fromDate: Date | undefined
+      let toDate: Date | undefined
 
-    const rows = await this.db
-      .select()
-      .from(calendarEvents)
-      .where(and(...conditions))
-      .orderBy(desc(calendarEvents.startAt))
+      if (params.from) {
+        fromDate = new Date(params.from)
+        if (isNaN(fromDate.getTime())) {
+          throw new BadRequestException(`Invalid 'from' date: ${params.from}`)
+        }
+      }
 
-    // Derive isOwner from Google's rawJson.organizer.self field.
-    // Events created through the CRM always have organizer.self = true.
-    // Future Google Calendar sync may import events where the user is only an attendee.
-    return rows.map((row) => ({
-      ...row,
-      isOwner: (row.rawJson as Record<string, any> | null)?.organizer?.self !== false,
-    }))
+      if (params.to) {
+        toDate = new Date(params.to)
+        if (isNaN(toDate.getTime())) {
+          throw new BadRequestException(`Invalid 'to' date: ${params.to}`)
+        }
+      }
+
+      const conditions = [eq(calendarEvents.userId, userId)]
+      if (fromDate) conditions.push(gte(calendarEvents.startAt, fromDate))
+      if (toDate) conditions.push(lte(calendarEvents.startAt, toDate))
+      if (params.dealId) conditions.push(eq(calendarEvents.dealId, params.dealId))
+
+      this.logger.debug(`Calendar query: userId=${userId}, from=${fromDate?.toISOString()}, to=${toDate?.toISOString()}`)
+
+      const rows = await this.db
+        .select()
+        .from(calendarEvents)
+        .where(and(...conditions))
+        .orderBy(desc(calendarEvents.startAt))
+
+      // Derive isOwner from Google's rawJson.organizer.self field.
+      // Events created through the CRM always have organizer.self = true.
+      // Future Google Calendar sync may import events where the user is only an attendee.
+      return rows.map((row) => ({
+        ...row,
+        isOwner: (row.rawJson as Record<string, any> | null)?.organizer?.self !== false,
+      }))
+    } catch (err) {
+      if (err instanceof BadRequestException) throw err
+      this.logger.error(`Calendar findAll error: ${(err as Error).message}`)
+      throw err
+    }
   }
 
   async findOne(id: string) {
