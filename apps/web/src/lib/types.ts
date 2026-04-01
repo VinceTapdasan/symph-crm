@@ -96,6 +96,10 @@ export type ApiDocument = {
   dealId?: string | null
   version?: number | null
   parentId?: string | null
+  /** Storage bucket path — used to distinguish notes (/notes/) from resources (/resources/) */
+  storagePath?: string
+  /** Classification tags set on upload (e.g. ['resources', 'pdf'] or ['notes', 'markdown']) */
+  tags?: string[] | null
 }
 
 // ── Products & Tiers ─────────────────────────────────────────────────────────

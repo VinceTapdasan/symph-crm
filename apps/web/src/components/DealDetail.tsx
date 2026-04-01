@@ -21,11 +21,12 @@ import {
   cn, formatCurrencyFull, timeAgo, formatDate,
   getDaysInStage, getBrandColor, getInitials, getStageProgressIndex,
 } from '@/lib/utils'
-import type { ApiDealDetail, ApiCompanyDetail } from '@/lib/types'
+import type { ApiDealDetail, ApiCompanyDetail, ApiDocument } from '@/lib/types'
 import {
   STAGE_LABELS, STAGE_COLORS, STAGE_ADVANCE_MAP,
   PROGRESS_STAGES, ACTIVITY_LABELS, DOC_TYPE_LABELS, ACCEPTED_FILE_TYPES,
 } from '@/lib/constants'
+import { DocumentViewerModal } from './DocumentViewerModal'
 
 // ── Sub-components ───────────────────────────────────────────────────────────
 
@@ -174,6 +175,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
   const [noteType, setNoteType] = useState<string>('general')
   const [addingNote, setAddingNote] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [viewingDoc, setViewingDoc] = useState<ApiDocument | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const queryClient = useQueryClient()
@@ -196,6 +198,12 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
   const isTerminal = deal ? (deal.stage === 'closed_won' || deal.stage === 'closed_lost') : false
   const daysInStage = deal ? getDaysInStage(activities, deal.createdAt) : 0
   const brandColor = getBrandColor(company?.name ?? deal?.companyId)
+
+  // ── Notes vs Resources split ─────────────────────────────────────────────
+  // Resources: docs uploaded to the /resources/ bucket path
+  // Notes: everything else (inline notes and /notes/ uploads)
+  const resourceDocs = documents.filter(d => d.storagePath?.includes('/resources/'))
+  const noteDocs = documents.filter(d => !d.storagePath?.includes('/resources/'))
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -299,6 +307,11 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
 
   return (
     <div className="p-4 md:p-6">
+      {/* Document viewer modal */}
+      {viewingDoc && (
+        <DocumentViewerModal doc={viewingDoc} onClose={() => setViewingDoc(null)} />
+      )}
+
       {/* Back */}
       <button
         onClick={onBack}
@@ -392,8 +405,8 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
           {/* Tab bar */}
           <div className="flex border-b border-black/[.06] dark:border-white/[.08]">
             {([
-              { id: 'notes', label: 'Notes', count: documents.length },
-              { id: 'resources', label: 'Resources', count: null },
+              { id: 'notes', label: 'Notes', count: noteDocs.length },
+              { id: 'resources', label: 'Resources', count: resourceDocs.length },
               { id: 'timeline', label: 'Timeline', count: activities.length },
             ] as const).map(tab => (
               <button
@@ -462,17 +475,18 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                 <div className="p-8 flex items-center justify-center">
                   <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                 </div>
-              ) : documents.length === 0 ? (
+              ) : noteDocs.length === 0 ? (
                 <div className="py-10 text-center">
                   <p className="text-[13px] text-slate-400">No notes yet</p>
                   <p className="text-[11px] text-slate-300 mt-0.5">Add the first note above</p>
                 </div>
               ) : (
                 <div className="divide-y divide-black/[.04] dark:divide-white/[.05]">
-                  {documents.map(doc => (
+                  {noteDocs.map(doc => (
                     <div
                       key={doc.id}
-                      className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/[.02] transition-colors group"
+                      className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/[.02] transition-colors group cursor-pointer"
+                      onClick={() => setViewingDoc(doc)}
                     >
                       {/* Obsidian-style file icon */}
                       <div className="mt-0.5 shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-primary/50 transition-colors">
@@ -486,7 +500,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                       </div>
                       <div className="flex-1 min-w-0">
                         {/* Note name — primary, Obsidian-style */}
-                        <p className="text-[13px] font-semibold text-slate-800 dark:text-white truncate leading-tight">
+                        <p className="text-[13px] font-semibold text-slate-800 dark:text-white truncate leading-tight group-hover:text-primary transition-colors">
                           {doc.title}
                         </p>
                         {doc.excerpt && (
@@ -502,6 +516,15 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                             {new Date(doc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
                           </span>
                         </div>
+                      </div>
+                      {/* View hint */}
+                      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
+                        <span className="text-[10px] font-medium text-primary flex items-center gap-0.5">
+                          View
+                          <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -527,7 +550,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                 <label
                   htmlFor="resource-upload"
                   className={cn(
-                    'flex flex-col items-center gap-2 py-6 px-4 border-2 border-dashed rounded-lg cursor-pointer transition-colors',
+                    'flex flex-col items-center gap-2 py-5 px-4 border-2 border-dashed rounded-lg cursor-pointer transition-colors',
                     uploading
                       ? 'border-primary/30 bg-primary/5'
                       : 'border-slate-200 dark:border-white/[.1] hover:border-primary/40 hover:bg-primary/[.02]'
@@ -547,15 +570,67 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                       {uploading ? 'Uploading\u2026' : 'Drop files here or click to upload'}
                     </p>
                     <p className="text-[10px] text-slate-400 mt-0.5">
-                      PDF, DOCX, HTML, Markdown, TXT, CSV, Images
+                      PDF, DOCX, HTML, Images — text/markdown files go to Notes
                     </p>
                   </div>
                 </label>
               </div>
 
+              {/* Uploaded resource files list */}
+              {loadingDocs ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                </div>
+              ) : resourceDocs.length > 0 ? (
+                <div className="mb-4">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Uploaded Files</p>
+                  <div className="divide-y divide-black/[.04] dark:divide-white/[.05] border border-black/[.06] dark:border-white/[.08] rounded-lg overflow-hidden">
+                    {resourceDocs.map(doc => {
+                      const ext = doc.tags?.find(t => !['resources', 'notes'].includes(t))?.toUpperCase() ?? 'FILE'
+                      const isImg = ['JPEG', 'JPG', 'PNG', 'WEBP', 'GIF'].includes(ext)
+                      return (
+                        <div
+                          key={doc.id}
+                          className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-white/[.02] transition-colors group cursor-pointer"
+                          onClick={() => setViewingDoc(doc)}
+                        >
+                          {/* File type indicator */}
+                          <div className={cn(
+                            'w-8 h-8 rounded-md flex items-center justify-center shrink-0 text-[9px] font-bold',
+                            isImg
+                              ? 'bg-purple-50 dark:bg-purple-500/[.12] text-purple-600 dark:text-purple-400'
+                              : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
+                          )}>
+                            {ext.slice(0, 4)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[12px] font-medium text-slate-800 dark:text-white truncate group-hover:text-primary transition-colors">
+                              {doc.title}
+                            </p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">
+                              {new Date(doc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              {doc.wordCount ? ` · ${doc.wordCount} words extracted` : ''}
+                            </p>
+                          </div>
+                          {/* View arrow */}
+                          <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-[10px] font-medium text-primary flex items-center gap-0.5">
+                              View
+                              <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                                <polyline points="9 18 15 12 9 6" />
+                              </svg>
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
               {/* Quick links from deal fields */}
               {(deal.proposalLink || deal.demoLink) && (
-                <div className="flex flex-col gap-2 mb-4">
+                <div className="flex flex-col gap-2 mb-3">
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Links</p>
                   {deal.proposalLink && (
                     <a
@@ -582,8 +657,8 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                 </div>
               )}
 
-              {/* Empty state when no links and no uploaded files */}
-              {!deal.proposalLink && !deal.demoLink && (
+              {/* Empty state */}
+              {!deal.proposalLink && !deal.demoLink && resourceDocs.length === 0 && !loadingDocs && (
                 <div className="py-4 text-center">
                   <p className="text-[11px] text-slate-300 dark:text-slate-600">
                     Uploaded files and links will appear here

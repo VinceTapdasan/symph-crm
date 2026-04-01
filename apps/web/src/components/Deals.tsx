@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useGetCompanies, useGetDeals, useGetUsers } from '@/lib/hooks/queries'
 import { Input } from '@/components/ui/input'
 import { getInitials, getBrandColor, formatDealValue, totalNumericValue } from '@/lib/utils'
-import { STAGE_DISPLAY, STAGE_COLORS, STAGE_DOT, CLOSED_STAGE_IDS } from '@/lib/constants'
+import { STAGE_DISPLAY, STAGE_COLORS, CLOSED_STAGE_IDS } from '@/lib/constants'
 import type { ApiCompanyDetail, ApiDeal } from '@/lib/types'
 import type { ColumnDef } from '@tanstack/react-table'
 import { DataTable, SortableHeader } from './ui/data-table'
@@ -14,11 +14,11 @@ import { EmptyState } from './EmptyState'
 import { CreateBrandModal } from './CreateBrandModal'
 import { CreateDealModal } from './CreateDealModal'
 import { DealsGraph } from './DealsGraph'
-import { ChevronsUpDown, ChevronsDownUp, Paperclip } from 'lucide-react'
+import { Paperclip } from 'lucide-react'
 import { useUser } from '@/lib/hooks/use-user'
 import { useEscapeKey } from '@/lib/hooks/use-escape-key'
 
-type ViewMode = 'list' | 'table' | 'graph'
+type ViewMode = 'table' | 'graph'
 
 // ── DataTable brand row type ──────────────────────────────────────────────────
 
@@ -183,6 +183,7 @@ function BrandsDataTable({
   search: string
 }) {
   const columns: ColumnDef<BrandTableRow>[] = [
+    // 1. Brand
     {
       id: 'brand',
       accessorFn: r => r.company.name,
@@ -212,21 +213,22 @@ function BrandsDataTable({
       },
       size: 240,
     },
+    // 2. Pipeline Value (after Brand)
     {
-      id: 'createdBy',
-      accessorFn: r => r.createdByName ?? '—',
-      header: ({ column }) => <SortableHeader column={column}>Created By</SortableHeader>,
+      id: 'totalValue',
+      accessorKey: 'totalValue',
+      header: ({ column }) => <SortableHeader column={column}>Value</SortableHeader>,
       cell: ({ getValue }) => {
-        const name = getValue<string>()
+        const v = getValue<number>()
         return (
-          <div className="flex items-center gap-1.5">
-            {name !== '—' && <Avatar name={name} size={20} />}
-            <span className="text-[12px] text-slate-700 dark:text-slate-300">{name}</span>
-          </div>
+          <span className="text-[13px] font-semibold tabular-nums text-primary">
+            {v > 0 ? formatDealValue(String(v)) : '—'}
+          </span>
         )
       },
-      size: 160,
+      size: 140,
     },
+    // 3. # Deals
     {
       id: 'dealCount',
       accessorKey: 'dealCount',
@@ -238,6 +240,7 @@ function BrandsDataTable({
       ),
       size: 80,
     },
+    // 4. # Resources
     {
       id: 'documentCount',
       accessorKey: 'documentCount',
@@ -261,22 +264,21 @@ function BrandsDataTable({
       },
       size: 100,
     },
+    // 5. Created By (last)
     {
-      id: 'totalValue',
-      accessorKey: 'totalValue',
-      header: ({ column }) => <SortableHeader column={column}>Pipeline Value</SortableHeader>,
+      id: 'createdBy',
+      accessorFn: r => r.createdByName ?? '—',
+      header: ({ column }) => <SortableHeader column={column}>Created By</SortableHeader>,
       cell: ({ getValue }) => {
-        const v = getValue<number>()
+        const name = getValue<string>()
         return (
-          <span
-            className="text-[13px] font-semibold tabular-nums"
-            style={{ color: v > 0 ? undefined : undefined }}
-          >
-            {v > 0 ? formatDealValue(String(v)) : '—'}
-          </span>
+          <div className="flex items-center gap-1.5">
+            {name !== '—' && <Avatar name={name} size={20} />}
+            <span className="text-[12px] text-slate-700 dark:text-slate-300">{name}</span>
+          </div>
         )
       },
-      size: 140,
+      size: 160,
     },
   ]
 
@@ -292,132 +294,6 @@ function BrandsDataTable({
   )
 }
 
-function BrandHeader({
-  group, expanded, onToggle, onOpenModal,
-}: { group: BrandGroup; expanded: boolean; onToggle: () => void; onOpenModal: () => void }) {
-  const totalStr = group.totalValue > 0 ? formatDealValue(String(group.totalValue)) : '—'
-
-  return (
-    <div
-      className="grid grid-cols-[36px_1fr_auto_20px] sm:grid-cols-[40px_1fr_auto_auto_auto_20px] items-center gap-3 sm:gap-3.5 w-full px-4 sm:px-[18px] py-3.5 bg-white dark:bg-[#1e1e21] border-0 border-b border-black/[.06] dark:border-white/[.08] transition-colors text-left hover:bg-slate-50 dark:hover:bg-[#252528]"
-    >
-      <div
-        onClick={onOpenModal}
-        className="w-9 h-9 rounded-lg flex items-center justify-center text-[13px] font-semibold shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all"
-        style={{ background: `${group.color}15`, color: group.color }}
-        title="Open brand details"
-      >
-        {getInitials(group.company.name)}
-      </div>
-      <div className="min-w-0 cursor-pointer" onClick={onOpenModal} title="Open brand details">
-        <div className="text-[13px] font-semibold text-slate-900 dark:text-white truncate hover:text-primary transition-colors">
-          {group.company.name}
-        </div>
-        <div className="text-[11px] text-slate-400 mt-px">
-          {group.company.industry || group.company.domain || 'No industry set'}
-        </div>
-      </div>
-      <div className="hidden sm:flex items-center gap-1">
-        <span className="text-[11px] font-medium text-slate-500">
-          {group.deals.length} {group.deals.length === 1 ? 'deal' : 'deals'}
-        </span>
-        <span className="text-[10px] text-slate-400">
-          ({group.activeCount} active)
-        </span>
-      </div>
-      <div
-        className="text-[13px] font-semibold tabular-nums sm:min-w-[90px] text-right"
-        style={{ color: group.color }}
-      >
-        {totalStr}
-      </div>
-      <div className="hidden sm:flex gap-[3px] min-w-[56px] justify-end">
-        {group.deals.map(d => (
-          <div
-            key={d.id}
-            title={`${d.title} — ${d.stage}`}
-            className="w-2 h-2 rounded-full shrink-0"
-            style={{ background: STAGE_DOT[d.stage] || '#94a3b8' }}
-          />
-        ))}
-      </div>
-      <button
-        onClick={onToggle}
-        className="w-5 h-5 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-white/[.08] transition-colors cursor-pointer"
-        title={expanded ? 'Collapse' : 'Expand'}
-      >
-        <svg
-          width={14} height={14} viewBox="0 0 24 24" fill="none"
-          className="stroke-slate-400 transition-transform shrink-0"
-          strokeWidth={1.2} strokeLinecap="round"
-          style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
-    </div>
-  )
-}
-
-function DealRow({
-  deal, color, onClick,
-}: { deal: ApiDeal; color: string; onClick: () => void }) {
-  const tags = deal.servicesTags?.filter(Boolean) ?? []
-
-  return (
-    <div
-      onClick={onClick}
-      className="grid grid-cols-[16px_1fr_auto_auto] sm:grid-cols-[40px_1.4fr_0.8fr_auto_0.5fr] items-center gap-3 sm:gap-3.5 py-3 pr-4 sm:pr-[18px] pl-5 sm:pl-8 border-b border-black/[.04] dark:border-white/[.06] cursor-pointer transition-colors bg-slate-50/50 dark:bg-[#252528] hover:bg-slate-100 dark:hover:bg-[#2a2a2d]"
-    >
-      <div className="flex items-center justify-center">
-        <div
-          className="w-1.5 h-1.5 rounded-full opacity-50 shrink-0"
-          style={{ background: color }}
-        />
-      </div>
-      <div className="min-w-0">
-        <div className="text-[13px] font-medium text-slate-900 dark:text-white whitespace-nowrap overflow-hidden text-ellipsis">
-          {deal.title}
-        </div>
-        {tags.length > 0 && (
-          <div className="flex gap-1 mt-px flex-wrap">
-            {tags.slice(0, 3).map(s => (
-              <span
-                key={s}
-                className="text-[9px] font-medium px-1.5 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[.06] text-slate-500 whitespace-nowrap"
-              >
-                {s}
-              </span>
-            ))}
-            {tags.length > 3 && (
-              <span className="text-[9px] text-slate-400">+{tags.length - 3}</span>
-            )}
-          </div>
-        )}
-      </div>
-      <div className="hidden sm:block">
-        <StagePill stage={deal.stage} />
-      </div>
-      <div className="text-[13px] font-medium text-slate-700 dark:text-slate-300 tabular-nums text-right whitespace-nowrap">
-        {formatDealValue(deal.value)}
-      </div>
-      <div className="hidden sm:flex items-center justify-end">
-        {deal.outreachCategory && (
-          <span
-            className="text-[9px] font-medium px-1.5 py-0.5 rounded-lg capitalize whitespace-nowrap"
-            style={{
-              background: deal.outreachCategory === 'inbound' ? 'rgba(22,163,74,0.08)' : 'rgba(124,58,237,0.08)',
-              color: deal.outreachCategory === 'inbound' ? '#16a34a' : '#7c3aed',
-            }}
-          >
-            {deal.outreachCategory}
-          </span>
-        )}
-      </div>
-    </div>
-  )
-}
-
 // Re-export types for components that import from Deals.tsx (legacy)
 export type { ApiCompanyDetail as ApiCompany } from '@/lib/types'
 export type { ApiDeal } from '@/lib/types'
@@ -430,11 +306,10 @@ type DealsProps = {
 
 export function Deals({ onOpenDeal }: DealsProps) {
   const searchInputRef = useRef<HTMLInputElement>(null)
-  const [expandedBrands, setExpandedBrands] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
   const [showCreateBrand, setShowCreateBrand] = useState(false)
   const [showCreateDeal, setShowCreateDeal] = useState(false)
-  const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [brandModalId, setBrandModalId] = useState<string | null>(null)
   const { isSales } = useUser()
 
@@ -539,48 +414,6 @@ export function Deals({ onOpenDeal }: DealsProps) {
     )
   }, [brandTableRows, search])
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return groups
-    const q = search.toLowerCase()
-    return groups
-      .map(g => ({
-        ...g,
-        deals: g.deals.filter(d =>
-          d.title.toLowerCase().includes(q) ||
-          g.company.name.toLowerCase().includes(q) ||
-          d.stage.toLowerCase().includes(q) ||
-          (d.servicesTags ?? []).some(s => s.toLowerCase().includes(q))
-        ),
-      }))
-      .filter(g => g.deals.length > 0 || g.company.name.toLowerCase().includes(q))
-  }, [groups, search])
-
-  const filteredDeals = useMemo(() => {
-    if (!search.trim()) return deals
-    const q = search.toLowerCase()
-    return deals.filter(d =>
-      d.title.toLowerCase().includes(q) ||
-      d.stage.toLowerCase().includes(q) ||
-      (d.servicesTags ?? []).some(s => s.toLowerCase().includes(q))
-    )
-  }, [deals, search])
-
-  function toggleBrand(id: string) {
-    setExpandedBrands(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  function expandAll() {
-    setExpandedBrands(new Set(groups.map(g => g.company.id)))
-  }
-  function collapseAll() {
-    setExpandedBrands(new Set())
-  }
-
   const totalDeals = deals.length
   const activePipeline = totalNumericValue(deals.filter(d => !CLOSED_STAGE_IDS.has(d.stage)))
 
@@ -632,16 +465,6 @@ export function Deals({ onOpenDeal }: DealsProps) {
             {/* View toggle */}
             <div className="flex items-center bg-slate-100 dark:bg-white/[.06] rounded-lg p-0.5 gap-0.5">
               <button
-                onClick={() => setViewMode('list')}
-                className={`h-[26px] px-2.5 rounded-lg text-[12px] font-medium transition-all flex items-center gap-1.5 ${viewMode === 'list' ? 'bg-white dark:bg-[#1e1e21] text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'}`}
-              >
-                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
-                  <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
-                  <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
-                </svg>
-                List
-              </button>
-              <button
                 onClick={() => setViewMode('table')}
                 className={`h-[26px] px-2.5 rounded-lg text-[12px] font-medium transition-all flex items-center gap-1.5 ${viewMode === 'table' ? 'bg-white dark:bg-[#1e1e21] text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'}`}
               >
@@ -664,32 +487,20 @@ export function Deals({ onOpenDeal }: DealsProps) {
 
             {/* Search */}
             <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-white/[.03] border border-black/[.06] dark:border-white/[.08] rounded-lg px-2.5 py-[5px] flex-1 sm:flex-none sm:w-[200px] min-w-[140px]">
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="text-slate-400 shrink-0" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round">
-                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <Input
-                  ref={searchInputRef}
-                  type="text"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Search deals…"
-                  className="border-none bg-transparent outline-none text-[12.5px] text-slate-900 dark:text-white w-full placeholder:text-slate-400 focus:ring-0 focus-visible:ring-0 focus-visible:outline-none px-0 py-0 rounded-none h-auto shadow-none"
-                />
-              </div>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="text-slate-400 shrink-0" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round">
+                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <Input
+                ref={searchInputRef}
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search brands…"
+                className="border-none bg-transparent outline-none text-[12.5px] text-slate-900 dark:text-white w-full placeholder:text-slate-400 focus:ring-0 focus-visible:ring-0 focus-visible:outline-none px-0 py-0 rounded-none h-auto shadow-none"
+              />
+            </div>
 
-            {/* Expand/Collapse toggle */}
-            <button
-              onClick={() => expandedBrands.size > 0 ? collapseAll() : expandAll()}
-              className="h-[30px] w-[30px] rounded-lg border border-black/[.08] dark:border-white/[.08] flex items-center justify-center text-slate-500 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
-              title={expandedBrands.size > 0 ? 'Collapse all' : 'Expand all'}
-            >
-              {expandedBrands.size > 0
-                ? <ChevronsDownUp size={14} strokeWidth={1.4} />
-                : <ChevronsUpDown size={14} strokeWidth={1.4} />
-              }
-            </button>
-
-            {/* New Brand */}
+            {/* New Brand / New Deal */}
             {isSales && (
               <>
                 <button
@@ -762,38 +573,6 @@ export function Deals({ onOpenDeal }: DealsProps) {
           </div>
         )}
 
-        {/* List view */}
-        {!isLoading && deals.length > 0 && viewMode === 'list' && (
-          <div className="flex-1 overflow-y-auto bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-            {filtered.length === 0 ? (
-              <div className="p-10 text-center text-[13px] text-slate-400">
-                No deals matching &quot;{search}&quot;
-              </div>
-            ) : (
-              filtered.map(group => {
-                const expanded = expandedBrands.has(group.company.id)
-                return (
-                  <div key={group.company.id}>
-                    <BrandHeader
-                      group={group}
-                      expanded={expanded}
-                      onToggle={() => toggleBrand(group.company.id)}
-                      onOpenModal={() => setBrandModalId(group.company.id)}
-                    />
-                    {expanded && group.deals.map(deal => (
-                      <DealRow
-                        key={deal.id}
-                        deal={deal}
-                        color={group.color}
-                        onClick={() => onOpenDeal(deal.id)}
-                      />
-                    ))}
-                  </div>
-                )
-              })
-            )}
-          </div>
-        )}
       </div>
     </>
   )

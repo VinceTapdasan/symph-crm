@@ -98,9 +98,17 @@ export class DocumentsController {
     }
 
     // Derive a unique storage path for this upload
+    // Classify upload: text files (md/txt/csv) → notes bucket; binary → resources bucket
+    const TEXT_MIMES = new Set([
+      'text/markdown', 'text/plain', 'text/csv', 'application/csv',
+    ])
+    const isTextNote = TEXT_MIMES.has(baseMime)
+    const bucket = isTextNote ? 'notes' : 'resources'
+    const ext = originalname.includes('.') ? originalname.split('.').pop()!.toLowerCase() : 'bin'
+
     const timestamp = Date.now()
     const safeName = titleBase.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60)
-    const storagePath = `deals/${dealId}/uploads/${timestamp}-${safeName}.md`
+    const storagePath = `deals/${dealId}/${bucket}/${timestamp}-${safeName}.${isTextNote ? 'md' : ext}`
 
     return this.documentsService.create(
       {
@@ -110,6 +118,7 @@ export class DocumentsController {
         title: titleBase,
         storagePath,
         content,
+        tags: [bucket, baseMime.split('/')[1] ?? ext],
       },
       userId ?? authorId,
     )

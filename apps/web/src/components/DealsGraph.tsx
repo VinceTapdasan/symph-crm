@@ -62,6 +62,8 @@ type GraphNode = d3.SimulationNodeDatum & {
   companyId?: string
   stage?: string
   value?: string | null
+  /** Total document/resource count — summed from deals for company nodes */
+  documentCount?: number
 }
 
 type GraphLink = d3.SimulationLinkDatum<GraphNode> & {
@@ -192,6 +194,10 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
     const dealsWithoutCompany = deals.filter(d => !d.companyId || !companyMap.has(d.companyId))
 
     for (const c of companies) {
+      const companyDocCount = deals
+        .filter(d => d.companyId === c.id)
+        .reduce((sum, d) => sum + (d.documentCount ?? 0), 0)
+
       nodes.push({
         id: `c-${c.id}`,
         kind: 'company',
@@ -200,6 +206,7 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
         color: getBrandColor(c.name),
         r: 22,
         companyId: c.id,
+        documentCount: companyDocCount > 0 ? companyDocCount : undefined,
       })
     }
 
@@ -574,6 +581,11 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
             {tooltip.node.kind === 'deal' && tooltip.node.value && (
               <p className="text-[10px] text-white/40 mt-0.5 tabular-nums">
                 {formatGraphValue(tooltip.node.value)}
+              </p>
+            )}
+            {tooltip.node.kind === 'company' && (tooltip.node.documentCount ?? 0) > 0 && (
+              <p className="text-[10px] text-white/40 mt-0.5">
+                📎 {tooltip.node.documentCount} resource{tooltip.node.documentCount !== 1 ? 's' : ''}
               </p>
             )}
             <p className="text-[9px] text-white/25 mt-1.5 border-t border-white/[0.06] pt-1.5">
