@@ -37,6 +37,7 @@ export const queryKeys = {
   },
   pipeline: {
     summary: ['pipeline', 'summary'] as const,
+    summaryFiltered: (params: { from?: string; to?: string }) => ['pipeline', 'summary', params] as const,
   },
   products: {
     all: ['products'] as const,

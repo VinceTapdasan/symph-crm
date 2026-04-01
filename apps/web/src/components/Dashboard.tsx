@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { MetricCard } from './MetricCard'
 import { PipelineBar } from './PipelineBar'
@@ -13,21 +14,60 @@ import {
   AMLeaderboardSkeleton,
   RecentActivitySkeleton,
 } from './Skeletons'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import { queryKeys } from '@/lib/query-keys'
 import { formatCurrency, timeAgo } from '@/lib/utils'
-import { API_BASE } from '@/lib/constants'
+import { api } from '@/lib/api'
+import { MONTHS } from '@/lib/constants'
 import type { ApiDeal, PipelineSummary } from '@/lib/types'
 
+// ─── Filter helpers ───────────────────────────────────────────────────────────
+
+type FilterMode = 'month' | 'lifetime'
+
+type DashboardFilter = {
+  mode: FilterMode
+  year: number
+  month: number // 0-based (Jan = 0)
+}
+
+function getDateRange(filter: DashboardFilter): { from?: string; to?: string } {
+  if (filter.mode === 'lifetime') return {}
+  const from = new Date(filter.year, filter.month, 1)
+  const to = new Date(filter.year, filter.month + 1, 0, 23, 59, 59, 999)
+  return { from: from.toISOString(), to: to.toISOString() }
+}
+
+// Generate year options: current year back to 2024
+function getYearOptions(): number[] {
+  const current = new Date().getFullYear()
+  const years: number[] = []
+  for (let y = current; y >= 2024; y--) years.push(y)
+  return years
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+
 export function Dashboard() {
+  const now = new Date()
+  const [filter, setFilter] = useState<DashboardFilter>({
+    mode: 'month',
+    year: now.getFullYear(),
+    month: now.getMonth(),
+  })
+
+  const { from, to } = getDateRange(filter)
+
   const { data: summary, isLoading: loadingSummary } = useQuery<PipelineSummary>({
-    queryKey: queryKeys.pipeline.summary,
-    queryFn: () => fetch(`${API_BASE}/pipeline/summary`).then(r => r.json()),
+    queryKey: queryKeys.pipeline.summaryFiltered({ from, to }),
+    queryFn: () => api.get<PipelineSummary>('/pipeline/summary', { from, to }),
     staleTime: 60_000,
   })
 
   const { data: deals = [], isLoading: loadingDeals } = useQuery<ApiDeal[]>({
-    queryKey: queryKeys.deals.all,
-    queryFn: () => fetch(`${API_BASE}/deals`).then(r => r.json()),
+    queryKey: [...queryKeys.deals.all, { from, to }],
+    queryFn: () => api.get<ApiDeal[]>('/deals', { from, to }),
   })
 
   const isLoading = loadingSummary || loadingDeals
@@ -70,8 +110,56 @@ export function Dashboard() {
       time: timeAgo(d.lastActivityAt),
     }))
 
+  const yearOptions = getYearOptions()
+
   return (
     <div className="w-full p-4 md:p-5">
+
+      {/* Filter Row */}
+      <div className="flex items-center gap-2 mb-5">
+        <Button
+          variant={filter.mode === 'lifetime' ? 'default' : 'outline'}
+          size="sm"
+          className="h-8 text-xs font-medium"
+          onClick={() => setFilter(f => ({ ...f, mode: 'lifetime' }))}
+        >
+          Lifetime
+        </Button>
+
+        <div className={filter.mode === 'month' ? 'flex items-center gap-2' : 'flex items-center gap-2 opacity-50 pointer-events-none'}>
+          <Select
+            value={String(filter.month)}
+            onValueChange={(v) => setFilter(f => ({ ...f, mode: 'month', month: parseInt(v, 10) }))}
+          >
+            <SelectTrigger className="h-8 text-xs w-[110px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MONTHS.map((m, i) => (
+                <SelectItem key={i} value={String(i)} className="text-xs">
+                  {m}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={String(filter.year)}
+            onValueChange={(v) => setFilter(f => ({ ...f, mode: 'month', year: parseInt(v, 10) }))}
+          >
+            <SelectTrigger className="h-8 text-xs w-[80px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {yearOptions.map(y => (
+                <SelectItem key={y} value={String(y)} className="text-xs">
+                  {y}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       {/* KPI Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-[1.2fr_0.9fr_0.9fr_1fr] gap-3 md:gap-3.5 mb-5">

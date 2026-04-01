@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common'
-import { eq, desc, and, ilike } from 'drizzle-orm'
+import { eq, desc, and, ilike, gte, lte } from 'drizzle-orm'
 import { deals } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
@@ -10,6 +10,8 @@ export type DealsFilterParams = {
   stage?: string
   search?: string
   limit?: number
+  from?: string
+  to?: string
 }
 
 @Injectable()
@@ -26,6 +28,8 @@ export class DealsService {
     if (params?.companyId) conditions.push(eq(deals.companyId, params.companyId))
     if (params?.stage) conditions.push(eq(deals.stage, params.stage as typeof deals.$inferSelect['stage']))
     if (params?.search) conditions.push(ilike(deals.title, `%${params.search}%`))
+    if (params?.from) conditions.push(gte(deals.createdAt, new Date(params.from)))
+    if (params?.to) conditions.push(lte(deals.createdAt, new Date(params.to)))
 
     const query = conditions.length > 0
       ? this.db.select().from(deals).where(and(...conditions)).orderBy(desc(deals.createdAt)).limit(limit)

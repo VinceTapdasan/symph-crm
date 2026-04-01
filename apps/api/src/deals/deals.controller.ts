@@ -12,12 +12,16 @@ export class DealsController {
     @Query('companyId') companyId?: string,
     @Query('search') search?: string,
     @Query('limit') limit?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
   ) {
     return this.dealsService.findAll({
       stage,
       companyId,
       search,
       limit: limit ? parseInt(limit, 10) : undefined,
+      from,
+      to,
     })
   }
 

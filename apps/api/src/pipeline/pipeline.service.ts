@@ -17,20 +17,31 @@ export type PipelineSummary = {
   }[]
 }
 
+export type PipelineSummaryParams = {
+  from?: string
+  to?: string
+}
+
 @Injectable()
 export class PipelineService {
   constructor(@Inject(DB) private db: Database) {}
 
-  async getSummary(): Promise<PipelineSummary> {
-    // Single query: group by stage, count + sum value
-    const rows = await this.db.execute(sql`
-      SELECT
-        stage,
-        COUNT(*)::int                                         AS count,
-        COALESCE(SUM(value::numeric), 0)::float8             AS total_value
-      FROM deals
-      GROUP BY stage
-    `)
+  async getSummary(params: PipelineSummaryParams = {}): Promise<PipelineSummary> {
+    const fromDate = params.from ? new Date(params.from) : null
+    const toDate = params.to ? new Date(params.to) : null
+
+    // Stage grouping query — with optional date filter
+    let stageQuery
+    if (fromDate && toDate) {
+      stageQuery = this.db.execute(sql`SELECT stage, COUNT(*)::int AS count, COALESCE(SUM(value::numeric), 0)::float8 AS total_value FROM deals WHERE created_at >= ${fromDate} AND created_at <= ${toDate} GROUP BY stage`)
+    } else if (fromDate) {
+      stageQuery = this.db.execute(sql`SELECT stage, COUNT(*)::int AS count, COALESCE(SUM(value::numeric), 0)::float8 AS total_value FROM deals WHERE created_at >= ${fromDate} GROUP BY stage`)
+    } else if (toDate) {
+      stageQuery = this.db.execute(sql`SELECT stage, COUNT(*)::int AS count, COALESCE(SUM(value::numeric), 0)::float8 AS total_value FROM deals WHERE created_at <= ${toDate} GROUP BY stage`)
+    } else {
+      stageQuery = this.db.execute(sql`SELECT stage, COUNT(*)::int AS count, COALESCE(SUM(value::numeric), 0)::float8 AS total_value FROM deals GROUP BY stage`)
+    }
+    const rows = await stageQuery
 
     type Row = { stage: string; count: number; total_value: number }
     const byStage = (rows as unknown as Row[]).map(r => ({
@@ -49,10 +60,19 @@ export class PipelineService {
     let sumAllValues = 0
     let dealsWithValue = 0
 
-    // To get avgDealSize we need per-row value data — run a second lightweight query
-    const valueRows = await this.db.execute(sql`
-      SELECT value::numeric AS v FROM deals WHERE value IS NOT NULL
-    `)
+    // Value query — with optional date filter
+    let valueQuery
+    if (fromDate && toDate) {
+      valueQuery = this.db.execute(sql`SELECT value::numeric AS v FROM deals WHERE value IS NOT NULL AND created_at >= ${fromDate} AND created_at <= ${toDate}`)
+    } else if (fromDate) {
+      valueQuery = this.db.execute(sql`SELECT value::numeric AS v FROM deals WHERE value IS NOT NULL AND created_at >= ${fromDate}`)
+    } else if (toDate) {
+      valueQuery = this.db.execute(sql`SELECT value::numeric AS v FROM deals WHERE value IS NOT NULL AND created_at <= ${toDate}`)
+    } else {
+      valueQuery = this.db.execute(sql`SELECT value::numeric AS v FROM deals WHERE value IS NOT NULL`)
+    }
+    const valueRows = await valueQuery
+
     type ValueRow = { v: string | null }
     for (const r of valueRows as unknown as ValueRow[]) {
       const n = parseFloat(r.v ?? '0')
