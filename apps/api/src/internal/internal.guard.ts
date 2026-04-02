@@ -26,6 +26,12 @@ export class InternalGuard implements CanActivate {
       throw new UnauthorizedException('INTERNAL_SECRET not configured')
     }
 
+    // Debug: log both values for troubleshooting
+    console.log(`[InternalGuard] Header: "${secretStr}" (length: ${secretStr?.length})`)
+    console.log(`[InternalGuard] Expected: "${expected}" (length: ${expected?.length})`)
+    console.log(`[InternalGuard] Header trimmed: "${secretStr?.trim()}" (length: ${secretStr?.trim()?.length})`)
+    console.log(`[InternalGuard] Expected trimmed: "${expected?.trim()}" (length: ${expected?.trim()?.length})`)
+
     if (!secretStr || secretStr.trim() !== expected?.trim()) {
       throw new UnauthorizedException('Invalid internal secret')
     }
