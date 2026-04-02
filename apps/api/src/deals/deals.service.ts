@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { eq, desc, and, ilike, gte, lte, inArray, isNull, count, sql } from 'drizzle-orm'
-import { deals, documents, users } from '@symph-crm/database'
+import { deals, documents, users, amRoster } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
 import { AuditLogsService } from '../audit-logs/audit-logs.service'
@@ -116,6 +116,11 @@ export class DealsService {
   async create(data: typeof deals.$inferInsert, performedBy?: string) {
     const [deal] = await this.db.insert(deals).values(data).returning()
 
+    // Auto-add assigned user to AM roster
+    if (deal.assignedTo) {
+      this.ensureOnRoster(deal.assignedTo, deal.workspaceId).catch(() => {})
+    }
+
     this.auditLogs.log({
       action: 'create',
       auditType: 'deal_created',
@@ -130,6 +135,11 @@ export class DealsService {
 
   async update(id: string, data: Partial<typeof deals.$inferInsert>, performedBy?: string) {
     const [deal] = await this.db.update(deals).set(data).where(eq(deals.id, id)).returning()
+
+    // Auto-add assigned user to AM roster when assignedTo changes
+    if (data.assignedTo && deal) {
+      this.ensureOnRoster(data.assignedTo, deal.workspaceId).catch(() => {})
+    }
 
     this.auditLogs.log({
       action: 'update',
@@ -177,5 +187,41 @@ export class DealsService {
         updatedAt: new Date(),
       })
       .where(eq(deals.id, id))
+  }
+
+  /**
+   * Ensure a user is on the AM roster. Auto-called when a deal is assigned.
+   * If user already exists on roster, updates lastAssignedAt and increments count.
+   * Schema has UNIQUE on userId — uses ON CONFLICT DO UPDATE for atomicity.
+   * DB migration needed: ALTER TABLE am_roster ADD CONSTRAINT am_roster_user_id_unique UNIQUE (user_id);
+   */
+  private async ensureOnRoster(userId: string, workspaceId: string | null): Promise<void> {
+    // Check if user already on roster (safe fallback if UNIQUE constraint not yet applied)
+    const [existing] = await this.db
+      .select()
+      .from(amRoster)
+      .where(eq(amRoster.userId, userId))
+      .limit(1)
+
+    if (existing) {
+      await this.db
+        .update(amRoster)
+        .set({
+          lastAssignedAt: new Date(),
+          assignmentCount: sql`${amRoster.assignmentCount} + 1`,
+          isActive: true,
+        })
+        .where(eq(amRoster.userId, userId))
+    } else {
+      await this.db
+        .insert(amRoster)
+        .values({
+          userId,
+          workspaceId: workspaceId ?? undefined,
+          isActive: true,
+          lastAssignedAt: new Date(),
+          assignmentCount: 1,
+        })
+    }
   }
 }

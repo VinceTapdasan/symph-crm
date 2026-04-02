@@ -16,7 +16,7 @@ export const pipelineStages = pgTable('pipeline_stages', {
 export const amRoster = pgTable('am_roster', {
   id: uuid('id').defaultRandom().primaryKey(),
   workspaceId: uuid('workspace_id').references(() => workspaces.id),
-  userId: text('user_id').references(() => users.id).notNull(),
+  userId: text('user_id').references(() => users.id).notNull().unique(),
   isActive: boolean('is_active').default(true).notNull(),
   lastAssignedAt: timestamp('last_assigned_at', { withTimezone: true }),
   assignmentCount: integer('assignment_count').default(0).notNull(),
