@@ -247,9 +247,9 @@ export class GmailService {
 
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    // Use whichever is earlier — start of month OR 7 days ago
-    const windowStart = sevenDaysAgo < monthStart ? sevenDaysAgo : monthStart
+    const threeWeeksAgo = new Date(now.getTime() - 21 * 24 * 60 * 60 * 1000)
+    // Use whichever is earlier — start of month OR 3 weeks ago
+    const windowStart = threeWeeksAgo < monthStart ? threeWeeksAgo : monthStart
     // Gmail query date format: YYYY/M/D (no leading zeros)
     const afterDate = `${windowStart.getFullYear()}/${windowStart.getMonth() + 1}/${windowStart.getDate()}`
     const fromQuery = INBOX_SENDERS.map(e => `from:${e}`).join(' OR ')

@@ -2,8 +2,7 @@
 
 import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { useGetDeals } from '@/lib/hooks/queries'
-import { useGetBillingByDeal } from '@/lib/hooks/queries'
+import { useGetDeals, useGetBillingByDeal, useGetCompanies } from '@/lib/hooks/queries'
 import { cn } from '@/lib/utils'
 import type { ApiDeal, ApiBilling } from '@/lib/types'
 
@@ -26,7 +25,7 @@ function formatDate(d: string | null): string {
 }
 
 /** Individual row that fetches its own billing data */
-function BillRow({ deal, onClick }: { deal: ApiDeal; onClick: () => void }) {
+function BillRow({ deal, companyMap, onClick }: { deal: ApiDeal; companyMap: Map<string, string>; onClick: () => void }) {
   const { data: billing, isLoading } = useGetBillingByDeal(deal.id)
 
   if (isLoading) {
@@ -54,7 +53,7 @@ function BillRow({ deal, onClick }: { deal: ApiDeal; onClick: () => void }) {
         {deal.title}
       </td>
       <td className="px-4 py-3 text-[12px] text-slate-600 dark:text-slate-400">
-        {deal.companyId ? deal.companyId.slice(0, 8) : '--'}
+        {deal.companyId ? (companyMap.get(deal.companyId) ?? deal.companyId.slice(0, 8)) : '--'}
       </td>
       <td className="px-4 py-3">
         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
@@ -89,6 +88,13 @@ function BillRow({ deal, onClick }: { deal: ApiDeal; onClick: () => void }) {
 export default function BillsPage() {
   const router = useRouter()
   const { data: deals = [], isLoading } = useGetDeals()
+  const { data: companies = [] } = useGetCompanies()
+
+  const companyMap = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const c of companies) m.set(c.id, c.name)
+    return m
+  }, [companies])
 
   const wonDeals = useMemo(
     () => deals.filter(d => d.stage === 'closed_won'),
@@ -97,11 +103,13 @@ export default function BillsPage() {
 
   return (
     <div className="p-4 md:px-6 pb-6">
-      <div className="mb-4">
-        <h1 className="text-[18px] font-bold text-slate-900 dark:text-white">Bills</h1>
-        <p className="text-[12px] text-slate-400 mt-0.5">
-          Billing setup for won deals
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 shrink-0">
+        <div>
+          <div className="text-[13px] font-semibold text-slate-900 dark:text-white">Bills</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">
+            {isLoading ? 'Loading\u2026' : `${wonDeals.length} won deal${wonDeals.length !== 1 ? 's' : ''}`}
+          </div>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-[0_1px_4px_rgba(0,0,0,0.04)] overflow-hidden">
@@ -140,6 +148,7 @@ export default function BillsPage() {
                   <BillRow
                     key={deal.id}
                     deal={deal}
+                    companyMap={companyMap}
                     onClick={() => router.push(`/deals/${deal.id}`)}
                   />
                 ))}

@@ -180,7 +180,7 @@ export class CalendarConnectionsService {
       return upsertCount
     } catch (err: any) {
       // 410 Gone = syncToken expired, retry full sync
-      if (err?.code === 410 || err?.status === 410) {
+      if (err?.code === 410 || err?.status === 410 || err?.code === 400 || err?.status === 400) {
         this.logger.warn(`syncToken expired for user ${userId}, running full sync`)
         await this.db
           .update(userCalendarConnections)

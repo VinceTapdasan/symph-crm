@@ -716,17 +716,16 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
             </div>
             <div className="ml-auto flex items-center gap-1.5 flex-wrap">
               {/* Month / Week toggle */}
-              <div className="flex rounded-lg overflow-hidden border border-black/[.06] dark:border-white/[.08]">
-                {(['month', 'week'] as CalendarView[]).map((v, i) => (
+              <div className="flex items-center bg-slate-100 dark:bg-white/[.06] rounded-lg p-0.5 gap-0.5">
+                {(['month', 'week'] as CalendarView[]).map(v => (
                   <button
                     key={v}
                     onClick={() => setView(v)}
                     className={cn(
-                      'px-3 py-1.5 text-[11.5px] font-medium transition-colors',
-                      i > 0 && 'border-l border-black/[.06] dark:border-white/[.08]',
+                      'h-[26px] px-2.5 rounded-lg text-[12px] font-medium transition-all',
                       view === v
-                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
-                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04]',
+                        ? 'bg-white dark:bg-[#1e1e21] text-slate-900 dark:text-white shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300',
                     )}
                   >
                     {v.charAt(0).toUpperCase() + v.slice(1)}
