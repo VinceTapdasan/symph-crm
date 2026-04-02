@@ -215,6 +215,8 @@ export type InboxResponse = {
 
 export type FilterTab = 'all' | 'unread'
 
+export type InboxChannel = 'all' | 'email' | 'messenger' | 'instagram' | 'whatsapp' | 'viber'
+
 // ── Billing ─────────────────────────────────────────────────────────────────
 
 export type ApiBillingMilestone = {
