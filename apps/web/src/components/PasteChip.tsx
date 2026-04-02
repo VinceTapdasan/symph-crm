@@ -20,24 +20,24 @@ type PasteChipProps = {
 }
 
 export function PasteChip({ text, onRemove, onClick }: PasteChipProps) {
-  // Up to ~180 chars of preview — ~4 compact lines
+  // Up to ~180 chars of preview — clipped to fit the square card
   const preview = text.slice(0, 180) + (text.length > 180 ? '…' : '')
 
   return (
-    <div className="px-3 pt-2.5 pb-0">
-      <div className="relative inline-block max-w-[190px] group">
-        {/* Card — clickable to expand */}
+    <div className="p-1 pt-2">
+      <div className="relative w-[128px] h-[128px] group">
+        {/* Card — fixed square, clickable to expand */}
         <button
           type="button"
           onClick={onClick}
-          className="w-full text-left px-2.5 py-2 rounded-lg bg-slate-100 dark:bg-white/[.06] border border-black/[.08] dark:border-white/[.10] hover:border-black/20 dark:hover:border-white/20 transition-colors"
+          className="w-full h-full text-left px-2.5 py-2.5 rounded-lg bg-slate-100 dark:bg-white/[.06] border border-black/[.08] dark:border-white/[.10] hover:border-black/20 dark:hover:border-white/20 transition-colors flex flex-col overflow-hidden"
         >
-          {/* Word-wrapped preview text */}
-          <p className="text-[11.5px] text-slate-500 dark:text-slate-400 leading-[1.5] line-clamp-4 break-words">
+          {/* Preview text — fills remaining space, clipped */}
+          <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-[1.5] line-clamp-4 break-words flex-1 overflow-hidden">
             {preview}
           </p>
-          {/* PASTED badge */}
-          <div className="mt-2">
+          {/* PASTED badge — pinned to bottom */}
+          <div className="mt-1.5 shrink-0">
             <span className="text-[9px] font-semibold tracking-[0.12em] uppercase text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-white/[.15] rounded px-1.5 py-0.5">
               PASTED
             </span>
