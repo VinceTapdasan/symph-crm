@@ -4,8 +4,8 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useGetCompanies, useGetDeals, useGetUsers } from '@/lib/hooks/queries'
 import { Input } from '@/components/ui/input'
-import { cn, getInitials, getBrandColor, formatDealValue, totalNumericValue } from '@/lib/utils'
-import { STAGE_DISPLAY, STAGE_COLORS, CLOSED_STAGE_IDS } from '@/lib/constants'
+import { cn, getInitials, getBrandColor, formatDealValue, totalNumericValue, toPascalCase } from '@/lib/utils'
+import { STAGE_DISPLAY, STAGE_COLORS, STAGE_LABELS, CLOSED_STAGE_IDS } from '@/lib/constants'
 import type { ApiCompanyDetail, ApiDeal } from '@/lib/types'
 import type { ColumnDef } from '@tanstack/react-table'
 import { DataTable, SortableHeader } from './ui/data-table'
@@ -43,13 +43,14 @@ type BrandGroup = {
 }
 
 function StagePill({ stage }: { stage: string }) {
-  const cfg = STAGE_DISPLAY[stage] || { label: stage, bg: '#f1f5f9', color: '#475569' }
+  const stageColor = STAGE_COLORS[stage] || '#64748b'
+  const label = STAGE_LABELS[stage] || stage
   return (
     <span
       className="inline-block px-2 py-px rounded-full text-[11px] font-medium leading-[18px] whitespace-nowrap"
-      style={{ background: cfg.bg, color: cfg.color }}
+      style={{ background: `${stageColor}18`, color: stageColor }}
     >
-      {cfg.label}
+      {label}
     </span>
   )
 }
@@ -148,7 +149,7 @@ function BrandDetailModal({
                   />
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-medium text-slate-900 dark:text-white truncate">
-                      {deal.title}
+                      {toPascalCase(deal.title)}
                     </div>
                     {tags.length > 0 && (
                       <div className="flex gap-1 mt-0.5 flex-wrap">
@@ -478,8 +479,9 @@ export function Deals({ onOpenDeal }: DealsProps) {
       for (const d of g.deals.filter(dd => !CLOSED_STAGE_IDS.has(dd.stage))) {
         if (!seenStages.has(d.stage)) {
           seenStages.add(d.stage)
-          const cfg = STAGE_DISPLAY[d.stage] || { label: d.stage, bg: '#f1f5f9', color: '#475569' }
-          stageSummary.push({ id: d.stage, label: cfg.label, bg: cfg.bg, color: cfg.color })
+          const stageColor = STAGE_COLORS[d.stage] || '#64748b'
+          const label = STAGE_LABELS[d.stage] || d.stage
+          stageSummary.push({ id: d.stage, label, bg: `${stageColor}18`, color: stageColor })
         }
       }
 

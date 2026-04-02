@@ -15,7 +15,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query'
 import { useGetDeals, useGetCompanies, useGetUsers } from '@/lib/hooks/queries'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { cn, formatPeso, getAdvanceTargets, getMoveBackTargets } from '@/lib/utils'
+import { cn, formatPeso, getAdvanceTargets, getMoveBackTargets, toPascalCase } from '@/lib/utils'
 import type { ApiDeal, ApiCompany, ApiUser } from '@/lib/types'
 import {
   KANBAN_STAGES, COLUMN_TO_STAGE, STAGE_ORDER,
@@ -29,7 +29,7 @@ import { usePatchDealStage, useDeleteDeal, useUpdateDeal } from '@/lib/hooks/mut
 import { useUser } from '@/lib/hooks/use-user'
 import {
   MoreHorizontal, Search, X, Trash2, ExternalLink,
-  ChevronDown, ChevronRight, User as UserIcon, Paperclip, Plus,
+  ChevronDown, ChevronRight, User as UserIcon, Paperclip,
 } from 'lucide-react'
 
 type PipelineProps = {
@@ -327,7 +327,7 @@ function DealCard({
 
       {/* Deal title */}
       <div className="text-[12.5px] font-semibold text-slate-900 dark:text-white leading-snug mb-2.5">
-        {deal.title}
+        {toPascalCase(deal.title)}
       </div>
 
       {/* Services tags */}
@@ -788,14 +788,14 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                 onClick={() => setShowCreateBrand(true)}
                 className="bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.08] rounded-lg px-3 py-[5px] text-[12px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors flex items-center gap-1.5"
               >
-                <Plus size={12} /> Brand
+                + New Brand
               </button>
               <button
                 onClick={() => setShowCreateDeal(true)}
                 className="rounded-lg px-3 py-[5px] text-[12px] font-medium text-white transition-colors flex items-center gap-1.5"
                 style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
               >
-                <Plus size={12} /> Deal
+                + New Deal
               </button>
             </>
           )}

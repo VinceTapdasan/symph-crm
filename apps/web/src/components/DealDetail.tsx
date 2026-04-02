@@ -235,6 +235,8 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
   const [noteType, setNoteType] = useState<string>('general')
   const [addingNote, setAddingNote] = useState(false)
   const [showAdvanceConfirm, setShowAdvanceConfirm] = useState(false)
+  const [showWonConfirm, setShowWonConfirm] = useState(false)
+  const [showLostConfirm, setShowLostConfirm] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [viewingDoc, setViewingDoc] = useState<ApiDocument | null>(null)
@@ -332,7 +334,15 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
   }, [deal, nextStage, dealId, patchStage, queryClient])
 
   const handleMarkWon = useCallback(() => {
-    if (!confirm('Mark this deal as Won?')) return
+    setShowWonConfirm(true)
+  }, [])
+
+  const handleMarkLost = useCallback(() => {
+    setShowLostConfirm(true)
+  }, [])
+
+  const confirmMarkWon = useCallback(() => {
+    setShowWonConfirm(false)
     patchStage.mutate({ id: dealId, stage: 'closed_won' }, {
       onSettled: () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.deals.detail(dealId) })
@@ -341,8 +351,8 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
     })
   }, [dealId, patchStage, queryClient])
 
-  const handleMarkLost = useCallback(() => {
-    if (!confirm('Close this deal as Lost?')) return
+  const confirmMarkLost = useCallback(() => {
+    setShowLostConfirm(false)
     patchStage.mutate({ id: dealId, stage: 'closed_lost' }, {
       onSettled: () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.deals.detail(dealId) })
@@ -553,6 +563,80 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                 {patchStage.isPending ? (
                   <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin mx-auto" />
                 ) : 'Advance'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Won confirmation dialog */}
+      {showWonConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+          onClick={() => setShowWonConfirm(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-2xl p-5 animate-in zoom-in-95 fade-in-0 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-[15px] font-bold text-slate-900 dark:text-white mb-1">
+              Mark as Won?
+            </p>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-5">
+              This deal will be marked as won and moved to the closed pipeline.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowWonConfirm(false)}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmMarkWon}
+                disabled={patchStage.isPending}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 transition-colors"
+              >
+                {patchStage.isPending ? (
+                  <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin mx-auto" />
+                ) : 'Mark as Won'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lost confirmation dialog */}
+      {showLostConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+          onClick={() => setShowLostConfirm(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-2xl p-5 animate-in zoom-in-95 fade-in-0 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-[15px] font-bold text-slate-900 dark:text-white mb-1">
+              Close as Lost?
+            </p>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-5">
+              This deal will be marked as lost and moved to the closed pipeline.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowLostConfirm(false)}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmMarkLost}
+                disabled={patchStage.isPending}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 transition-colors"
+              >
+                {patchStage.isPending ? (
+                  <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin mx-auto" />
+                ) : 'Close as Lost'}
               </button>
             </div>
           </div>
