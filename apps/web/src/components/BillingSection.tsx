@@ -147,7 +147,7 @@ export function BillingSection({ dealId }: BillingSectionProps) {
             type="date"
             value={contractStart}
             onChange={e => { setContractStart(e.target.value); setDirty(true) }}
-            className="w-full h-8 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[12px] text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-primary/30"
+            className="w-full h-8 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[12px] text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
           />
         </div>
         <div>
@@ -156,7 +156,7 @@ export function BillingSection({ dealId }: BillingSectionProps) {
             type="date"
             value={contractEnd}
             onChange={e => { setContractEnd(e.target.value); setDirty(true) }}
-            className="w-full h-8 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[12px] text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-primary/30"
+            className="w-full h-8 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[12px] text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
           />
         </div>
       </div>
@@ -174,7 +174,7 @@ export function BillingSection({ dealId }: BillingSectionProps) {
             placeholder="0.00"
             value={amount}
             onChange={e => { setAmount(e.target.value); setDirty(true) }}
-            className="w-full h-8 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[12px] text-slate-800 dark:text-white tabular-nums outline-none focus:ring-1 focus:ring-primary/30"
+            className="w-full h-8 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[12px] text-slate-800 dark:text-white tabular-nums outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
           />
           {billingType === 'annual' && amount && (
             <p className="text-[10px] text-slate-400 mt-1 tabular-nums">
@@ -258,7 +258,7 @@ export function BillingSection({ dealId }: BillingSectionProps) {
               placeholder="Milestone name"
               value={newMilestoneName}
               onChange={e => setNewMilestoneName(e.target.value)}
-              className="flex-1 h-7 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[11px] text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:ring-1 focus:ring-primary/30"
+              className="flex-1 h-7 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[11px] text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
             />
             <input
               type="number"
@@ -267,7 +267,7 @@ export function BillingSection({ dealId }: BillingSectionProps) {
               placeholder="Amount"
               value={newMilestoneAmount}
               onChange={e => setNewMilestoneAmount(e.target.value)}
-              className="w-[80px] h-7 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[11px] text-slate-800 dark:text-white tabular-nums placeholder:text-slate-400 outline-none focus:ring-1 focus:ring-primary/30"
+              className="w-[80px] h-7 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[11px] text-slate-800 dark:text-white tabular-nums placeholder:text-slate-400 outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
             />
             <button
               onClick={handleAddMilestone}

@@ -155,18 +155,21 @@
     outline: none;
   }
 
-  /* Subtle focus ring — 1px, muted accent, works on both light + dark */
+  /* Subtle focus ring — 1px, muted accent, works on both light + dark.
+     Shadcn components override with their own ring-inset styles. */
   :focus-visible {
-    outline: 1px solid color-mix(in srgb, var(--primary) 50%, transparent);
-    outline-offset: 2px;
+    outline: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+    outline-offset: -1px;
   }
 
-  /* Form inputs: even subtler — box-shadow ring so it doesn't shift layout */
+  /* Form inputs: let shadcn ring-inset handle focus, remove default outline */
   input:focus-visible,
   textarea:focus-visible,
-  select:focus-visible {
+  select:focus-visible,
+  [data-slot="input"]:focus-visible,
+  [data-slot="textarea"]:focus-visible,
+  [data-slot="select-trigger"]:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--primary) 40%, transparent);
   }
 
   /* Subtle ease-in-out transitions on interactive elements */
