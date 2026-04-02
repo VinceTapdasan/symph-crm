@@ -26,6 +26,7 @@ import type {
   ApiCalendarEvent,
   CalendarStatus,
   InboxResponse,
+  ApiNotification,
 } from '@/lib/types'
 
 // ─── Companies ────────────────────────────────────────────────────────────────
@@ -288,6 +289,19 @@ export function useGetTiers(
     queryKey: queryKeys.tiers.all,
     queryFn: () => api.get<ApiTier[]>('/tiers'),
     staleTime: Infinity,
+    ...options,
+  })
+}
+
+// ─── Notifications ───────────────────────────────────────────────────────────
+
+export function useGetNotifications(
+  options?: Partial<UseQueryOptions<ApiNotification[]>>,
+) {
+  return useQuery<ApiNotification[]>({
+    queryKey: queryKeys.notifications.all,
+    queryFn: () => api.get<ApiNotification[]>('/notifications'),
+    refetchInterval: 30_000,
     ...options,
   })
 }

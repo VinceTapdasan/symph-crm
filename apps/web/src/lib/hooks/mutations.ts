@@ -7,9 +7,10 @@
 // - Toast fires BEFORE caller's onSuccess/onError
 // - No direct fetch() calls — always use api.post/put/patch/delete from lib/api.ts
 
-import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
+import { useMutation, useQueryClient, type UseMutationOptions } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
+import { queryKeys } from '@/lib/query-keys'
 import type { CreateEventForm, ApiDocument, ApiBilling, ApiBillingMilestone } from '@/lib/types'
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
@@ -308,5 +309,27 @@ export function useDeleteEmailThread(
   return useMutation<void, Error, string>({
     mutationFn: (threadId: string) => api.delete<void>(`/gmail/threads/${threadId}`),
     ...withToast('Deleted', options),
+  })
+}
+
+// ─── Notification mutations ──────────────────────────────────────────────────
+
+export function useMarkAllNotificationsRead() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.patch('/notifications/read-all', {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.notifications.all })
+    },
+  })
+}
+
+export function useMarkNotificationRead() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.patch(`/notifications/${id}/read`, {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.notifications.all })
+    },
   })
 }

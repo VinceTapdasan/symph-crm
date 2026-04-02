@@ -232,6 +232,19 @@ export type InboxResponse = {
   error?: string
 }
 
+// ── Notifications ──────────────────────────────────────────────────────────
+
+export type ApiNotification = {
+  id: string
+  type: 'dormant_deal' | 'deal_won' | 'mention'
+  isRead: boolean
+  createdAt: string
+  dealId: string | null
+  dealTitle: string | null
+  brandName: string | null
+  triggerText: string
+}
+
 export type FilterTab = 'all' | 'unread'
 
 export type InboxChannel = 'all' | 'email' | 'messenger' | 'instagram' | 'whatsapp' | 'viber'

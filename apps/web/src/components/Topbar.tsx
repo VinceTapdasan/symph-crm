@@ -1,6 +1,7 @@
 'use client'
 
 import { Menu, Search } from 'lucide-react'
+import { NotificationBell } from './NotificationBell'
 
 type TopbarProps = {
   onMenuToggle?: () => void
@@ -30,6 +31,8 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
           Cmd K
         </kbd>
       </button>
+
+      <NotificationBell />
 
       <div className="flex-1" />
     </div>

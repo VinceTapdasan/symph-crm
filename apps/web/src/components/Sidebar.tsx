@@ -7,6 +7,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useTheme } from 'next-themes'
 import { Avatar } from './Avatar'
 import { cn } from '@/lib/utils'
+import { useGetNotifications } from '@/lib/hooks/queries'
 import {
   MessageCircle,
   LayoutGrid,
@@ -52,28 +53,30 @@ type NavSection = {
   items: NavItem[]
 }
 
-const NAV_SECTIONS: NavSection[] = [
-  {
-    title: 'Main',
-    items: [
-      { path: '/chat', label: 'Chat', icon: MessageCircle },
-      { path: '/', label: 'Dashboard', icon: LayoutGrid },
-      { path: '/pipeline', label: 'Pipeline', icon: Columns3 },
-      { path: '/deals', label: 'Deals', icon: BookOpen },
-      { path: '/inbox', label: 'Inbox', icon: Mail },
-    ],
-  },
-  {
-    title: 'Tools',
-    items: [
-      { path: '/calendar', label: 'Calendar', icon: Calendar },
-      { path: '/reports', label: 'Reports', icon: BarChart3 },
-      { path: '/proposals', label: 'Proposals', icon: FileText },
-      { path: '/bills', label: 'Bills', icon: Receipt },
-      { path: '/audit-logs', label: 'Audit Log', icon: ClipboardList },
-    ],
-  },
-]
+function getNavSections(dormantCount: number): NavSection[] {
+  return [
+    {
+      title: 'Main',
+      items: [
+        { path: '/chat', label: 'Chat', icon: MessageCircle },
+        { path: '/', label: 'Dashboard', icon: LayoutGrid },
+        { path: '/pipeline', label: 'Pipeline', icon: Columns3, ...(dormantCount > 0 ? { badge: dormantCount, badgeColor: '#f59e0b' } : {}) },
+        { path: '/deals', label: 'Deals', icon: BookOpen },
+        { path: '/inbox', label: 'Inbox', icon: Mail },
+      ],
+    },
+    {
+      title: 'Tools',
+      items: [
+        { path: '/calendar', label: 'Calendar', icon: Calendar },
+        { path: '/reports', label: 'Reports', icon: BarChart3 },
+        { path: '/proposals', label: 'Proposals', icon: FileText },
+        { path: '/bills', label: 'Bills', icon: Receipt },
+        { path: '/audit-logs', label: 'Audit Log', icon: ClipboardList },
+      ],
+    },
+  ]
+}
 
 function isActive(itemPath: string, pathname: string): boolean {
   if (itemPath === '/') return pathname === '/'
@@ -133,6 +136,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const user = session?.user
 
+  const { data: notifications = [] } = useGetNotifications()
+  const dormantCount = notifications.filter(n => n.type === 'dormant_deal' && !n.isRead).length
+  const navSections = getNavSections(dormantCount)
+
   async function handleSignOut() {
     setShowLogoutConfirm(false)
     setSigningOut(true)
@@ -174,7 +181,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Nav */}
         <nav className="px-2 py-1.5 flex-1 flex flex-col overflow-y-auto">
-          {NAV_SECTIONS.map((section, si) => (
+          {navSections.map((section, si) => (
             <div key={si} className={cn(si > 0 && 'mt-2.5')}>
               <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-400 px-[10px] pt-[4px] pb-0.5">
                 {section.title}
