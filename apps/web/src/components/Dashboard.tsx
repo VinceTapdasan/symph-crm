@@ -80,7 +80,13 @@ export function Dashboard() {
 
   const totalPipeline = summary?.totalPipeline ?? 0
   const activeDeals   = summary?.activeDeals ?? 0
-  const winRate       = summary?.winRate ?? 0
+  // Derive win rate from funnel data to match the terminal card calculation (Bug 3).
+  // summary?.winRate can show 100% if the 'closed_lost' stage slug doesn't match
+  // the hardcoded string in getSummary — using funnelData as source of truth instead.
+  const closedTotal   = (funnelData?.wonCount ?? 0) + (funnelData?.lostCount ?? 0)
+  const winRate       = closedTotal > 0
+    ? Math.round(((funnelData?.wonCount ?? 0) / closedTotal) * 100)
+    : summary?.winRate ?? 0
   const avgDealSize   = summary?.avgDealSize ?? 0
 
   const topDeals = [...deals]
@@ -215,10 +221,13 @@ export function Dashboard() {
       {/* 2-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 items-start">
         <div className="flex flex-col gap-4">
-          <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg px-5 py-[18px] shadow-[var(--shadow-card)]">
-            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-4">Stage Conversion Funnel</div>
-            {loadingFunnel ? <FunnelSkeleton /> : <StageFunnelChart data={funnelData} isLoading={loadingFunnel} />}
-          </div>
+          {loadingFunnel ? (
+            <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg px-5 py-[18px] shadow-[var(--shadow-card)]">
+              <FunnelSkeleton />
+            </div>
+          ) : (
+            <StageFunnelChart data={funnelData} isLoading={false} />
+          )}
           <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg px-5 py-[18px] shadow-[var(--shadow-card)]">
             <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-3.5">Top Deals</div>
             {isLoading ? <TopDealsSkeleton /> : isError ? <p className="text-xs text-slate-400 py-2">No data available</p> : <TopDeals deals={topDeals} />}

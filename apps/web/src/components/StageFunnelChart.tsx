@@ -45,7 +45,7 @@ function FunnelRow({
   return (
     <>
       {/* Stage row */}
-      <div className="grid grid-cols-[140px_1fr_72px_28px] items-center gap-3 py-2 px-1 border-b border-black/[.04] dark:border-white/[.05] last:border-0">
+      <div className="grid grid-cols-[140px_1fr_72px_28px] items-center gap-3 py-1 px-1 border-b border-black/[.04] dark:border-white/[.05] last:border-0">
         {/* Stage name */}
         <div className="text-[12px] font-medium text-slate-700 dark:text-slate-300 truncate">
           {stage.label}
@@ -100,17 +100,6 @@ function FunnelRow({
         </div>
       </div>
 
-      {/* Arrow connector between stages */}
-      {!isLast && stage.conversionRate !== null && (
-        <div className="flex items-center gap-1.5 px-1 py-0.5">
-          <div className="w-[140px] shrink-0" />
-          <div className="flex items-center gap-1 text-[10px] text-slate-400">
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
-      )}
     </>
   )
 }
@@ -188,22 +177,26 @@ function TerminalBadges({ wonCount, lostCount }: { wonCount: number; lostCount: 
   const winRate = total > 0 ? Math.round((wonCount / total) * 100) : null
 
   return (
-    <div className="mt-3 pt-3 border-t border-black/[.06] dark:border-white/[.08]">
-      <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Terminal</div>
-      <div className="flex gap-2">
-        <div className="flex-1 rounded-lg bg-green-50 dark:bg-green-950/30 px-3 py-2.5">
-          <div className="text-[10px] font-semibold text-green-700 dark:text-green-400 uppercase tracking-wide mb-1">Closed Won</div>
-          <div className="text-[20px] font-bold tabular-nums text-green-700 dark:text-green-400">{wonCount}</div>
-          {winRate !== null && (
-            <div className="text-[10px] text-green-600 dark:text-green-500 mt-0.5">{winRate}% win rate</div>
-          )}
+    <div className="mt-2 pt-2 border-t border-black/[.06] dark:border-white/[.08]">
+      <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Terminal</div>
+      <div className="flex gap-1.5">
+        <div className="flex-1 rounded-md bg-green-50 dark:bg-green-950/30 px-2.5 py-1.5 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-[9px] font-semibold text-green-700 dark:text-green-400 uppercase tracking-wide leading-none">Won</div>
+            {winRate !== null && (
+              <div className="text-[9px] text-green-600 dark:text-green-500 mt-0.5 leading-none">{winRate}% win rate</div>
+            )}
+          </div>
+          <div className="text-[16px] font-bold tabular-nums text-green-700 dark:text-green-400 shrink-0">{wonCount}</div>
         </div>
-        <div className="flex-1 rounded-lg bg-red-50 dark:bg-red-950/30 px-3 py-2.5">
-          <div className="text-[10px] font-semibold text-red-700 dark:text-red-400 uppercase tracking-wide mb-1">Closed Lost</div>
-          <div className="text-[20px] font-bold tabular-nums text-red-700 dark:text-red-400">{lostCount}</div>
-          {lostCount + wonCount > 0 && (
-            <div className="text-[10px] text-red-600 dark:text-red-500 mt-0.5">{total} total closed</div>
-          )}
+        <div className="flex-1 rounded-md bg-red-50 dark:bg-red-950/30 px-2.5 py-1.5 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-[9px] font-semibold text-red-700 dark:text-red-400 uppercase tracking-wide leading-none">Lost</div>
+            {total > 0 && (
+              <div className="text-[9px] text-red-600 dark:text-red-500 mt-0.5 leading-none">{total} total</div>
+            )}
+          </div>
+          <div className="text-[16px] font-bold tabular-nums text-red-700 dark:text-red-400 shrink-0">{lostCount}</div>
         </div>
       </div>
     </div>
