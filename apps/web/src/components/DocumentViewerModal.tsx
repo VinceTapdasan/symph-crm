@@ -26,6 +26,11 @@ function isImageDoc(doc: ApiDocument): boolean {
   return ['jpeg', 'jpg', 'png', 'webp', 'gif'].some(t => doc.tags?.includes(t))
 }
 
+
+/** Audio if tags contain a known audio extension */
+function isAudioDoc(doc: ApiDocument): boolean {
+  return ['mp4', 'x-m4a', 'mpeg', 'mp3', 'm4a'].some(t => doc.tags?.includes(t))
+}
 /** Friendly type label from tags */
 function getFileTypeLabel(doc: ApiDocument): string {
   if (!doc.tags?.length) return 'Note'
@@ -47,11 +52,12 @@ type DocumentViewerModalProps = {
 export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: DocumentViewerModalProps) {
   const isMarkdown = isMarkdownDoc(doc)
   const isImage = isImageDoc(doc)
+  const isAudio = isAudioDoc(doc)
   const [viewMode, setViewMode] = useState<ViewMode>('rendered')
   const contentRef = useRef<HTMLDivElement>(null)
 
   // Fetch content for all non-image documents (text, extracted PDF text, etc.)
-  const { data, isLoading } = useGetDocumentContent(!isImage ? doc.id : null)
+  const { data, isLoading } = useGetDocumentContent(!isImage && !isAudio ? doc.id : null)
 
   useEscapeKey(useCallback(onClose, [onClose]))
 
@@ -196,6 +202,19 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
           {isLoading ? (
             <div className="flex items-center justify-center h-48">
               <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+            </div>
+          ) : isAudio ? (
+            /* Audio playback — requires signed URL from Supabase Storage */
+            <div className="flex flex-col items-center justify-center h-48 gap-3 text-slate-400 px-6">
+              <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1} strokeLinecap="round" className="opacity-30">
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
+              <p className="text-[12px] text-center">Audio playback requires Supabase Storage</p>
+              <p className="text-[10px] text-slate-300 dark:text-slate-600 text-center">
+                Add SUPABASE_SERVICE_ROLE_KEY to enable audio playback
+              </p>
             </div>
           ) : isImage ? (
             /* Images require signed URL — not available without Supabase configured */

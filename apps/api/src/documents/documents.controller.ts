@@ -99,6 +99,9 @@ export class DocumentsController {
     } else if (baseMime.startsWith('image/')) {
       // Images are stored as attachment stubs — no text to extract
       content = `[Image attachment: ${originalname}]`
+    } else if (baseMime.startsWith('audio/')) {
+      // Audio files stored as stubs — no text to extract
+      content = `[Audio attachment: ${originalname}]`
     } else {
       throw new BadRequestException(`Unsupported file type: ${mimetype}`)
     }

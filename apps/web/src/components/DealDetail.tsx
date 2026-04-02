@@ -206,6 +206,7 @@ function StagePill({ stage }: { stage: string }) {
 const RESOURCE_ACCEPT_LIST = [
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'text/html',
   'text/markdown',
   'text/plain',
@@ -213,6 +214,9 @@ const RESOURCE_ACCEPT_LIST = [
   'image/jpeg',
   'image/png',
   'image/webp',
+  'audio/mp4',
+  'audio/x-m4a',
+  'audio/mpeg',
 ]
 const RESOURCE_ACCEPT = RESOURCE_ACCEPT_LIST.join(',')
 
@@ -1286,7 +1290,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                       {uploading ? 'Uploading\u2026' : 'Drop files here or click to upload'}
                     </p>
                     <p className="text-[10px] text-slate-400 mt-0.5">
-                      PDF, DOCX, HTML, Images — text/markdown files go to Notes
+                      PDF, DOCX, PPTX, Images, Audio (m4a/mp3) — text files go to Notes
                     </p>
                   </div>
                 </label>
