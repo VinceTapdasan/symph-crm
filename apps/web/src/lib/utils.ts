@@ -163,12 +163,11 @@ export function getInitials(name: string): string {
 }
 
 export function toPascalCase(str: string): string {
+  if (!str) return ''
   return str
-    .replace(/[^a-zA-Z0-9]+/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join('')
+    .split(/[\s_-]+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
 }
 
 /** Extract display name from email address: "Foo Bar <foo@bar.com>" → "Foo Bar" */

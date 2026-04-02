@@ -184,6 +184,15 @@ export function useUpdateDocument(
   })
 }
 
+export function useDeleteDocument(
+  options?: UseMutationOptions<void, Error, string>,
+) {
+  return useMutation<void, Error, string>({
+    mutationFn: (id: string) => api.delete(`/documents/${id}`),
+    ...withToast('Document deleted', options),
+  })
+}
+
 export function useUploadDocumentFile(
   options?: UseMutationOptions<ApiDocument[], Error, { dealId: string; authorId: string; files: File[]; dealStage?: string }>,
 ) {

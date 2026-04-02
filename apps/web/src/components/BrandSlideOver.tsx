@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { cn, getInitials, getBrandColor, formatDealValue, timeAgo, totalNumericValue } from '@/lib/utils'
-import { STAGE_DISPLAY, STAGE_COLORS, CLOSED_STAGE_IDS } from '@/lib/constants'
+import { cn, getInitials, getBrandColor, formatDealValue, timeAgo, totalNumericValue, toPascalCase } from '@/lib/utils'
+import { STAGE_COLORS, STAGE_LABELS, CLOSED_STAGE_IDS } from '@/lib/constants'
 import { useGetDeals, useGetActivitiesByCompany, useGetUsers } from '@/lib/hooks/queries'
 import type { ApiCompanyDetail, ApiDeal, Activity } from '@/lib/types'
 import { X } from 'lucide-react'
@@ -20,13 +20,14 @@ interface BrandSlideOverProps {
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function StagePill({ stage }: { stage: string }) {
-  const cfg = STAGE_DISPLAY[stage] || { label: stage, bg: '#f1f5f9', color: '#475569' }
+  const stageColor = STAGE_COLORS[stage] || '#64748b'
+  const label = STAGE_LABELS[stage] || stage
   return (
     <span
       className="inline-block px-2 py-px rounded-full text-[11px] font-medium leading-[18px] whitespace-nowrap"
-      style={{ background: cfg.bg, color: cfg.color }}
+      style={{ background: `${stageColor}18`, color: stageColor }}
     >
-      {cfg.label}
+      {label}
     </span>
   )
 }
@@ -237,7 +238,7 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
                       >
                         <div className="min-w-0 flex-1">
                           <div className="text-[13px] font-medium text-slate-900 dark:text-white truncate">
-                            {deal.title}
+                            {toPascalCase(deal.title)}
                           </div>
                           <div className="text-[11px] text-slate-400 mt-0.5">
                             {formatDealValue(deal.value)}

@@ -32,6 +32,12 @@ const MIME_TO_LABEL: Record<string, string> = {
   'image/gif': 'GIF',
   'image/svg+xml': 'SVG',
 
+
+  // Audio
+  'audio/mp4': 'M4A',
+  'audio/x-m4a': 'M4A',
+  'audio/mpeg': 'MP3',
+
   // Archives
   'application/zip': 'ZIP',
   'application/x-zip-compressed': 'ZIP',
@@ -64,6 +70,10 @@ const EXT_TO_LABEL: Record<string, string> = {
   webp: 'WEBP',
   gif: 'GIF',
   svg: 'SVG',
+  mp4: 'M4A',
+  m4a: 'M4A',
+  mp3: 'MP3',
+  mpeg: 'MP3',
   zip: 'ZIP',
   rar: 'RAR',
   '7z': '7Z',
@@ -156,6 +166,12 @@ const IMAGE_MIMES = new Set([
 ])
 
 const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'])
+const AUDIO_MIMES = new Set([
+  'audio/mp4', 'audio/x-m4a', 'audio/mpeg', 'audio/mp3',
+])
+
+const AUDIO_EXTS = new Set(['mp4', 'x-m4a', 'mpeg', 'mp3', 'm4a'])
+
 
 /**
  * Determine if a document type supports word count.
@@ -197,4 +213,23 @@ export function isImage(mimeOrExt: string | null | undefined): boolean {
 
   // Check extension
   return IMAGE_EXTS.has(normalized)
+}
+/**
+ * Determine if a document is an audio file.
+ *
+ * @param mimeOrExt - MIME type or file extension
+ * @returns true if this is an audio document
+ */
+export function isAudio(mimeOrExt: string | null | undefined): boolean {
+  if (!mimeOrExt) return false
+
+  const normalized = mimeOrExt.toLowerCase().trim()
+
+  // Check MIME type
+  if (normalized.includes('/')) {
+    return AUDIO_MIMES.has(normalized) || normalized.startsWith('audio/')
+  }
+
+  // Check extension
+  return AUDIO_EXTS.has(normalized)
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 // Product/Tier inputs removed per Vins — not needed in create flow
 import { Input } from '@/components/ui/input'
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Combobox } from '@/components/ui/combobox'
-import { useCreateDeal } from '@/lib/hooks/mutations'
+import { useCreateDeal, useUploadDocumentFile } from '@/lib/hooks/mutations'
 import { useUser } from '@/lib/hooks/use-user'
 import { queryKeys } from '@/lib/query-keys'
 import { useEscapeKey } from '@/lib/hooks/use-escape-key'
@@ -60,6 +60,23 @@ function ServiceSelect({ value, onValueChange }: { value: string; onValueChange:
   )
 }
 
+const CREATE_DEAL_ACCEPT_LIST = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/html',
+  'text/markdown',
+  'text/plain',
+  'text/csv',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'audio/mp4',
+  'audio/x-m4a',
+  'audio/mpeg',
+]
+const CREATE_DEAL_ACCEPT = CREATE_DEAL_ACCEPT_LIST.join(',')
+
 export function CreateDealModal({ companies, onClose, onCreated }: Props) {
   useEscapeKey(useCallback(onClose, [onClose]))
 
@@ -72,12 +89,29 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
   const [serviceType, setServiceType] = useState('')
   const qc = useQueryClient()
   const { userId } = useUser()
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const uploadFiles = useUploadDocumentFile()
 
-  const { mutate, isPending, error } = useCreateDeal({
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.deals.all })
-      if (companyId) qc.invalidateQueries({ queryKey: queryKeys.companies.deals(companyId) })
-      onCreated()
+  const createDeal = useCreateDeal({
+    onSuccess: (data: any) => {
+      // If files are pending, upload them to the new deal
+      if (pendingFiles.length > 0 && data?.id && userId) {
+        uploadFiles.mutate(
+          { dealId: data.id, authorId: userId, files: pendingFiles, dealStage: stage },
+          {
+            onSettled: () => {
+              qc.invalidateQueries({ queryKey: queryKeys.deals.all })
+              if (companyId) qc.invalidateQueries({ queryKey: queryKeys.companies.deals(companyId) })
+              onCreated()
+            },
+          },
+        )
+      } else {
+        qc.invalidateQueries({ queryKey: queryKeys.deals.all })
+        if (companyId) qc.invalidateQueries({ queryKey: queryKeys.companies.deals(companyId) })
+        onCreated()
+      }
     },
   })
 
@@ -88,7 +122,7 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
     // Build tags from the selected service type
     const tags = serviceType ? [serviceType] : []
 
-    mutate({
+    createDeal.mutate({
       title: title.trim(),
       companyId: companyId || null,
       productId: null,
@@ -105,6 +139,8 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
 
   // Product + tier are now optional — only title is required
   const canSubmit = !!title.trim()
+  const isPending = createDeal.isPending || uploadFiles.isPending
+  const error = createDeal.error
 
   return (
     <div
@@ -228,6 +264,62 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
             </div>
           </div>
 
+
+          {/* File attachments */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">
+              Attachments <span className="text-slate-400">(optional)</span>
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={CREATE_DEAL_ACCEPT}
+              multiple
+              onChange={e => {
+                const files = e.target.files
+                if (!files?.length) return
+                setPendingFiles(prev => [...prev, ...Array.from(files).filter(f => CREATE_DEAL_ACCEPT_LIST.includes(f.type))])
+                if (fileInputRef.current) fileInputRef.current.value = ''
+              }}
+              className="hidden"
+              id="create-deal-files"
+            />
+            <label
+              htmlFor="create-deal-files"
+              className="flex items-center gap-2 py-2.5 px-3 border border-dashed border-slate-200 dark:border-white/[.1] rounded-lg cursor-pointer hover:border-primary/40 hover:bg-primary/[.02] transition-colors"
+            >
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-400 shrink-0">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              <span className="text-[12px] text-slate-500 dark:text-slate-400">
+                {pendingFiles.length > 0 ? `${pendingFiles.length} file${pendingFiles.length !== 1 ? 's' : ''} attached` : 'Drop files or click to attach'}
+              </span>
+            </label>
+            {pendingFiles.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {pendingFiles.map((file, i) => (
+                  <div key={i} className="relative group inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 dark:bg-white/[.06] border border-black/[.06] dark:border-white/[.08] max-w-[160px]">
+                    <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-400 shrink-0">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    <span className="text-[10px] text-slate-600 dark:text-slate-300 truncate">{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))}
+                      className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-white dark:bg-[#2a2c30] border border-black/[.1] dark:border-white/[.1] flex items-center justify-center text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <svg width={6} height={6} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {error && (
             <p className="text-[12px] text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">

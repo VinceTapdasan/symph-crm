@@ -3,7 +3,7 @@ import { eq, desc, and, isNull } from 'drizzle-orm'
 import { documents } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
-import { StorageService } from '../storage/storage.service'
+import { StorageService, CONTENT_BUCKET } from '../storage/storage.service'
 import { AuditLogsService } from '../audit-logs/audit-logs.service'
 
 export type DocumentType = typeof documents.$inferInsert['type']
@@ -151,12 +151,39 @@ export class DocumentsService {
     return doc
   }
 
-  /** Soft delete */
+  /** Hard delete — removes storage file + DB row permanently */
   async remove(id: string) {
-    await this.db
-      .update(documents)
-      .set({ deletedAt: new Date() })
-      .where(eq(documents.id, id))
+    const doc = await this.findOne(id)
+    if (!doc) throw new NotFoundException(`Document ${id} not found`)
+
+    // Delete from storage (best-effort — don't block DB cleanup)
+    try {
+      await this.storage.delete(CONTENT_BUCKET, doc.storagePath)
+    } catch (e) {
+      // Storage delete is best-effort — log and continue
+    }
+
+    // Hard delete from DB
+    await this.db.delete(documents).where(eq(documents.id, id))
+
+    // Audit
+    this.auditLogs.log({
+      action: 'delete',
+      auditType: 'document_deleted',
+      entityType: 'document',
+      entityId: id,
+      details: { title: doc.title, type: doc.type, dealId: doc.dealId },
+    }).catch(() => {})
+  }
+
+  /** Generate a signed download URL for a document */
+  async getDownloadUrl(id: string): Promise<{ url: string; filename: string }> {
+    const doc = await this.findOne(id)
+    if (!doc) throw new NotFoundException(`Document ${id} not found`)
+    const url = await this.storage.signedUrl(CONTENT_BUCKET, doc.storagePath, 3600)
+    // Extract filename from storagePath (last segment)
+    const filename = doc.storagePath.split('/').pop() ?? doc.title
+    return { url, filename }
   }
 
   /**

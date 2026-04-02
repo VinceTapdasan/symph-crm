@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { queryKeys } from '@/lib/query-keys'
-import { usePatchDealStage, useCreateDocument, useUploadDocumentFile, useUpdateDeal } from '@/lib/hooks/mutations'
+import { usePatchDealStage, useCreateDocument, useUploadDocumentFile, useUpdateDeal, useDeleteDocument } from '@/lib/hooks/mutations'
 import { useGetDeal, useGetCompany, useGetActivitiesByDeal, useGetDocumentsByDeal, useGetUsers } from '@/lib/hooks/queries'
 import { useUser } from '@/lib/hooks/use-user'
 import { EmptyState } from './EmptyState'
@@ -22,6 +22,7 @@ import {
   getDaysInStage, getBrandColor, getInitials, getStageProgressIndex,
 } from '@/lib/utils'
 import { getMimeLabel, supportsWordCount, isImage } from '@/lib/utils/document-utils'
+import { api } from '@/lib/api'
 import type { ApiDealDetail, ApiCompanyDetail, ApiDocument } from '@/lib/types'
 import {
   STAGE_LABELS, STAGE_COLORS, STAGE_ADVANCE_MAP,
@@ -205,6 +206,7 @@ function StagePill({ stage }: { stage: string }) {
 const RESOURCE_ACCEPT_LIST = [
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'text/html',
   'text/markdown',
   'text/plain',
@@ -212,6 +214,9 @@ const RESOURCE_ACCEPT_LIST = [
   'image/jpeg',
   'image/png',
   'image/webp',
+  'audio/mp4',
+  'audio/x-m4a',
+  'audio/mpeg',
 ]
 const RESOURCE_ACCEPT = RESOURCE_ACCEPT_LIST.join(',')
 
@@ -235,9 +240,12 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
   const [noteType, setNoteType] = useState<string>('general')
   const [addingNote, setAddingNote] = useState(false)
   const [showAdvanceConfirm, setShowAdvanceConfirm] = useState(false)
+  const [showWonConfirm, setShowWonConfirm] = useState(false)
+  const [showLostConfirm, setShowLostConfirm] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [viewingDoc, setViewingDoc] = useState<ApiDocument | null>(null)
+  const [deletingDoc, setDeletingDoc] = useState<ApiDocument | null>(null)
   const [notePasteChips, setNotePasteChips] = useState<string[]>([])
   const [notePastePreviewText, setNotePastePreviewText] = useState<string | null>(null)
   const [noteFocused, setNoteFocused] = useState(false)
@@ -259,6 +267,14 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
   const { data: activities = [], isLoading: loadingActivities } = useGetActivitiesByDeal(dealId, { enabled: !!deal })
   const { data: documents = [], isLoading: loadingDocs, refetch: refetchDocs } = useGetDocumentsByDeal(dealId, { enabled: !!deal })
   const { data: users = [] } = useGetUsers()
+  const deleteDoc = useDeleteDocument({
+    onSuccess: () => {
+      refetchDocs()
+      queryClient.invalidateQueries({ queryKey: queryKeys.documents.byDeal(dealId) })
+      setDeletingDoc(null)
+      setViewingDoc(null)
+    },
+  })
 
   // ── Derived values ───────────────────────────────────────────────────────
 
@@ -332,7 +348,15 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
   }, [deal, nextStage, dealId, patchStage, queryClient])
 
   const handleMarkWon = useCallback(() => {
-    if (!confirm('Mark this deal as Won?')) return
+    setShowWonConfirm(true)
+  }, [])
+
+  const handleMarkLost = useCallback(() => {
+    setShowLostConfirm(true)
+  }, [])
+
+  const confirmMarkWon = useCallback(() => {
+    setShowWonConfirm(false)
     patchStage.mutate({ id: dealId, stage: 'closed_won' }, {
       onSettled: () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.deals.detail(dealId) })
@@ -341,8 +365,8 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
     })
   }, [dealId, patchStage, queryClient])
 
-  const handleMarkLost = useCallback(() => {
-    if (!confirm('Close this deal as Lost?')) return
+  const confirmMarkLost = useCallback(() => {
+    setShowLostConfirm(false)
     patchStage.mutate({ id: dealId, stage: 'closed_lost' }, {
       onSettled: () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.deals.detail(dealId) })
@@ -448,6 +472,24 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
     setPendingFiles([])
   }, [pendingFiles, deal, dealId, userId, uploadFiles])
 
+  const handleDeleteDoc = useCallback((doc: ApiDocument) => {
+    setDeletingDoc(doc)
+  }, [])
+
+  const confirmDeleteDoc = useCallback(() => {
+    if (!deletingDoc) return
+    deleteDoc.mutate(deletingDoc.id)
+  }, [deletingDoc, deleteDoc])
+
+  const handleDownloadDoc = useCallback(async (doc: ApiDocument) => {
+    try {
+      const data = await api.get<{ url: string; filename: string }>(`/documents/${doc.id}/download`)
+      window.open(data.url, '_blank')
+    } catch {
+      toast.error('Download failed — storage may not be configured')
+    }
+  }, [])
+
   // ── Render: loading / error ───────────────────────────────────────────────
 
   if (isLoading) {
@@ -501,9 +543,61 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
 
   return (
     <div className="px-0 pt-4 pb-6 sm:p-4 md:p-6">
+      {/* ── Delete confirmation modal ───────────────────────────────── */}
+      {deletingDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDeletingDoc(null)}>
+          <div className="bg-white dark:bg-[#1a1d21] rounded-xl shadow-2xl border border-black/[.08] dark:border-white/[.08] w-[92vw] max-w-[400px] p-6 animate-in fade-in-0 zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center shrink-0">
+                <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-red-500">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  <line x1="10" y1="11" x2="10" y2="17" />
+                  <line x1="14" y1="11" x2="14" y2="17" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-[15px] font-semibold text-slate-900 dark:text-white">Delete permanently?</h3>
+                <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">This cannot be undone.</p>
+              </div>
+            </div>
+            <div className="rounded-lg bg-red-50/50 dark:bg-red-500/[.06] border border-red-100 dark:border-red-500/10 px-3 py-2.5 mb-5">
+              <p className="text-[12px] text-red-700 dark:text-red-400 font-medium truncate">{deletingDoc.title}</p>
+              <p className="text-[10px] text-red-500/70 dark:text-red-400/60 mt-0.5">
+                {deletingDoc.storagePath?.includes('/resources/') ? 'Resource file' : 'Note'} · Created {new Date(deletingDoc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeletingDoc(null)}
+                className="flex-1 h-9 rounded-lg text-[13px] font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[.06] hover:bg-slate-200 dark:hover:bg-white/[.10] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteDoc}
+                disabled={deleteDoc.isPending}
+                className="flex-1 h-9 rounded-lg text-[13px] font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+              >
+                {deleteDoc.isPending ? (
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                ) : (
+                  'Delete forever'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Document viewer modal */}
       {viewingDoc && (
-        <DocumentViewerModal doc={viewingDoc} onClose={() => setViewingDoc(null)} />
+        <DocumentViewerModal
+          doc={viewingDoc}
+          onClose={() => setViewingDoc(null)}
+          onDelete={handleDeleteDoc}
+          onDownload={handleDownloadDoc}
+        />
       )}
 
       {/* Paste preview modal — ESC-closable, shows full pasted content */}
@@ -553,6 +647,80 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                 {patchStage.isPending ? (
                   <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin mx-auto" />
                 ) : 'Advance'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Won confirmation dialog */}
+      {showWonConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+          onClick={() => setShowWonConfirm(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-2xl p-5 animate-in zoom-in-95 fade-in-0 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-[15px] font-bold text-slate-900 dark:text-white mb-1">
+              Mark as Won?
+            </p>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-5">
+              This deal will be marked as won and moved to the closed pipeline.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowWonConfirm(false)}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmMarkWon}
+                disabled={patchStage.isPending}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 transition-colors"
+              >
+                {patchStage.isPending ? (
+                  <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin mx-auto" />
+                ) : 'Mark as Won'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lost confirmation dialog */}
+      {showLostConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+          onClick={() => setShowLostConfirm(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-2xl p-5 animate-in zoom-in-95 fade-in-0 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-[15px] font-bold text-slate-900 dark:text-white mb-1">
+              Close as Lost?
+            </p>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-5">
+              This deal will be marked as lost and moved to the closed pipeline.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowLostConfirm(false)}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmMarkLost}
+                disabled={patchStage.isPending}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 transition-colors"
+              >
+                {patchStage.isPending ? (
+                  <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin mx-auto" />
+                ) : 'Close as Lost'}
               </button>
             </div>
           </div>
@@ -953,7 +1121,19 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                               <polyline points="14 2 14 8 20 8" />
                             </svg>
                           </div>
-                          {docStage && <StagePill stage={docStage} />}
+                          <div className="flex items-center gap-1">
+                            {docStage && <StagePill stage={docStage} />}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc) }}
+                              className="w-5 h-5 rounded-md flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                              title="Delete"
+                            >
+                              <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                         {/* Title */}
                         <p className="text-[12px] font-semibold text-slate-800 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors">
@@ -1035,8 +1215,18 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                             </span>
                           </div>
                         </div>
-                        {/* View hint */}
-                        <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
+                        {/* Actions */}
+                        <div className="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc) }}
+                            className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                            title="Delete"
+                          >
+                            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                          </button>
                           <span className="text-[10px] font-medium text-primary flex items-center gap-0.5">
                             View
                             <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -1100,7 +1290,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                       {uploading ? 'Uploading\u2026' : 'Drop files here or click to upload'}
                     </p>
                     <p className="text-[10px] text-slate-400 mt-0.5">
-                      PDF, DOCX, HTML, Images — text/markdown files go to Notes
+                      PDF, DOCX, PPTX, Images, Audio (m4a/mp3) — text files go to Notes
                     </p>
                   </div>
                 </label>
@@ -1173,7 +1363,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                               className="group rounded-lg border border-black/[.06] dark:border-white/[.08] p-3 cursor-pointer hover:border-primary/30 hover:bg-primary/[.02] transition-all flex flex-col gap-2"
                               onClick={() => setViewingDoc(doc)}
                             >
-                              {/* File icon */}
+                              {/* File icon + actions */}
                               <div className="flex items-center justify-between">
                                 <div className={cn(
                                   'w-10 h-10 rounded-lg flex items-center justify-center text-[10px] font-bold',
@@ -1183,7 +1373,30 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                                 )}>
                                   {ext}
                                 </div>
-                                {docStage && <StagePill stage={docStage} />}
+                                <div className="flex items-center gap-1">
+                                  {docStage && <StagePill stage={docStage} />}
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDownloadDoc(doc) }}
+                                    className="w-5 h-5 rounded-md flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Download"
+                                  >
+                                    <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                      <polyline points="7 10 12 15 17 10" />
+                                      <line x1="12" y1="15" x2="12" y2="3" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc) }}
+                                    className="w-5 h-5 rounded-md flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Delete"
+                                  >
+                                    <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                                      <polyline points="3 6 5 6 21 6" />
+                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    </svg>
+                                  </button>
+                                </div>
                               </div>
                               {/* Filename */}
                               <p className="text-[12px] font-medium text-slate-800 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors" title={displayName}>
@@ -1253,8 +1466,29 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                                   </span>
                                 </div>
                               </div>
-                              {/* View arrow */}
-                              <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {/* Actions */}
+                              <div className="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleDownloadDoc(doc) }}
+                                  className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                                  title="Download"
+                                >
+                                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc) }}
+                                  className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                  title="Delete"
+                                >
+                                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                  </svg>
+                                </button>
                                 <span className="text-[10px] font-medium text-primary flex items-center gap-0.5">
                                   View
                                   <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
