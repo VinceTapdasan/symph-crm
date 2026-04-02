@@ -109,6 +109,25 @@ function StageProgress({ currentStage }: { currentStage: string }) {
   )
 }
 
+function SegmentedProgressBar({ currentStage }: { currentStage: string }) {
+  const isLost = currentStage === 'closed_lost'
+  const currentIdx = isLost ? -1 : getStageProgressIndex(currentStage)
+  return (
+    <div className="flex gap-[3px] h-1">
+      {PROGRESS_STAGES.map((stage, i) => (
+        <div
+          key={stage.id}
+          className="flex-1 rounded-full transition-all"
+          style={{
+            background: STAGE_STEP_COLOR[stage.id] ?? 'var(--stage-lead)',
+            opacity: isLost ? 0.2 : i <= currentIdx ? 1 : 0.2,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 function SidebarSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4">
@@ -491,14 +510,85 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
         Back to Pipeline
       </button>
 
-      {/* ── Header card ─────────────────────────────────────────────────────── */}
-      <div className="bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 mb-4">
+      {/* ── Mobile header (sm:hidden) ────────────────────────────────────────── */}
+      <div className="sm:hidden bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 mb-4 flex flex-col gap-3">
+        {/* Company tag */}
+        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide leading-none">
+          {company?.name ?? 'No Brand'}
+        </p>
+
+        {/* Deal title */}
+        <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-snug -mt-1">
+          {deal.title}
+        </h1>
+
+        {/* Stage dot + deal value */}
+        <div className="flex items-center gap-2">
+          <div
+            className="w-2.5 h-2.5 rounded-full shrink-0"
+            style={{ background: `var(--stage-${deal.stage}, ${stageColor})` }}
+          />
+          <span
+            className="text-[12px] font-semibold"
+            style={{ color: `var(--stage-${deal.stage}, ${stageColor})` }}
+          >
+            {stageLabel}
+          </span>
+          <span className="text-slate-300 dark:text-slate-600">·</span>
+          <span className="text-[15px] font-bold tabular-nums text-primary">
+            {formatCurrencyFull(deal.value)}
+          </span>
+        </div>
+
+        {/* Segmented progress bar */}
+        <SegmentedProgressBar currentStage={deal.stage} />
+
+        {/* Context strip: days in stage + capture date */}
+        <div className="flex items-center gap-3 text-[11px] text-slate-400">
+          <span>{daysInStage}d in stage</span>
+          <span className="text-slate-300 dark:text-slate-600">·</span>
+          <span>Captured {formatDate(deal.createdAt)}</span>
+        </div>
+
+        {/* Action row: Advance + More */}
+        <div className="flex items-center gap-2 mt-1">
+          {nextStage ? (
+            <button
+              onClick={handleAdvance}
+              disabled={patchStage.isPending}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg font-semibold text-[13px] text-white disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
+            >
+              {patchStage.isPending ? (
+                <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              ) : (
+                <>
+                  Advance to {STAGE_LABELS[nextStage] ?? nextStage}
+                  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </>
+              )}
+            </button>
+          ) : (
+            <div className="flex-1 flex items-center justify-center py-2 rounded-lg text-[12px] font-medium text-slate-400 bg-slate-50 dark:bg-white/[.04]">
+              {deal.stage === 'closed_won' ? '🎉 Deal Won' : deal.stage === 'closed_lost' ? 'Deal Lost' : 'No next stage'}
+            </div>
+          )}
+          <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-black/[.08] dark:border-white/[.1] text-slate-500 hover:bg-slate-50 dark:hover:bg-white/[.04] shrink-0">
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Desktop header (hidden sm:block) ────────────────────────────────── */}
+      <div className="hidden sm:block bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 mb-4">
         {/* Top row: brand info + value/advance */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="flex sm:items-start sm:justify-between gap-3">
           {/* Left: Brand + deal info */}
           <div className="flex items-center gap-3.5 min-w-0">
             <div
-              className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-[14px] sm:text-[15px] font-bold shrink-0"
+              className="w-12 h-12 rounded-xl flex items-center justify-center text-[15px] font-bold shrink-0"
               style={{ background: `${brandColor}18`, color: brandColor }}
             >
               {getInitials(company?.name ?? 'No Brand')}
@@ -507,7 +597,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide leading-none mb-1">
                 {company?.name ?? 'No Brand'}
               </p>
-              <h1 className="text-[18px] sm:text-[20px] font-bold text-slate-900 dark:text-white leading-tight">
+              <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-tight">
                 {deal.title}
               </h1>
               <p className="text-[12px] text-slate-400 mt-0.5">
@@ -517,8 +607,8 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
           </div>
 
           {/* Right: Value → stage → advance (stacked, right-aligned) */}
-          <div className="flex flex-col items-end gap-1.5 sm:shrink-0">
-            <div className="text-[22px] sm:text-[26px] font-bold tabular-nums text-primary leading-tight">
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <div className="text-[26px] font-bold tabular-nums text-primary leading-tight">
               {formatCurrencyFull(deal.value)}
             </div>
             <span
@@ -552,7 +642,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
           </div>
         </div>
 
-        {/* Stage progress */}
+        {/* Stage progress — desktop only */}
         <StageProgress currentStage={deal.stage} />
       </div>
 
