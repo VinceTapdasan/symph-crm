@@ -40,6 +40,11 @@ export class DocumentsController {
     return this.documentsService.readContent(id).then(content => ({ content }))
   }
 
+  @Get(':id/download')
+  downloadUrl(@Param('id') id: string) {
+    return this.documentsService.getDownloadUrl(id)
+  }
+
   @Post()
   create(
     @Body() data: Omit<typeof documents.$inferInsert, 'storagePath' | 'excerpt' | 'wordCount'> & {
