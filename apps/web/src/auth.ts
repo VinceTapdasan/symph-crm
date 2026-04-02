@@ -70,6 +70,7 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
               token.firstName = data.firstName ?? null
               token.lastName = data.lastName ?? null
               token.nickname = data.nickname ?? null
+              token.currentTeam = data.currentTeam ?? null
             }
           } catch {
             // Non-blocking — login still succeeds even if sync fails
@@ -95,6 +96,7 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
             token.firstName = data.firstName ?? null
             token.lastName = data.lastName ?? null
             token.nickname = data.nickname ?? null
+            token.currentTeam = data.currentTeam ?? null
           }
         } catch {
           // Non-blocking
@@ -115,6 +117,7 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
       ;(session.user as any).firstName = token.firstName ?? null
       ;(session.user as any).lastName = token.lastName ?? null
       ;(session.user as any).nickname = token.nickname ?? null
+      ;(session.user as any).currentTeam = token.currentTeam ?? null
       return session
     },
   },

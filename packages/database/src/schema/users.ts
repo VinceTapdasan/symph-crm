@@ -14,6 +14,7 @@ export const users = pgTable('users', {
   middleName: text('middle_name'),
   lastName: text('last_name'),
   nickname: text('nickname'),
+  currentTeam: text('current_team'),
   isOnboarded: boolean('is_onboarded').default(false).notNull(),
   createdAt: timestamp('createdAt', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updatedAt', { withTimezone: true }).defaultNow().notNull(),

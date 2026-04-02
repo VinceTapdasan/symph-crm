@@ -66,24 +66,19 @@ export class UsersService {
 
   /**
    * Complete onboarding for a user.
-   * Sets profile fields and marks isOnboarded = true.
+   * Sets the user's current team and marks isOnboarded = true.
+   * Name is taken from Google OAuth (already stored in the name column).
    */
   async completeOnboarding(
     id: string,
     data: {
-      firstName: string
-      middleName: string
-      lastName: string
-      nickname?: string | null
+      currentTeam: string
     },
   ) {
     const [user] = await this.db
       .update(users)
       .set({
-        firstName: data.firstName,
-        middleName: data.middleName,
-        lastName: data.lastName,
-        nickname: data.nickname ?? null,
+        currentTeam: data.currentTeam,
         isOnboarded: true,
         updatedAt: new Date(),
       })
@@ -97,9 +92,7 @@ export class UsersService {
       entityId: id,
       performedBy: id,
       details: {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        nickname: data.nickname ?? null,
+        currentTeam: data.currentTeam,
       },
     }).catch(() => {})
 

@@ -18,21 +18,18 @@ export class UsersController {
 
   /**
    * PATCH /api/users/onboarding
-   * Complete the onboarding profile for a user.
-   * Sets name fields and flips isOnboarded to true.
+   * Complete onboarding by selecting the user's current team.
+   * Flips isOnboarded to true. Name comes from Google OAuth.
    */
   @Patch('onboarding')
   completeOnboarding(
     @Body()
     body: {
       id: string
-      firstName: string
-      middleName: string
-      lastName: string
-      nickname?: string
+      currentTeam: string
     },
   ) {
-    return this.usersService.completeOnboarding(body.id, body)
+    return this.usersService.completeOnboarding(body.id, { currentTeam: body.currentTeam })
   }
 
   @Get()
