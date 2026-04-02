@@ -118,6 +118,25 @@ export type PipelineSummary = {
   dealsByStage: { stage: string; count: number; totalValue: number }[]
 }
 
+// ── Pipeline Funnel ──────────────────────────────────────────────────────────
+
+export type FunnelStage = {
+  stage: string
+  label: string
+  entryCount: number
+  conversionRate: number | null   // % conversion to next stage; null for last funnel stage
+  isBottleneck: boolean           // true when conversionRate < 40
+  color: string
+  sortOrder: number
+}
+
+export type FunnelResponse = {
+  stages: FunnelStage[]   // active (non-terminal) stages ordered by sort_order
+  totalEntered: number
+  wonCount: number
+  lostCount: number
+}
+
 // ── Audit Logs ───────────────────────────────────────────────────────────────
 
 export type AuditLogEntry = {

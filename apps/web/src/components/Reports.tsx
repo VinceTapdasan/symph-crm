@@ -4,7 +4,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from './EmptyState'
 import { formatCurrency } from '@/lib/utils'
 import { STAGE_LABELS, STAGE_COLORS } from '@/lib/constants'
-import { useGetPipelineSummary, useGetDeals } from '@/lib/hooks/queries'
+import { useGetPipelineSummary, useGetDeals, useGetFunnel } from '@/lib/hooks/queries'
+import { StageFunnelChart } from './StageFunnelChart'
 
 function Spinner() {
   return (
@@ -18,6 +19,7 @@ function Spinner() {
 export function Reports() {
   const { data: summary, isLoading } = useGetPipelineSummary()
   const { data: deals = [], isLoading: loadingDeals } = useGetDeals()
+  const { data: funnelData, isLoading: loadingFunnel } = useGetFunnel()
 
   const closedWon = summary?.dealsByStage.find(s => s.stage === 'closed_won')
   const closedLost = summary?.dealsByStage.find(s => s.stage === 'closed_lost')
@@ -137,53 +139,8 @@ export function Reports() {
           </CardContent>
         </Card>
 
-        {/* Pipeline Funnel */}
-        <Card>
-          <CardContent>
-            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-4 pb-4 border-b border-black/[.06] dark:border-white/[.08]">
-              Pipeline Funnel
-            </div>
-            {isLoading ? (
-              <div className="flex items-center justify-center h-[200px]"><Spinner /></div>
-            ) : funnelStages.length === 0 ? (
-              <EmptyState
-                icon="M3 4h18M4 8h16M6 12h12M8 16h8M10 20h4"
-                title="No active deals"
-                description="The funnel shows conversion rates across active stages"
-                compact
-              />
-            ) : (
-              <div className="flex flex-col gap-1.5">
-                {funnelStages.map(s => {
-                  const widthPct = Math.max(10, Math.round((s.count / maxFunnelCount) * 100))
-                  return (
-                    <div key={s.stage} className="flex items-center gap-2.5">
-                      <div className="w-[80px] shrink-0 text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate">
-                        {STAGE_LABELS[s.stage] ?? s.stage}
-                      </div>
-                      <div className="flex-1 flex items-center">
-                        <div
-                          className="h-[20px] rounded flex items-center px-2 transition-all duration-500"
-                          style={{
-                            width: `${widthPct}%`,
-                            background: `${STAGE_COLORS[s.stage] ?? '#94a3b8'}50`,
-                          }}
-                        >
-                          <span
-                            className="text-[11px] font-semibold"
-                            style={{ color: STAGE_COLORS[s.stage] ?? '#94a3b8' }}
-                          >
-                            {s.count}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Stage Conversion Funnel */}
+        <StageFunnelChart data={funnelData} isLoading={loadingFunnel} />
       </div>
 
       {/* AM Performance */}

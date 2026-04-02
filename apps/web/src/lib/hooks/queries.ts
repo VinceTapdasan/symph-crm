@@ -21,6 +21,7 @@ import type {
   ApiDocument,
   ApiBilling,
   PipelineSummary,
+  FunnelResponse,
   AuditLogsResponse,
   ApiCalendarEvent,
   CalendarStatus,
@@ -95,6 +96,16 @@ export function useGetPipelineSummary(
   return useQuery<PipelineSummary>({
     queryKey: queryKeys.pipeline.summary,
     queryFn: () => api.get<PipelineSummary>('/pipeline/summary'),
+    ...options,
+  })
+}
+
+export function useGetFunnel(
+  options?: Partial<UseQueryOptions<FunnelResponse>>,
+) {
+  return useQuery<FunnelResponse>({
+    queryKey: queryKeys.pipeline.funnel,
+    queryFn: () => api.get<FunnelResponse>('/pipeline/funnel'),
     ...options,
   })
 }

@@ -38,6 +38,8 @@ export const queryKeys = {
   pipeline: {
     summary: ['pipeline', 'summary'] as const,
     summaryFiltered: (params: { from?: string; to?: string }) => ['pipeline', 'summary', params] as const,
+    funnel: ['pipeline', 'funnel'] as const,
+    funnelFiltered: (params: { from?: string; to?: string }) => ['pipeline', 'funnel', params] as const,
   },
   products: {
     all: ['products'] as const,
