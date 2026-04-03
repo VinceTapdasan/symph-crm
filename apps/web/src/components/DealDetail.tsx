@@ -19,7 +19,7 @@ import {
 import { toast } from 'sonner'
 import {
   cn, formatCurrencyFull, timeAgo, formatDate,
-  getDaysInStage, getBrandColor, getInitials, getStageProgressIndex,
+  getDaysInStage, getBrandColor, getInitials, getStageProgressIndex, formatServiceType,
 } from '@/lib/utils'
 import { getMimeLabel, supportsWordCount, isImage } from '@/lib/utils/document-utils'
 import { api } from '@/lib/api'
@@ -31,6 +31,7 @@ import {
 import { DocumentViewerModal } from './DocumentViewerModal'
 import { PasteChip, PastePreviewModal } from './PasteChip'
 import { BillingSection } from './BillingSection'
+import { EditDealModal } from './EditDealModal'
 
 // ── Sub-components ───────────────────────────────────────────────────────────
 
@@ -242,6 +243,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
   const [showAdvanceConfirm, setShowAdvanceConfirm] = useState(false)
   const [showWonConfirm, setShowWonConfirm] = useState(false)
   const [showLostConfirm, setShowLostConfirm] = useState(false)
+  const [showEditDeal, setShowEditDeal] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [viewingDoc, setViewingDoc] = useState<ApiDocument | null>(null)
@@ -591,6 +593,10 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
       )}
 
       {/* Document viewer modal */}
+      {showEditDeal && deal && (
+        <EditDealModal deal={deal} onClose={() => setShowEditDeal(false)} />
+      )}
+
       {viewingDoc && (
         <DocumentViewerModal
           doc={viewingDoc}
@@ -663,11 +669,21 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
             className="w-full max-w-sm bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-2xl p-5 animate-in zoom-in-95 fade-in-0 duration-300"
             onClick={e => e.stopPropagation()}
           >
+            {/* Stage transition indicator */}
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: `var(--stage-${deal.stage}, #94a3b8)` }} />
+              <span className="text-[12px] font-semibold" style={{ color: `var(--stage-${deal.stage}, #94a3b8)` }}>{stageLabel}</span>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="text-slate-300">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: 'var(--stage-closed_won, #16a34a)' }} />
+              <span className="text-[12px] font-semibold" style={{ color: 'var(--stage-closed_won, #16a34a)' }}>Won</span>
+            </div>
             <p className="text-[15px] font-bold text-slate-900 dark:text-white mb-1">
               Mark as Won?
             </p>
             <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-5">
-              This deal will be marked as won and moved to the closed pipeline.
+              Move <span className="font-medium text-slate-700 dark:text-slate-200">{deal.title}</span> to <span className="font-medium" style={{ color: 'var(--stage-closed_won, #16a34a)' }}>Won</span>. This can’t be undone.
             </p>
             <div className="flex gap-2">
               <button
@@ -700,11 +716,21 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
             className="w-full max-w-sm bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-2xl p-5 animate-in zoom-in-95 fade-in-0 duration-300"
             onClick={e => e.stopPropagation()}
           >
+            {/* Stage transition indicator */}
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: `var(--stage-${deal.stage}, #94a3b8)` }} />
+              <span className="text-[12px] font-semibold" style={{ color: `var(--stage-${deal.stage}, #94a3b8)` }}>{stageLabel}</span>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="text-slate-300">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: 'var(--stage-closed_lost, #dc2626)' }} />
+              <span className="text-[12px] font-semibold" style={{ color: 'var(--stage-closed_lost, #dc2626)' }}>Lost</span>
+            </div>
             <p className="text-[15px] font-bold text-slate-900 dark:text-white mb-1">
               Close as Lost?
             </p>
             <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-5">
-              This deal will be marked as lost and moved to the closed pipeline.
+              Move <span className="font-medium text-slate-700 dark:text-slate-200">{deal.title}</span> to <span className="font-medium" style={{ color: 'var(--stage-closed_lost, #dc2626)' }}>Lost</span>. This can’t be undone.
             </p>
             <div className="flex gap-2">
               <button
@@ -744,9 +770,21 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
         </p>
 
         {/* Deal title */}
-        <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-snug -mt-1 line-clamp-2">
-          {deal.title}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-snug -mt-1 line-clamp-2">
+            {deal.title}
+          </h1>
+          <button
+            onClick={() => setShowEditDeal(true)}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors shrink-0"
+            title="Edit deal"
+          >
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+        </div>
 
         {/* Stage dot + deal value */}
         <div className="flex items-center gap-2">
@@ -823,9 +861,21 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide leading-none mb-1">
                 {company?.name ?? 'No Brand'}
               </p>
-              <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-tight">
-                {deal.title}
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-tight">
+                  {deal.title}
+                </h1>
+                <button
+                  onClick={() => setShowEditDeal(true)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors shrink-0"
+                  title="Edit deal"
+                >
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+              </div>
               <p className="text-[12px] text-slate-400 mt-0.5">
                 {[company?.name, company?.industry].filter(Boolean).join(' \u00B7 ') || 'No brand assigned'}
               </p>
@@ -1125,10 +1175,10 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                             {docStage && <StagePill stage={docStage} />}
                             <button
                               onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc) }}
-                              className="w-5 h-5 rounded-md flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                              className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:text-red-400 dark:hover:bg-red-500/15 transition-colors opacity-0 group-hover:opacity-100"
                               title="Delete"
                             >
-                              <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                                 <polyline points="3 6 5 6 21 6" />
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                               </svg>
@@ -1219,10 +1269,10 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                         <div className="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc) }}
-                            className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                            className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-100 dark:hover:text-red-400 dark:hover:bg-red-500/15 transition-colors"
                             title="Delete"
                           >
-                            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                               <polyline points="3 6 5 6 21 6" />
                               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                             </svg>
@@ -1377,7 +1427,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                                   {docStage && <StagePill stage={docStage} />}
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleDownloadDoc(doc) }}
-                                    className="w-5 h-5 rounded-md flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"
+                                    className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"
                                     title="Download"
                                   >
                                     <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -1388,10 +1438,10 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                                   </button>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc) }}
-                                    className="w-5 h-5 rounded-md flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                                    className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:text-red-400 dark:hover:bg-red-500/15 transition-colors opacity-0 group-hover:opacity-100"
                                     title="Delete"
                                   >
-                                    <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                                    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                                       <polyline points="3 6 5 6 21 6" />
                                       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                     </svg>
@@ -1481,10 +1531,10 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc) }}
-                                  className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                  className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-100 dark:hover:text-red-400 dark:hover:bg-red-500/15 transition-colors"
                                   title="Delete"
                                 >
-                                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                                  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                                     <polyline points="3 6 5 6 21 6" />
                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                   </svg>
@@ -1638,7 +1688,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                 <div className="flex flex-wrap gap-1">
                   {deal.servicesTags.map(s => (
                     <span key={s} className="text-[10px] font-medium px-1.5 py-0.5 rounded-lg bg-primary/10 text-primary">
-                      {s}
+                      {formatServiceType(s)}
                     </span>
                   ))}
                 </div>

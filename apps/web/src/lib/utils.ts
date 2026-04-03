@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import { BRAND_PALETTE, AVATAR_COLORS, STAGE_ORDER, KANBAN_STAGES, COLUMN_TO_STAGE, PROGRESS_STAGES } from './constants'
+import { BRAND_PALETTE, AVATAR_COLORS, STAGE_ORDER, KANBAN_STAGES, COLUMN_TO_STAGE, PROGRESS_STAGES, SERVICE_TYPES } from './constants'
 
 // ─── Tailwind ────────────────────────────────────────────────────────────────
 
@@ -296,6 +296,28 @@ export function mimeToExt(mimetype: string): string {
   if (mimetype.includes('webm')) return 'webm'
   if (mimetype.includes('wav')) return 'wav'
   return 'webm'
+}
+
+
+// ─── Service Type Formatting ────────────────────────────────────────────────
+
+/** Build a flat slug→label map from the hierarchical SERVICE_TYPES tree */
+const SERVICE_LABEL_MAP: Record<string, string> = (() => {
+  const map: Record<string, string> = {}
+  for (const s of SERVICE_TYPES) {
+    map[s.value] = s.label
+    if (s.children) {
+      for (const c of s.children) {
+        map[c.value] = c.label
+      }
+    }
+  }
+  return map
+})()
+
+/** Maps a service slug (e.g. "agency") to its human label (e.g. "The Agency") */
+export function formatServiceType(value: string): string {
+  return SERVICE_LABEL_MAP[value] ?? value.replace(/_/g, ' ').replace(/\w/g, c => c.toUpperCase())
 }
 
 // ─── Pipeline Helpers ────────────────────────────────────────────────────────
