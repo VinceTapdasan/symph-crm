@@ -351,7 +351,7 @@ function DealCard({
       {/* Value + AM + doc indicator */}
       <div className="flex items-center justify-between pt-2 border-t border-black/[.05] dark:border-white/[.08]">
         <span className="text-[15px] font-bold tabular-nums" style={{ color: colColor }}>
-          {deal.value ? formatPeso(parseFloat(deal.value)) : '—'}
+          {formatPeso(parseFloat(deal.value || '0') || 0)}
         </span>
         <div className="flex items-center gap-2">
           {(deal.documentCount ?? 0) > 0 && (
@@ -896,7 +896,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                     </div>
                     <div className="flex items-center gap-1.5 mt-1 pl-[18px]">
                       <span className="text-[12px] tabular-nums font-medium" style={{ color: col.total > 0 ? col.color : undefined, opacity: col.total > 0 ? 1 : 0.4 }}>
-                        {col.total > 0 ? formatPeso(col.total) : '—'}
+                        {formatPeso(col.total)}
                       </span>
                       {totalValue > 0 && col.total > 0 && !CLOSED_STAGE_IDS.has(col.id) && (
                         <span className="text-[10px] text-slate-400 tabular-nums">
