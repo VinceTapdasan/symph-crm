@@ -336,7 +336,7 @@ function DealCard({
           {services.slice(0, 3).map(s => (
             <span
               key={s}
-              className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+              className="text-[10px] font-medium px-2 py-0.5 rounded-full dark:brightness-150"
               style={{ background: `${colColor}18`, color: colColor }}
             >
               {formatServiceType(s)}
