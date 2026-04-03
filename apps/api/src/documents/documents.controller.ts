@@ -1,7 +1,7 @@
 import {
   Controller, Get, Post, Put, Delete,
   Param, Body, Query, Headers,
-  UseInterceptors, UploadedFile, BadRequestException, Logger,
+  UseInterceptors, UploadedFile, BadRequestException, HttpCode, Logger,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { memoryStorage } from 'multer'
@@ -146,6 +146,7 @@ export class DocumentsController {
   }
 
   @Delete(':id')
+  @HttpCode(204)
   remove(@Param('id') id: string) {
     return this.documentsService.remove(id)
   }

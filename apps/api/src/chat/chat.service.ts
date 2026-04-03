@@ -147,6 +147,18 @@ export class ChatService {
       .orderBy(chatMessages.createdAt)
   }
 
+  async saveMessages(sessionId: string, userId: string, userMessage: string, assistantMessage: string) {
+    // Update session updatedAt
+    await this.db.update(chatSessions)
+      .set({ updatedAt: new Date() })
+      .where(eq(chatSessions.id, sessionId))
+
+    await this.db.insert(chatMessages).values([
+      { sessionId, userId, role: 'user', content: userMessage },
+      { sessionId, userId, role: 'assistant', content: assistantMessage },
+    ])
+  }
+
   // ─── Main send message flow ──────────────────────────────────────────────
 
   async sendMessage(dto: ChatMessageDto): Promise<ChatResponseDto> {

@@ -154,4 +154,16 @@ export class ChatController {
   getHistory(@Param('sessionId') sessionId: string) {
     return this.chatService.getHistory(sessionId)
   }
+
+  /**
+   * POST /api/chat/sessions/:sessionId/messages
+   * Save a user+assistant message pair after a completed Aria stream.
+   */
+  @Post('sessions/:sessionId/messages')
+  saveMessages(
+    @Param('sessionId') sessionId: string,
+    @Body() body: { userId: string; userMessage: string; assistantMessage: string },
+  ) {
+    return this.chatService.saveMessages(sessionId, body.userId, body.userMessage, body.assistantMessage)
+  }
 }

@@ -31,6 +31,7 @@ const GATEWAY_URL = (process.env.ARIA_GATEWAY_URL ?? 'https://aria-gateway.symph
   '',
 )
 const INTERNAL_BASE = 'https://symph-crm-api-t5wb3mrt7q-as.a.run.app/api/internal'
+const NESTJS_API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'https://symph-crm-api-t5wb3mrt7q-as.a.run.app/api').replace(/\/+$/, '')
 // Default workspace used when the client doesn't pass one explicitly.
 // Matches the single workspace seeded in the CRM DB.
 const DEFAULT_WORKSPACE_ID = '60f84f03-283e-4c1a-8c88-b8330dc71d32'
@@ -193,7 +194,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Failed to open Aria stream: ${msg}` }, { status: 502 })
   }
 
-  // Pipe the SSE stream line-by-line to the client
+  // Pipe the SSE stream line-by-line to the client.
+  // Simultaneously parse events to collect the assembled assistant reply so we
+  // can persist the user + assistant message pair to the NestJS backend once done.
   const encoder = new TextEncoder()
   const readable = new ReadableStream({
     async start(controller) {
@@ -209,6 +212,23 @@ export async function POST(req: NextRequest) {
       const decoder = new TextDecoder()
       let buffer = ''
 
+      // SSE event assembly for message persistence
+      let currentEventType = ''
+      const assembledTextParts: string[] = []
+
+      const processEvent = (eventType: string, dataLines: string[]) => {
+        if (!eventType) return
+        const raw = dataLines.join('\n')
+        if (eventType === 'text') {
+          try {
+            const parsed = JSON.parse(raw) as { text?: string }
+            if (parsed.text) assembledTextParts.push(parsed.text)
+          } catch { /* ignore malformed text events */ }
+        }
+      }
+
+      let currentDataLines: string[] = []
+
       try {
         while (true) {
           const { done, value } = await reader.read()
@@ -219,7 +239,37 @@ export async function POST(req: NextRequest) {
           buffer = lines.pop() ?? ''
 
           for (const line of lines) {
+            // Forward to client unchanged
             controller.enqueue(encoder.encode(line + '\n'))
+
+            // Parse SSE events for persistence
+            if (line.startsWith('event: ')) {
+              // New event — if we had a pending event (no data yet), just reset
+              currentEventType = line.slice('event: '.length).trim()
+              currentDataLines = []
+            } else if (line.startsWith('data: ')) {
+              currentDataLines.push(line.slice('data: '.length))
+            } else if (line === '') {
+              // Blank line = end of SSE event block
+              processEvent(currentEventType, currentDataLines)
+
+              if (currentEventType === 'done' && sessionId && userId) {
+                const fullAssistantText = assembledTextParts.join('')
+                // Fire-and-forget: persist user + assistant message pair
+                fetch(`${NESTJS_API_BASE}/chat/sessions/${sessionId}/messages`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    userId,
+                    userMessage: messageContent,
+                    assistantMessage: fullAssistantText,
+                  }),
+                }).catch(() => { /* best-effort — don't fail the stream */ })
+              }
+
+              currentEventType = ''
+              currentDataLines = []
+            }
           }
         }
 
