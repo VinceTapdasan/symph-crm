@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { cn, getInitials, getBrandColor, formatDealValue, timeAgo, totalNumericValue, toPascalCase } from '@/lib/utils'
 import { STAGE_COLORS, STAGE_LABELS, CLOSED_STAGE_IDS } from '@/lib/constants'
-import { useGetDeals, useGetActivitiesByCompany, useGetUsers } from '@/lib/hooks/queries'
+import { useGetDeals, useGetActivitiesByCompany, useGetUsers, useGetCompanies } from '@/lib/hooks/queries'
+import { useAssignDealBrand } from '@/lib/hooks/mutations'
 import type { ApiCompanyDetail, ApiDeal, Activity } from '@/lib/types'
 import { X } from 'lucide-react'
 import { Avatar } from './Avatar'
@@ -16,6 +18,8 @@ interface BrandSlideOverProps {
   onClose: () => void
   onOpenDeal?: (dealId: string) => void
 }
+
+const UNASSIGNED_ID = '__unassigned__'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -46,11 +50,53 @@ function StatCard({ label, value, color }: { label: string; value: string; color
   )
 }
 
+// ─── AssignBrandSelect — inline dropdown for unassigned deals ───────────────
+
+function AssignBrandSelect({
+  dealId,
+  companies,
+  onAssigned,
+}: {
+  dealId: string
+  companies: ApiCompanyDetail[]
+  onAssigned: () => void
+}) {
+  const qc = useQueryClient()
+  const assign = useAssignDealBrand({
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['deals'] })
+      qc.invalidateQueries({ queryKey: ['companies'] })
+      onAssigned()
+    },
+  })
+
+  function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const companyId = e.target.value || null
+    if (companyId) assign.mutate({ id: dealId, companyId })
+  }
+
+  return (
+    <select
+      defaultValue=""
+      onChange={handleChange}
+      disabled={assign.isPending}
+      onClick={e => e.stopPropagation()}
+      className="text-[11px] border border-black/[.08] dark:border-white/[.08] rounded-md px-2 py-0.5 bg-white dark:bg-[#2a2d31] text-slate-600 dark:text-slate-300 cursor-pointer hover:border-primary/40 transition-colors disabled:opacity-50 max-w-[130px]"
+    >
+      <option value="" disabled>Assign brand…</option>
+      {companies.map(c => (
+        <option key={c.id} value={c.id}>{c.name}</option>
+      ))}
+    </select>
+  )
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverProps) {
   const [tab, setTab] = useState<'deals' | 'people'>('deals')
   const isOpen = !!brand
+  const isUnassigned = brand?.id === UNASSIGNED_ID
 
   useEscapeKey(useCallback(onClose, [onClose]), isOpen)
 
@@ -61,10 +107,20 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
 
   // Fetch deals
   const { data: allDeals = [] } = useGetDeals()
+
+  // For "No Brand" group, filter deals with no companyId; otherwise filter by brand.id
   const brandDeals = useMemo(() => {
     if (!brand) return []
+    if (isUnassigned) return allDeals.filter(d => !d.companyId)
     return allDeals.filter(d => d.companyId === brand.id)
-  }, [allDeals, brand?.id])
+  }, [allDeals, brand?.id, isUnassigned])
+
+  // Companies list — needed for the assign dropdown on unassigned deals
+  const { data: companies = [] } = useGetCompanies()
+  const assignableCompanies = useMemo(
+    () => companies.filter(c => c.id !== UNASSIGNED_ID),
+    [companies],
+  )
 
   // Fetch users for assigned person display
   const { data: users = [] } = useGetUsers()
@@ -74,19 +130,19 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
     return m
   }, [users])
 
-  // Fetch activities (always when brand is open, not just on people tab)
+  // Fetch activities (skip for unassigned pseudo-brand)
   const { data: activities = [] } = useGetActivitiesByCompany(brand?.id ?? '', {
-    enabled: !!brand?.id,
+    enabled: !!brand?.id && !isUnassigned,
   })
 
   // Stats
   const totalDeals = brandDeals.length
   const openValue = useMemo(
-    () => totalNumericValue(brandDeals.filter(d => !CLOSED_STAGE_IDS.has(d.stage))),
+    () => totalNumericValue(brandDeals.filter(d => !CLOSED_STAGE_IDS.has(d.stage ?? ''))),
     [brandDeals],
   )
   const winRate = useMemo(() => {
-    const closed = brandDeals.filter(d => CLOSED_STAGE_IDS.has(d.stage))
+    const closed = brandDeals.filter(d => CLOSED_STAGE_IDS.has(d.stage ?? ''))
     if (closed.length === 0) return null
     const won = closed.filter(d => d.stage === 'closed_won').length
     return Math.round((won / closed.length) * 100)
@@ -144,7 +200,6 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
             {/* Header */}
             <div className="shrink-0 px-5 pt-5 pb-4 border-b border-black/[.06] dark:border-white/[.08]">
               <div className="flex items-start gap-3">
-                {/* Avatar */}
                 <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center text-[14px] font-bold shrink-0"
                   style={{ background: `${brandColor}18`, color: brandColor }}
@@ -156,34 +211,32 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
                   <h2 className="text-[15px] font-semibold text-slate-900 dark:text-white truncate">
                     {brand.name}
                   </h2>
-                  <div className="flex items-center gap-1 text-[11.5px] text-slate-400 mt-0.5 flex-wrap">
-                    {brand.industry && (
-                      <span>{brand.industry}</span>
-                    )}
-                    {brand.industry && contactCount > 0 && (
-                      <span>&#183;</span>
-                    )}
-                    {contactCount > 0 && (
-                      <span>{contactCount} contact{contactCount !== 1 ? 's' : ''}</span>
-                    )}
-                    {(brand.industry || contactCount > 0) && brand.website && (
-                      <span>&#183;</span>
-                    )}
-                    {brand.website && (
-                      <a
-                        href={brand.website.startsWith('http') ? brand.website : `https://${brand.website}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline truncate"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        {brand.domain || brand.website}
-                      </a>
-                    )}
-                  </div>
+                  {!isUnassigned && (
+                    <div className="flex items-center gap-1 text-[11.5px] text-slate-400 mt-0.5 flex-wrap">
+                      {brand.industry && <span>{brand.industry}</span>}
+                      {brand.industry && contactCount > 0 && <span>&#183;</span>}
+                      {contactCount > 0 && <span>{contactCount} contact{contactCount !== 1 ? 's' : ''}</span>}
+                      {(brand.industry || contactCount > 0) && brand.website && <span>&#183;</span>}
+                      {brand.website && (
+                        <a
+                          href={brand.website.startsWith('http') ? brand.website : `https://${brand.website}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:underline truncate"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          {brand.domain || brand.website}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                  {isUnassigned && (
+                    <p className="text-[11.5px] text-slate-400 mt-0.5">
+                      Deals without a brand — assign one below
+                    </p>
+                  )}
                 </div>
 
-                {/* Close */}
                 <button
                   onClick={onClose}
                   className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[.08] transition-colors shrink-0"
@@ -196,31 +249,34 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
             {/* Stat cards */}
             <div className="shrink-0 px-5 py-3 flex gap-2.5">
               <StatCard label="Total Deals" value={String(totalDeals)} />
-              <StatCard label="Open Value" value={openValue > 0 ? formatDealValue(String(openValue)) : '--'} color={brandColor} />
-              <StatCard label="Win Rate" value={winRate !== null ? `${winRate}%` : '--'} />
+              <StatCard label="Open Value" value={openValue > 0 ? formatDealValue(String(openValue)) : '--'} color={isUnassigned ? undefined : brandColor} />
+              {!isUnassigned && <StatCard label="Win Rate" value={winRate !== null ? `${winRate}%` : '--'} />}
             </div>
 
-            {/* Tab switcher */}
-            <div className="shrink-0 px-5 flex gap-1 border-b border-black/[.06] dark:border-white/[.08]">
-              {(['deals', 'people'] as const).map(t => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={cn(
-                    'px-3 py-2.5 text-[12.5px] font-medium border-b-2 transition-colors capitalize',
-                    tab === t
-                      ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-                      : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300',
-                  )}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
+            {/* Tab switcher — hide People tab for unassigned */}
+            {!isUnassigned && (
+              <div className="shrink-0 px-5 flex gap-1 border-b border-black/[.06] dark:border-white/[.08]">
+                {(['deals', 'people'] as const).map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setTab(t)}
+                    className={cn(
+                      'px-3 py-2.5 text-[12.5px] font-medium border-b-2 transition-colors capitalize',
+                      tab === t
+                        ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                        : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300',
+                    )}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Tab content */}
             <div className="flex-1 overflow-y-auto">
-              {tab === 'deals' && (
+              {/* Deals list */}
+              {(tab === 'deals' || isUnassigned) && (
                 <div className="p-3 space-y-1">
                   {brandDeals.length === 0 ? (
                     <div className="py-8 text-center text-[13px] text-slate-400">
@@ -232,8 +288,8 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
                         key={deal.id}
                         onClick={() => onOpenDeal?.(deal.id)}
                         className={cn(
-                          "flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-colors",
-                          onOpenDeal ? "cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[.04]" : "hover:bg-slate-50 dark:hover:bg-white/[.03]"
+                          'flex items-start gap-3 px-3 py-2.5 rounded-lg transition-colors',
+                          onOpenDeal ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[.04]' : 'hover:bg-slate-50 dark:hover:bg-white/[.03]',
                         )}
                       >
                         <div className="min-w-0 flex-1">
@@ -252,15 +308,27 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
                               <span className="text-[10px] text-slate-400 truncate">{userMap.get(deal.assignedTo)}</span>
                             </div>
                           )}
+                          {/* Assign brand dropdown — only shown in the "No Brand" slide-over */}
+                          {isUnassigned && assignableCompanies.length > 0 && (
+                            <div className="mt-1.5" onClick={e => e.stopPropagation()}>
+                              <AssignBrandSelect
+                                dealId={deal.id}
+                                companies={assignableCompanies}
+                                onAssigned={() => {/* deal disappears from list on next query refresh */}}
+                              />
+                            </div>
+                          )}
                         </div>
-                        <StagePill stage={deal.stage} />
+                        <div className="shrink-0 pt-0.5">
+                          <StagePill stage={deal.stage ?? ''} />
+                        </div>
                       </div>
                     ))
                   )}
                 </div>
               )}
 
-              {tab === 'people' && (
+              {tab === 'people' && !isUnassigned && (
                 <div className="p-3 space-y-1">
                   {people.length === 0 ? (
                     <div className="py-8 text-center text-[13px] text-slate-400">

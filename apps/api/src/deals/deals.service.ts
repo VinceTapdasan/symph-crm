@@ -14,6 +14,19 @@ export type DealsFilterParams = {
   to?: string
 }
 
+/** Batch-resolve stageId UUIDs → slug/label/color in one query */
+async function resolveStages(
+  db: Database,
+  stageIds: string[],
+): Promise<Map<string, { slug: string; label: string; color: string }>> {
+  if (stageIds.length === 0) return new Map()
+  const rows = await db
+    .select({ id: pipelineStages.id, slug: pipelineStages.slug, label: pipelineStages.label, color: pipelineStages.color })
+    .from(pipelineStages)
+    .where(inArray(pipelineStages.id, stageIds as [string, ...string[]]))
+  return new Map(rows.map(r => [r.id, { slug: r.slug, label: r.label, color: r.color }]))
+}
+
 @Injectable()
 export class DealsService {
   constructor(
@@ -44,37 +57,47 @@ export class DealsService {
     const rawDeals = await query
     if (rawDeals.length === 0) return []
 
-    // Batch-fetch document counts for all returned deal IDs
     const dealIds = rawDeals.map(d => d.id)
-    const docCounts = await this.db
-      .select({ dealId: documents.dealId, cnt: count() })
-      .from(documents)
-      .where(and(
-        inArray(documents.dealId, dealIds as [string, ...string[]]),
-        isNull(documents.deletedAt),
-      ))
-      .groupBy(documents.dealId)
+
+    // Batch-fetch document counts, user names, and stage slugs in parallel
+    const [docCounts, userRows, stageMap] = await Promise.all([
+      this.db
+        .select({ dealId: documents.dealId, cnt: count() })
+        .from(documents)
+        .where(and(
+          inArray(documents.dealId, dealIds as [string, ...string[]]),
+          isNull(documents.deletedAt),
+        ))
+        .groupBy(documents.dealId),
+
+      (() => {
+        const creatorIds = [...new Set(rawDeals.map(d => d.createdBy).filter((id): id is string => !!id))]
+        return creatorIds.length > 0
+          ? this.db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, creatorIds as [string, ...string[]]))
+          : Promise.resolve([])
+      })(),
+
+      resolveStages(
+        this.db,
+        [...new Set(rawDeals.map(d => d.stageId).filter((id): id is string => !!id))],
+      ),
+    ])
 
     const docCountMap = new Map(docCounts.map(r => [r.dealId, r.cnt]))
-
-    // Batch-fetch user names for all unique createdBy values
-    const creatorIds = [
-      ...new Set(rawDeals.map(d => d.createdBy).filter((id): id is string => !!id)),
-    ]
-    const userRows = creatorIds.length > 0
-      ? await this.db
-          .select({ id: users.id, name: users.name })
-          .from(users)
-          .where(inArray(users.id, creatorIds as [string, ...string[]]))
-      : []
-
     const userNameMap = new Map(userRows.map(u => [u.id, u.name]))
 
-    return rawDeals.map(d => ({
-      ...d,
-      documentCount: docCountMap.get(d.id) ?? 0,
-      createdByName: d.createdBy ? (userNameMap.get(d.createdBy) ?? null) : null,
-    }))
+    return rawDeals.map(d => {
+      const stageMeta = d.stageId ? stageMap.get(d.stageId) : undefined
+      return {
+        ...d,
+        // Inject stage slug so FE can use deal.stage as before
+        stage: stageMeta?.slug ?? null,
+        stageLabel: stageMeta?.label ?? null,
+        stageColor: stageMeta?.color ?? null,
+        documentCount: docCountMap.get(d.id) ?? 0,
+        createdByName: d.createdBy ? (userNameMap.get(d.createdBy) ?? null) : null,
+      }
+    })
   }
 
   async findByCompany(companyId: string) {
@@ -87,7 +110,18 @@ export class DealsService {
 
   async findOne(id: string) {
     const [deal] = await this.db.select().from(deals).where(eq(deals.id, id))
-    return deal
+    if (!deal) return undefined
+    const stageMap = await resolveStages(
+      this.db,
+      deal.stageId ? [deal.stageId] : [],
+    )
+    const stageMeta = deal.stageId ? stageMap.get(deal.stageId) : undefined
+    return {
+      ...deal,
+      stage: stageMeta?.slug ?? null,
+      stageLabel: stageMeta?.label ?? null,
+      stageColor: stageMeta?.color ?? null,
+    }
   }
 
   async updateStage(id: string, stage: string, performedBy?: string) {
@@ -100,15 +134,7 @@ export class DealsService {
 
     // Capture current stage slug for audit trail
     const existing = await this.findOne(id)
-    let oldStageSlug: string | null = null
-    if (existing?.stageId) {
-      const [oldStage] = await this.db
-        .select({ slug: pipelineStages.slug })
-        .from(pipelineStages)
-        .where(eq(pipelineStages.id, existing.stageId))
-        .limit(1)
-      oldStageSlug = oldStage?.slug ?? null
-    }
+    const oldStageSlug = existing?.stage ?? null
 
     const [deal] = await this.db
       .update(deals)
@@ -193,12 +219,6 @@ export class DealsService {
 
   /**
    * Touch lastActivityAt and clear dormancy flag in one atomic UPDATE.
-   * Call this from any service that records activity against a deal:
-   *   - chat message about a deal
-   *   - document created / updated
-   *   - file uploaded
-   *   - calendar event linked
-   *   - stage change (already handled in updateStage)
    */
   async updateLastActivity(id: string): Promise<void> {
     await this.db
@@ -214,8 +234,6 @@ export class DealsService {
 
   /**
    * Ensure a user is on the AM roster. Auto-called when a deal is assigned.
-   * If user already exists on roster, updates lastAssignedAt and increments count.
-   * Schema has UNIQUE on userId — uses ON CONFLICT DO UPDATE for atomicity.
    */
   private async ensureOnRoster(userId: string, workspaceId: string | null): Promise<void> {
     const [existing] = await this.db

@@ -61,7 +61,7 @@ function getNavSections(dormantCount: number): NavSection[] {
         { path: '/chat', label: 'Chat', icon: MessageCircle },
         { path: '/', label: 'Dashboard', icon: LayoutGrid },
         { path: '/pipeline', label: 'Pipeline', icon: Columns3, ...(dormantCount > 0 ? { badge: dormantCount, badgeColor: '#f59e0b' } : {}) },
-        { path: '/deals', label: 'Deals', icon: BookOpen },
+        { path: '/deals', label: 'Brands', icon: BookOpen },
         { path: '/inbox', label: 'Inbox', icon: Mail },
       ],
     },

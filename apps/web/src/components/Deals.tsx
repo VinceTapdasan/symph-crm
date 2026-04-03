@@ -544,7 +544,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 shrink-0">
           <div>
-            <div className="text-[13px] font-semibold text-slate-900 dark:text-white">Deals</div>
+            <div className="text-[13px] font-semibold text-slate-900 dark:text-white">Brands</div>
             <div className="text-[11px] text-slate-400 mt-0.5">
               {isLoading
                 ? 'Loading…'

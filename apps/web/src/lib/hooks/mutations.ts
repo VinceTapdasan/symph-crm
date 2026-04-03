@@ -342,3 +342,15 @@ export function useMarkNotificationRead() {
     },
   })
 }
+
+// ─── Brand assignment ─────────────────────────────────────────────────────────
+
+/** Assign (or unassign) a brand/company to an existing deal. */
+export function useAssignDealBrand(
+  options?: UseMutationOptions<unknown, Error, { id: string; companyId: string | null }>,
+) {
+  return useMutation({
+    mutationFn: ({ id, companyId }) => api.put(`/deals/${id}`, { companyId }),
+    ...withToast('Brand assigned', options),
+  })
+}
