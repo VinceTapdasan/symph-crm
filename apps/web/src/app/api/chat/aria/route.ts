@@ -31,6 +31,9 @@ const GATEWAY_URL = (process.env.ARIA_GATEWAY_URL ?? 'https://aria-gateway.symph
   '',
 )
 const INTERNAL_BASE = 'https://symph-crm-api-t5wb3mrt7q-as.a.run.app/api/internal'
+// Default workspace used when the client doesn't pass one explicitly.
+// Matches the single workspace seeded in the CRM DB.
+const DEFAULT_WORKSPACE_ID = '60f84f03-283e-4c1a-8c88-b8330dc71d32'
 
 export async function POST(req: NextRequest) {
   const apiToken = process.env.ARIA_API_TOKEN
@@ -67,7 +70,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Build CRM system prompt additions
-  const ws = workspaceId ?? ''
+  const ws = workspaceId || DEFAULT_WORKSPACE_ID
   const internalSecret = process.env.INTERNAL_SECRET
 
   const promptLines: string[] = [
@@ -77,34 +80,47 @@ export async function POST(req: NextRequest) {
     '',
     '## Session context',
     `- User ID: ${userId ?? 'unknown'}`,
-    `- Workspace: ${ws || 'unknown'}`,
+    `- Workspace ID: ${ws}`,
     `- Active deal: ${dealId ?? 'none'}`,
   ]
 
-  if (internalSecret && ws) {
+  if (internalSecret) {
     promptLines.push(
       '',
       '## CRM data access',
-      'Use the api_caller tool to look up or modify CRM data. All requests require:',
+      'ALWAYS use the api_caller tool to answer questions about deals, companies, contacts, users, or activities.',
+      'NEVER answer from memory or training data — every piece of CRM data MUST come from a live API call.',
+      'If the API returns an empty list or 404, say "Not found in CRM" — do NOT guess or fabricate.',
+      '',
+      'All requests require:',
       `- Base URL: ${INTERNAL_BASE}`,
       `- Header: X-Internal-Secret: ${internalSecret}`,
-      `- Workspace filter: workspaceId=${ws}`,
       '',
-      'Key endpoints:',
-      `- GET /deals?workspaceId=${ws}&limit=20 — list recent deals`,
+      'Key endpoints (always include workspaceId):',
+      `- GET /deals?workspaceId=${ws}&limit=20&sortBy=createdAt&sortOrder=desc — list recent deals`,
+      `- GET /deals?workspaceId=${ws}&stage={stage}&limit=20 — filter by stage (e.g. "Follow Up", "Proposal", "Closed Won")`,
       '- GET /deals/{dealId} — deal details',
-      `- GET /companies/search?q={query}&workspaceId=${ws} — search companies`,
+      `- GET /pipeline/summary?workspaceId=${ws} — pipeline overview with counts per stage`,
+      `- GET /companies?workspaceId=${ws}&limit=20 — list companies`,
+      `- GET /companies/search?q={query}&workspaceId=${ws} — search companies by name`,
+      `- GET /contacts?workspaceId=${ws}&limit=20 — list contacts`,
       '- GET /activities?dealId={dealId}&limit=20 — deal activity log',
-      '- PATCH /deals/{dealId} — update deal (stage, value, probability, closeDate)',
+      '- PATCH /deals/{dealId} — update deal fields (stage, value, probability, closeDate, assignedTo)',
+      '',
+      '## Data integrity rules',
+      '- AM names, company names, and deal stages in API responses come directly from the database.',
+      '- If a user asks about a person who is not in the API results, say "Not found in CRM" — do not infer from your knowledge.',
+      '- If a deal stage filter returns 0 results, say "No deals found in that stage" — do not invent deals.',
     )
   }
 
   promptLines.push(
     '',
-    '## Guidelines',
+    '## Response guidelines',
     '- Be concise and action-oriented.',
     '- Currency is PHP (Philippine Peso).',
-    '- Confirm what you did after using CRM tools.',
+    '- Confirm what API call you made and what it returned.',
+    '- If the API call fails or returns an error, share the exact error with the user.',
   )
 
   const systemPromptAdditions = promptLines.join('\n')
