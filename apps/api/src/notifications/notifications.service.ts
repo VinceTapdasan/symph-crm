@@ -17,7 +17,7 @@ export class NotificationsService {
         and(
           eq(deals.assignedTo, userId),
           lt(deals.lastActivityAt, sql`NOW() - INTERVAL '3 days'`),
-          sql`${deals.stage} NOT IN ('closed_won', 'closed_lost')`,
+          sql`(SELECT slug FROM pipeline_stages WHERE id = ${deals.stageId}) NOT IN ('closed_won', 'closed_lost')`,
         ),
       )
 

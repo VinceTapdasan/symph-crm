@@ -1,13 +1,13 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { eq, desc, and, ilike, gte, lte, inArray, isNull, count, sql } from 'drizzle-orm'
-import { deals, documents, users, amRoster } from '@symph-crm/database'
+import { deals, documents, users, amRoster, pipelineStages } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
 import { AuditLogsService } from '../audit-logs/audit-logs.service'
 
 export type DealsFilterParams = {
   companyId?: string
-  stage?: string
+  stage?: string        // pipeline stage slug (e.g. 'lead', 'discovery')
   search?: string
   limit?: number
   from?: string
@@ -26,10 +26,16 @@ export class DealsService {
     const conditions = []
 
     if (params?.companyId) conditions.push(eq(deals.companyId, params.companyId))
-    if (params?.stage) conditions.push(eq(deals.stage, params.stage as typeof deals.$inferSelect['stage']))
     if (params?.search) conditions.push(ilike(deals.title, `%${params.search}%`))
     if (params?.from) conditions.push(gte(deals.createdAt, new Date(params.from)))
     if (params?.to) conditions.push(lte(deals.createdAt, new Date(params.to)))
+
+    // Filter by stage slug — resolve to stage_id via subquery
+    if (params?.stage) {
+      conditions.push(
+        sql`${deals.stageId} = (SELECT id FROM pipeline_stages WHERE slug = ${params.stage} LIMIT 1)`,
+      )
+    }
 
     const query = conditions.length > 0
       ? this.db.select().from(deals).where(and(...conditions)).orderBy(desc(deals.createdAt)).limit(limit)
@@ -85,12 +91,29 @@ export class DealsService {
   }
 
   async updateStage(id: string, stage: string, performedBy?: string) {
-    // Capture old stage for audit trail
+    // Resolve slug → pipeline_stage ID
+    const [pipelineStage] = await this.db
+      .select({ id: pipelineStages.id })
+      .from(pipelineStages)
+      .where(eq(pipelineStages.slug, stage))
+      .limit(1)
+
+    // Capture current stage slug for audit trail
     const existing = await this.findOne(id)
+    let oldStageSlug: string | null = null
+    if (existing?.stageId) {
+      const [oldStage] = await this.db
+        .select({ slug: pipelineStages.slug })
+        .from(pipelineStages)
+        .where(eq(pipelineStages.id, existing.stageId))
+        .limit(1)
+      oldStageSlug = oldStage?.slug ?? null
+    }
+
     const [deal] = await this.db
       .update(deals)
       .set({
-        stage: stage as typeof deals.$inferSelect['stage'],
+        stageId: pipelineStage?.id ?? null,
         updatedAt: new Date(),
         lastActivityAt: new Date(),
       })
@@ -105,7 +128,7 @@ export class DealsService {
       performedBy: performedBy ?? undefined,
       details: {
         title: existing?.title,
-        from: existing?.stage ?? null,
+        from: oldStageSlug,
         to: stage,
       },
     }).catch(() => {}) // non-blocking
@@ -127,7 +150,7 @@ export class DealsService {
       entityType: 'deal',
       entityId: deal.id,
       performedBy: performedBy ?? data.createdBy ?? undefined,
-      details: { title: deal.title, stage: deal.stage },
+      details: { title: deal.title, stageId: deal.stageId },
     }).catch(() => {})
 
     return deal
@@ -193,10 +216,8 @@ export class DealsService {
    * Ensure a user is on the AM roster. Auto-called when a deal is assigned.
    * If user already exists on roster, updates lastAssignedAt and increments count.
    * Schema has UNIQUE on userId — uses ON CONFLICT DO UPDATE for atomicity.
-   * DB migration needed: ALTER TABLE am_roster ADD CONSTRAINT am_roster_user_id_unique UNIQUE (user_id);
    */
   private async ensureOnRoster(userId: string, workspaceId: string | null): Promise<void> {
-    // Check if user already on roster (safe fallback if UNIQUE constraint not yet applied)
     const [existing] = await this.db
       .select()
       .from(amRoster)

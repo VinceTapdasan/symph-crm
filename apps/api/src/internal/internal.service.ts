@@ -42,8 +42,9 @@ export class InternalService {
         flag_reason = 'dormant',
         updated_at  = now()
       FROM workspaces w
+      LEFT JOIN pipeline_stages ps ON ps.id = d.stage_id
       WHERE d.workspace_id = w.id
-        AND d.stage NOT IN ('closed_won', 'closed_lost')
+        AND COALESCE(ps.slug, '') NOT IN ('closed_won', 'closed_lost')
         AND d.last_activity_at < now() - (
           COALESCE((w.settings->>'dormancy_threshold_days')::int, 3) * INTERVAL '1 day'
         )
@@ -85,23 +86,18 @@ export class InternalService {
   async getPipelineSummary(): Promise<PipelineSummary> {
     const rows = await this.db.execute(sql`
       SELECT
-        stage,
+        ps.slug                                               AS stage,
+        ps.label                                              AS label,
         COUNT(*)::int                                         AS count,
-        COALESCE(SUM(value), 0)::float                       AS total_value
-      FROM deals
-      WHERE stage NOT IN ('closed_won', 'closed_lost')
-      GROUP BY stage
-      ORDER BY
-        CASE stage
-          WHEN 'lead'        THEN 1
-          WHEN 'qualified'   THEN 2
-          WHEN 'proposal'    THEN 3
-          WHEN 'negotiation' THEN 4
-          ELSE 5
-        END
+        COALESCE(SUM(d.value), 0)::float                     AS total_value
+      FROM deals d
+      LEFT JOIN pipeline_stages ps ON ps.id = d.stage_id
+      WHERE COALESCE(ps.slug, '') NOT IN ('closed_won', 'closed_lost')
+      GROUP BY ps.slug, ps.label, ps.sort_order
+      ORDER BY ps.sort_order NULLS LAST
     `)
 
-    const stages = Array.from(rows) as Array<{ stage: string; count: number; total_value: number }>
+    const stages = Array.from(rows) as Array<{ stage: string; label: string; count: number; total_value: number }>
 
     const totalDeals = stages.reduce((sum, r) => sum + r.count, 0)
     const totalPipelineValue = stages.reduce((sum, r) => sum + r.total_value, 0)
@@ -113,7 +109,7 @@ export class InternalService {
 
     return {
       stages: stages.map((r) => ({
-        stage: r.stage,
+        stage: r.stage ?? 'unknown',
         count: r.count,
         totalValue: r.total_value,
       })),

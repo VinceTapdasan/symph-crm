@@ -1,6 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { sql } from 'drizzle-orm'
-import { deals } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
 
@@ -44,27 +43,48 @@ export class PipelineService {
   constructor(@Inject(DB) private db: Database) {}
 
   async getSummary(params: PipelineSummaryParams = {}): Promise<PipelineSummary> {
-    // Pass as ISO strings + explicit ::timestamptz cast so postgres.js doesn't
-    // trip on type inference when mixed with ::int / ::float8 casts in the same query.
     const from = params.from ?? null
     const to = params.to ?? null
 
-    // Stage grouping query — with optional date filter
+    // Stage grouping query — JOIN pipeline_stages to resolve slug from stage_id
     let stageQuery
     if (from && to) {
-      stageQuery = this.db.execute(sql`SELECT stage, COUNT(*)::int AS count, COALESCE(SUM(value), 0)::float8 AS total_value FROM deals WHERE created_at >= ${from}::timestamptz AND created_at <= ${to}::timestamptz GROUP BY stage`)
+      stageQuery = this.db.execute(sql`
+        SELECT ps.slug AS stage, COUNT(*)::int AS count, COALESCE(SUM(d.value), 0)::float8 AS total_value
+        FROM deals d
+        LEFT JOIN pipeline_stages ps ON ps.id = d.stage_id
+        WHERE d.created_at >= ${from}::timestamptz AND d.created_at <= ${to}::timestamptz
+        GROUP BY ps.slug
+      `)
     } else if (from) {
-      stageQuery = this.db.execute(sql`SELECT stage, COUNT(*)::int AS count, COALESCE(SUM(value), 0)::float8 AS total_value FROM deals WHERE created_at >= ${from}::timestamptz GROUP BY stage`)
+      stageQuery = this.db.execute(sql`
+        SELECT ps.slug AS stage, COUNT(*)::int AS count, COALESCE(SUM(d.value), 0)::float8 AS total_value
+        FROM deals d
+        LEFT JOIN pipeline_stages ps ON ps.id = d.stage_id
+        WHERE d.created_at >= ${from}::timestamptz
+        GROUP BY ps.slug
+      `)
     } else if (to) {
-      stageQuery = this.db.execute(sql`SELECT stage, COUNT(*)::int AS count, COALESCE(SUM(value), 0)::float8 AS total_value FROM deals WHERE created_at <= ${to}::timestamptz GROUP BY stage`)
+      stageQuery = this.db.execute(sql`
+        SELECT ps.slug AS stage, COUNT(*)::int AS count, COALESCE(SUM(d.value), 0)::float8 AS total_value
+        FROM deals d
+        LEFT JOIN pipeline_stages ps ON ps.id = d.stage_id
+        WHERE d.created_at <= ${to}::timestamptz
+        GROUP BY ps.slug
+      `)
     } else {
-      stageQuery = this.db.execute(sql`SELECT stage, COUNT(*)::int AS count, COALESCE(SUM(value), 0)::float8 AS total_value FROM deals GROUP BY stage`)
+      stageQuery = this.db.execute(sql`
+        SELECT ps.slug AS stage, COUNT(*)::int AS count, COALESCE(SUM(d.value), 0)::float8 AS total_value
+        FROM deals d
+        LEFT JOIN pipeline_stages ps ON ps.id = d.stage_id
+        GROUP BY ps.slug
+      `)
     }
     const rows = await stageQuery
 
     type Row = { stage: string; count: number; total_value: number }
     const byStage = (rows as unknown as Row[]).map(r => ({
-      stage: r.stage,
+      stage: r.stage ?? 'unknown',
       count: Number(r.count),
       totalValue: Number(r.total_value),
     }))
@@ -129,7 +149,6 @@ export class PipelineService {
     const from = params.from ?? null
     const to = params.to ?? null
 
-    // Build reusable date filter fragments for audit_logs and deals tables
     const auditFilter =
       from && to ? sql`AND created_at >= ${from}::timestamptz AND created_at <= ${to}::timestamptz`
       : from      ? sql`AND created_at >= ${from}::timestamptz`
@@ -137,30 +156,19 @@ export class PipelineService {
       : sql``
 
     const dealFilter =
-      from && to ? sql`AND created_at >= ${from}::timestamptz AND created_at <= ${to}::timestamptz`
-      : from      ? sql`AND created_at >= ${from}::timestamptz`
-      : to        ? sql`AND created_at <= ${to}::timestamptz`
+      from && to ? sql`AND d.created_at >= ${from}::timestamptz AND d.created_at <= ${to}::timestamptz`
+      : from      ? sql`AND d.created_at >= ${from}::timestamptz`
+      : to        ? sql`AND d.created_at <= ${to}::timestamptz`
       : sql``
 
-    // Run both queries in parallel:
-    //   Q1 — entry counts per stage (who entered each stage, deduplicated by deal)
-    //   Q2 — transition counts (unique deals moving FROM one stage TO the next)
-    //
-    // Bug fixes applied:
-    //   Bug 1: Conversion rates use actual A→B transitions / entry_count(A), capped at 100%.
-    //          This prevents >100% rates caused by deals skipping earlier stages.
-    //   Bug 2: deal_created events are counted as 'lead' stage entries, so the
-    //          first stage in the funnel has data even before any transitions occur.
     const [entryRows, transitionRows] = await Promise.all([
       this.db.execute(sql`
         WITH deal_created_entries AS (
-          -- Every deal creation counts as entry into the 'lead' stage
           SELECT DISTINCT entity_id, 'lead' AS stage
           FROM audit_logs
           WHERE audit_type = 'deal_created' ${auditFilter}
         ),
         stage_change_entries AS (
-          -- Deals that were explicitly transitioned TO a stage
           SELECT DISTINCT entity_id, details->>'to' AS stage
           FROM audit_logs
           WHERE audit_type = 'deal_stage_change'
@@ -168,10 +176,11 @@ export class PipelineService {
             ${auditFilter}
         ),
         current_deal_stages AS (
-          -- Current stage of each deal (catches deals never formally transitioned)
-          SELECT DISTINCT id::text AS entity_id, stage
-          FROM deals
-          WHERE TRUE ${dealFilter}
+          -- JOIN pipeline_stages to resolve slug from stage_id
+          SELECT DISTINCT d.id::text AS entity_id, ps.slug AS stage
+          FROM deals d
+          LEFT JOIN pipeline_stages ps ON ps.id = d.stage_id
+          WHERE ps.slug IS NOT NULL ${dealFilter}
         ),
         all_stage_entries AS (
           SELECT entity_id, stage FROM deal_created_entries
@@ -197,7 +206,6 @@ export class PipelineService {
         ORDER BY ps.sort_order
       `),
 
-      // Q2: from→to transition counts, deduped per deal per pair
       this.db.execute(sql`
         SELECT
           details->>'from' AS from_stage,
@@ -212,7 +220,6 @@ export class PipelineService {
       `),
     ])
 
-    // Build a lookup: 'from_stage->to_stage' → transition_count
     type TransRow = { from_stage: string; to_stage: string; transition_count: number }
     const transitionMap = new Map<string, number>()
     for (const r of transitionRows as unknown as TransRow[]) {
@@ -233,9 +240,6 @@ export class PipelineService {
     const wonRow = allRows.find(r => r.stage === 'closed_won')
     const lostRow = allRows.find(r => r.stage === 'closed_lost')
 
-    // Compute per-stage conversion rate using actual A→B transition counts.
-    // conversionRate(stage[i]) = transitionCount(stage[i]→stage[i+1]) / entryCount(stage[i])
-    // Capped at 100 to guard against data anomalies.
     const stages: FunnelStage[] = funnelRows.map((s, i) => {
       const next = funnelRows[i + 1]
       let conversionRate: number | null = null
