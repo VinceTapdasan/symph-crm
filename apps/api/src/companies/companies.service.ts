@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common'
-import { eq, desc, ilike, or } from 'drizzle-orm'
-import { companies } from '@symph-crm/database'
+import { eq, desc, ilike, or, inArray } from 'drizzle-orm'
+import { companies, deals } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
 import { AuditLogsService } from '../audit-logs/audit-logs.service'
@@ -12,24 +12,49 @@ export class CompaniesService {
     private auditLogs: AuditLogsService,
   ) {}
 
+  /** Batch-fetch deal IDs for a set of company IDs — one query, O(1) round trips. */
+  private async batchDealIds(companyIds: string[]): Promise<Map<string, string[]>> {
+    if (companyIds.length === 0) return new Map()
+    const rows = await this.db
+      .select({ id: deals.id, companyId: deals.companyId })
+      .from(deals)
+      .where(inArray(deals.companyId, companyIds as [string, ...string[]]))
+    const map = new Map<string, string[]>()
+    for (const row of rows) {
+      if (!row.companyId) continue
+      const existing = map.get(row.companyId) ?? []
+      existing.push(row.id)
+      map.set(row.companyId, existing)
+    }
+    return map
+  }
+
   async findAll() {
-    return this.db.select().from(companies).orderBy(desc(companies.createdAt))
+    const rows = await this.db.select().from(companies).orderBy(desc(companies.createdAt))
+    if (rows.length === 0) return []
+    const dealMap = await this.batchDealIds(rows.map(c => c.id))
+    return rows.map(c => ({ ...c, dealIds: dealMap.get(c.id) ?? [] }))
   }
 
   async findOne(id: string) {
     const [company] = await this.db.select().from(companies).where(eq(companies.id, id))
-    return company
+    if (!company) return undefined
+    const dealMap = await this.batchDealIds([company.id])
+    return { ...company, dealIds: dealMap.get(company.id) ?? [] }
   }
 
   /** Fuzzy search by name or domain — used by the AI agent's search_companies tool. */
   async search(query: string) {
     const pattern = `%${query}%`
-    return this.db
+    const rows = await this.db
       .select()
       .from(companies)
       .where(or(ilike(companies.name, pattern), ilike(companies.domain, pattern)))
       .orderBy(desc(companies.createdAt))
       .limit(20)
+    if (rows.length === 0) return []
+    const dealMap = await this.batchDealIds(rows.map(c => c.id))
+    return rows.map(c => ({ ...c, dealIds: dealMap.get(c.id) ?? [] }))
   }
 
   /**
