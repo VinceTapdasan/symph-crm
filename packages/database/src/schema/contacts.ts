@@ -10,7 +10,7 @@ export const contacts = pgTable('contacts', {
   title: text('title'),
   linkedinUrl: text('linkedin_url'),
   isPrimary: boolean('is_primary').default(false).notNull(),
-  notes: text('notes'),
+  // Notes live in Supabase Storage — path stored in documents table, not inline here
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })

@@ -4,6 +4,7 @@ export * from './companies'
 export * from './contacts'
 export * from './products'
 export * from './deals'
+export * from './deal-contacts'
 export * from './documents'   // replaces notes — content lives in Supabase Storage
 export * from './activities'
 export * from './files'
