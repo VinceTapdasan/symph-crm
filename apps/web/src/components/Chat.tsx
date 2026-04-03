@@ -568,6 +568,14 @@ export function Chat({ dealId }: { dealId?: string }) {
         },
       ])
 
+      // Aria gateway sends proper SSE named events:
+      //   id: 1\nevent: text\ndata: {"text":"..."}\n\n
+      //   id: 2\nevent: done\ndata: {}\n\n
+      // Track the current event type from `event:` lines, then use it
+      // when the matching `data:` line arrives.
+      let currentEventType = ''
+      let streamDone = false
+
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
@@ -577,13 +585,14 @@ export function Chat({ dealId }: { dealId?: string }) {
         buffer = lines.pop() || ''
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.startsWith('event: ')) {
+            currentEventType = line.slice(7).trim()
+          } else if (line.startsWith('data: ')) {
             try {
-              const event = JSON.parse(line.slice(6))
+              const payload = JSON.parse(line.slice(6)) as Record<string, unknown>
 
-              if (event.type === 'text' && event.data?.text) {
-                assistantText += event.data.text
-                // Stream text updates
+              if (currentEventType === 'text' && typeof payload.text === 'string') {
+                assistantText += payload.text
                 setMessages(prev =>
                   prev.map(m =>
                     m.id === assistantMsgId
@@ -591,41 +600,37 @@ export function Chat({ dealId }: { dealId?: string }) {
                       : m,
                   ),
                 )
-              } else if (event.type === 'tool' && event.data?.tool) {
-                actions.push({
-                  tool: event.data.tool,
-                  input: event.data.input || {},
-                  result: event.data.result || {},
-                })
+              } else if (currentEventType === 'action') {
+                // Gateway sends: { type: string, payload: Record<string,unknown> }
+                const actionType = typeof payload.type === 'string' ? payload.type : 'tool'
+                const actionPayload = (payload.payload ?? {}) as Record<string, unknown>
+                actions.push({ tool: actionType, input: actionPayload, result: {} })
                 setMessages(prev =>
                   prev.map(m =>
                     m.id === assistantMsgId ? { ...m, actionsTaken: actions } : m,
                   ),
                 )
-              } else if (event.type === 'error') {
-                throw new Error(event.data?.message || 'Stream error')
+              } else if (currentEventType === 'error') {
+                const msg = typeof payload.message === 'string' ? payload.message : 'Stream error'
+                throw new Error(msg)
+              } else if (currentEventType === 'done') {
+                streamDone = true
               }
             } catch (parseErr) {
+              // Re-throw intentional stream errors; swallow JSON parse failures
+              if (parseErr instanceof Error && parseErr.message !== 'Unexpected end of JSON input') {
+                const isStreamError = currentEventType === 'error'
+                if (isStreamError) throw parseErr
+              }
               console.error('Failed to parse stream event:', line, parseErr)
             }
+            currentEventType = ''
           }
         }
-      }
 
-      buffer += decoder.decode()
-      if (buffer.trim().startsWith('data: ')) {
-        try {
-          const event = JSON.parse(buffer.slice(6))
-          if (event.type === 'text' && event.data?.text) {
-            assistantText += event.data.text
-            setMessages(prev =>
-              prev.map(m =>
-                m.id === assistantMsgId ? { ...m, content: assistantText } : m,
-              ),
-            )
-          }
-        } catch (parseErr) {
-          console.error('Failed to parse final stream event:', buffer, parseErr)
+        if (streamDone) {
+          reader.cancel().catch(() => {})
+          break
         }
       }
     } catch (err) {

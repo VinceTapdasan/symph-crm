@@ -158,6 +158,8 @@ export class ChatService {
         session_id: ariaSessionId,
         content: userContent,
         user_id: dto.userId,
+        // Assert T3 so system_prompt_additions is honoured by the gateway
+        user_tier: 3,
         workspace_path: '/share/agency/products/symph-crm',
         system_prompt_additions: systemPromptAdditions,
       }),
@@ -173,8 +175,8 @@ export class ChatService {
       seq: number
     }
 
-    // Poll history until Aria finishes
-    const reply = await this.pollForReply(ariaSessionId, startSeq)
+    // Poll history until Aria finishes — start from seq 0 (outbox seq, not inbox seq)
+    const reply = await this.pollForReply(ariaSessionId, 0)
 
     // Store assistant reply
     const [assistantMsg] = await this.db
@@ -293,7 +295,12 @@ export class ChatService {
           { headers: { Authorization: `Bearer ${this.apiToken}` } },
         )
         if (resp.ok) {
-          entries = (await resp.json()) as typeof entries
+          // Gateway returns { session_id: string, entries: [...] } — not a raw array
+          const body = (await resp.json()) as {
+            session_id?: string
+            entries?: typeof entries
+          }
+          entries = Array.isArray(body.entries) ? body.entries : []
         }
       } catch (err) {
         this.logger.warn(`History poll failed: ${(err as Error).message}`)
