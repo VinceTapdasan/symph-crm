@@ -428,14 +428,14 @@ export function Chat({ dealId }: { dealId?: string }) {
       queryClient.invalidateQueries({ queryKey: queryKeys.chatSessions.byUser(userId) })
     },
   })
-  const { data: historyMessages } = useGetChatHistory(sessionId)
+  const { data: historyMessages, isLoading: loadingHistory } = useGetChatHistory(sessionId)
 
-  // Load history when switching sessions
+  // Load history when switching sessions — set messages unconditionally when data arrives
   useEffect(() => {
-    if (historyMessages && historyMessages.length > 0) {
+    if (historyMessages !== undefined) {
       const loaded: ChatMessage[] = historyMessages.map((m) => ({
         id: m.id,
-        role: m.role,
+        role: m.role as 'user' | 'assistant',
         content: m.content,
         actionsTaken: (m.actionsTaken ?? []) as ActionRecord[],
       }))
@@ -992,7 +992,8 @@ export function Chat({ dealId }: { dealId?: string }) {
 
   // ── Empty state ──────────────────────────────────────────────────────────
 
-  const isEmpty = messages.length === 0 && !typing
+  // Only show empty state when there's no active session — if sessionId is set we're loading/showing history
+  const isEmpty = messages.length === 0 && !typing && !sessionId && !loadingHistory
 
   if (isEmpty) {
     return (
@@ -1041,6 +1042,33 @@ export function Chat({ dealId }: { dealId?: string }) {
         {pastePreviewText && (
           <PastePreviewModal text={pastePreviewText} onClose={() => setPastePreviewText(null)} />
         )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Loading history skeleton (session selected, waiting for messages) ──────
+  if (sessionId && loadingHistory && messages.length === 0) {
+    return (
+      <div className="h-full flex">
+        <SessionSidebar
+          sessions={chatSessions}
+          activeSessionId={sessionId}
+          onSelect={handleSelectSession}
+          onNewChat={handleNewChat}
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(p => !p)}
+        />
+        <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-[680px] w-full mx-auto px-6 pt-8 pb-4 flex flex-col gap-5">
+              {[1, 2, 3].map(i => (
+                <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`h-10 rounded-xl bg-slate-100 dark:bg-white/[.06] animate-pulse ${i % 2 === 0 ? 'w-48' : 'w-64'}`} />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     )
