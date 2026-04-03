@@ -19,7 +19,7 @@ import {
 import { toast } from 'sonner'
 import {
   cn, formatCurrencyFull, timeAgo, formatDate,
-  getDaysInStage, getBrandColor, getInitials, getStageProgressIndex, formatServiceType,
+  getDaysInStage, getBrandColor, getInitials, getStageProgressIndex, formatServiceType, formatDealTitle,
 } from '@/lib/utils'
 import { getMimeLabel, supportsWordCount, isImage } from '@/lib/utils/document-utils'
 import { api } from '@/lib/api'
@@ -548,7 +548,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
       {/* ── Delete confirmation modal ───────────────────────────────── */}
       {deletingDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDeletingDoc(null)}>
-          <div className="bg-white dark:bg-[#1a1d21] rounded-xl shadow-2xl border border-black/[.08] dark:border-white/[.08] w-[92vw] max-w-[400px] p-6 animate-in fade-in-0 zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-[#1a1d21] rounded-xl shadow-2xl border border-black/[.08] dark:border-white/[.08] w-[92vw] max-w-[400px] p-4 animate-in fade-in-0 zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center shrink-0">
                 <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-red-500">
@@ -618,7 +618,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
           onClick={() => setShowAdvanceConfirm(false)}
         >
           <div
-            className="w-full max-w-sm bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-2xl p-5 animate-in zoom-in-95 fade-in-0 duration-300"
+            className="w-full max-w-sm bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-2xl p-4 animate-in zoom-in-95 fade-in-0 duration-300"
             onClick={e => e.stopPropagation()}
           >
             {/* Stage transition indicator */}
@@ -666,7 +666,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
           onClick={() => setShowWonConfirm(false)}
         >
           <div
-            className="w-full max-w-sm bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-2xl p-5 animate-in zoom-in-95 fade-in-0 duration-300"
+            className="w-full max-w-sm bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-2xl p-4 animate-in zoom-in-95 fade-in-0 duration-300"
             onClick={e => e.stopPropagation()}
           >
             {/* Stage transition indicator */}
@@ -713,7 +713,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
           onClick={() => setShowLostConfirm(false)}
         >
           <div
-            className="w-full max-w-sm bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-2xl p-5 animate-in zoom-in-95 fade-in-0 duration-300"
+            className="w-full max-w-sm bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-2xl p-4 animate-in zoom-in-95 fade-in-0 duration-300"
             onClick={e => e.stopPropagation()}
           >
             {/* Stage transition indicator */}
@@ -772,7 +772,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
         {/* Deal title */}
         <div className="flex items-center gap-2">
           <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-snug -mt-1 line-clamp-2">
-            {deal.title}
+            {formatDealTitle(deal.title)}
           </h1>
           <button
             onClick={() => setShowEditDeal(true)}
@@ -863,7 +863,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
               </p>
               <div className="flex items-center gap-2">
                 <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-tight">
-                  {deal.title}
+                  {formatDealTitle(deal.title)}
                 </h1>
                 <button
                   onClick={() => setShowEditDeal(true)}

@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useGetCompanies, useGetDeals, useGetUsers } from '@/lib/hooks/queries'
 import { Input } from '@/components/ui/input'
-import { cn, getInitials, getBrandColor, formatDealValue, totalNumericValue, toPascalCase } from '@/lib/utils'
+import { cn, getInitials, getBrandColor, formatDealValue, totalNumericValue, formatDealTitle } from '@/lib/utils'
 import { STAGE_DISPLAY, STAGE_COLORS, STAGE_LABELS, CLOSED_STAGE_IDS } from '@/lib/constants'
 import type { ApiCompanyDetail, ApiDeal } from '@/lib/types'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -74,7 +74,7 @@ function BrandDetailModal({
         onClick={e => e.stopPropagation()}
       >
         {/* Modal header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-black/[.06] dark:border-white/[.08] shrink-0">
+        <div className="flex items-center gap-3 p-4 border-b border-black/[.06] dark:border-white/[.08] shrink-0">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center text-[14px] font-semibold"
             style={{ background: `${group.color}15`, color: group.color }}
@@ -110,7 +110,7 @@ function BrandDetailModal({
         </div>
 
         {/* Stats bar */}
-        <div className="flex items-center gap-4 px-5 py-2.5 border-b border-black/[.04] dark:border-white/[.06] bg-slate-50/50 dark:bg-white/[.02] shrink-0">
+        <div className="flex items-center gap-4 px-4 py-2.5 border-b border-black/[.04] dark:border-white/[.06] bg-slate-50/50 dark:bg-white/[.02] shrink-0">
           <div className="text-[12px]">
             <span className="text-slate-400">Deals:</span>{' '}
             <span className="font-semibold text-slate-700 dark:text-slate-300">{group.deals.length}</span>
@@ -141,7 +141,7 @@ function BrandDetailModal({
                 <div
                   key={deal.id}
                   onClick={() => { onClose(); onOpenDeal(deal.id) }}
-                  className="flex items-center gap-3 px-5 py-3 border-b border-black/[.04] dark:border-white/[.06] cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[.03] transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 border-b border-black/[.04] dark:border-white/[.06] cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[.03] transition-colors"
                 >
                   <div
                     className="w-2 h-2 rounded-full shrink-0"
@@ -149,7 +149,7 @@ function BrandDetailModal({
                   />
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-medium text-slate-900 dark:text-white truncate">
-                      {toPascalCase(deal.title)}
+                      {formatDealTitle(deal.title)}
                     </div>
                     {tags.length > 0 && (
                       <div className="flex gap-1 mt-0.5 flex-wrap">

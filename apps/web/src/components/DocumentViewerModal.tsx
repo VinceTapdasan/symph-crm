@@ -79,7 +79,7 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
         onKeyDown={e => { if (e.key === 'Escape') { onClose(); } e.stopPropagation(); }}
       >
         {/* ── Header ────────────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-3 px-5 py-3.5 border-b border-black/[.06] dark:border-white/[.08] shrink-0">
+        <div className="flex items-center gap-3 p-4 border-b border-black/[.06] dark:border-white/[.08] shrink-0">
           {/* File icon */}
           <div className="text-slate-400 shrink-0">
             {isImage ? (

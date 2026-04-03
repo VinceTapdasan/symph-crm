@@ -170,6 +170,13 @@ export function toPascalCase(str: string): string {
     .join(' ')
 }
 
+/** Format deal title: UPPERCASE if ≤4 chars (acronyms like TMS, HRIS), else Title Case */
+export function formatDealTitle(title: string): string {
+  if (!title) return ''
+  if (title.length <= 4) return title.toUpperCase()
+  return toPascalCase(title)
+}
+
 /** Extract display name from email address: "Foo Bar <foo@bar.com>" → "Foo Bar" */
 export function parseDisplayName(address: string): string {
   const match = address.match(/^"?([^"<]+)"?\s*</)

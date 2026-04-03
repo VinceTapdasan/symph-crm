@@ -152,7 +152,7 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 pt-5 pb-4 border-b border-black/[.06] dark:border-white/[.08] flex items-center justify-between sticky top-0 bg-white dark:bg-[#1e1e21] z-10">
+        <div className="px-4 py-3 border-b border-black/[.06] dark:border-white/[.08] flex items-center justify-between sticky top-0 bg-white dark:bg-[#1e1e21] z-10">
           <div>
             <div className="text-[14px] font-semibold text-slate-900 dark:text-white">New Deal</div>
             <div className="text-[11.5px] text-slate-400 mt-0.5">Add a deal to your pipeline</div>
@@ -168,7 +168,7 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="p-4 flex flex-col gap-4">
           {/* Title */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">

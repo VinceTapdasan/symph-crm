@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { cn, getInitials, getBrandColor, formatDealValue, timeAgo, totalNumericValue, toPascalCase } from '@/lib/utils'
+import { cn, getInitials, getBrandColor, formatDealValue, timeAgo, totalNumericValue, formatDealTitle } from '@/lib/utils'
 import { STAGE_COLORS, STAGE_LABELS, CLOSED_STAGE_IDS } from '@/lib/constants'
 import { useGetDeals, useGetActivitiesByCompany, useGetUsers, useGetCompanies, useGetContactsByCompany } from '@/lib/hooks/queries'
 import { useAssignDealBrand, useCreateContact, useDeleteBrand } from '@/lib/hooks/mutations'
@@ -99,7 +99,8 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
   const [showAddPerson, setShowAddPerson] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [personForm, setPersonForm] = useState({ name: '', phone: '', title: '', role: '' })
-  const isOpen = !!brand
+  const isDeleting = useRef(false)
+  const isOpen = !!brand && !isDeleting.current
   const isUnassigned = brand?.id === UNASSIGNED_ID
 
   useEscapeKey(useCallback(onClose, [onClose]), isOpen)
@@ -107,6 +108,7 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
   // Reset tab and form state when brand changes
   useEffect(() => {
     if (brand) {
+      isDeleting.current = false
       setTab('deals')
       setShowAddPerson(false)
       setShowDeleteConfirm(false)
@@ -152,10 +154,41 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
     },
   })
   const deleteBrand = useDeleteBrand({
+    onMutate: async () => {
+      // Optimistic: dismiss confirmation dialog, close slide-over, remove brand from cache
+      isDeleting.current = true
+      setShowDeleteConfirm(false)
+
+      // Cancel any outgoing refetches so they don't overwrite our optimistic update
+      await qc.cancelQueries({ queryKey: queryKeys.companies.all })
+
+      // Snapshot previous companies for rollback
+      const previousCompanies = qc.getQueryData(queryKeys.companies.all)
+
+      // Optimistically remove the brand from the companies cache
+      qc.setQueryData(queryKeys.companies.all, (old: ApiCompanyDetail[] | undefined) =>
+        old ? old.filter(c => c.id !== brand?.id) : [],
+      )
+
+      // Close the slide-over immediately
+      onClose()
+
+      return { previousCompanies }
+    },
+    onError: (_err, _vars, context) => {
+      // Rollback the optimistic removal on error
+      if (context?.previousCompanies) {
+        qc.setQueryData(queryKeys.companies.all, context.previousCompanies)
+      }
+      isDeleting.current = false
+    },
     onSuccess: () => {
+      // Sync full state from server
       qc.invalidateQueries({ queryKey: queryKeys.companies.all })
       qc.invalidateQueries({ queryKey: queryKeys.deals.all })
-      onClose()
+    },
+    onSettled: () => {
+      isDeleting.current = false
     },
   })
 
@@ -331,7 +364,7 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
             <div className="flex-1 overflow-y-auto">
               {/* Deals list */}
               {(tab === 'deals' || isUnassigned) && (
-                <div className="p-3 space-y-1">
+                <div className="p-3 space-y-2">
                   {brandDeals.length === 0 ? (
                     <div className="py-8 text-center text-[13px] text-slate-400">
                       No deals for this brand yet
@@ -342,13 +375,13 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
                         key={deal.id}
                         onClick={() => onOpenDeal?.(deal.id)}
                         className={cn(
-                          'flex items-start gap-3 px-3 py-2.5 rounded-lg transition-colors',
-                          onOpenDeal ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[.04]' : 'hover:bg-slate-50 dark:hover:bg-white/[.03]',
+                          'flex items-start gap-3 px-3 py-2.5 rounded-lg transition-colors border border-black/[.08] dark:border-white/[.08] bg-transparent',
+                          onOpenDeal ? 'cursor-pointer hover:border-black/[.15] dark:hover:border-white/[.15] hover:bg-slate-50 dark:hover:bg-white/[.03]' : 'hover:border-black/[.15] dark:hover:border-white/[.15] hover:bg-slate-50 dark:hover:bg-white/[.03]',
                         )}
                       >
                         <div className="min-w-0 flex-1">
                           <div className="text-[13px] font-medium text-slate-900 dark:text-white truncate">
-                            {toPascalCase(deal.title)}
+                            {formatDealTitle(deal.title)}
                           </div>
                           <div className="text-[11px] text-slate-400 mt-0.5">
                             {formatDealValue(deal.value)}
@@ -511,7 +544,7 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
         {/* Delete confirmation dialog */}
         {showDeleteConfirm && brand && !isUnassigned && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 dark:bg-black/50 rounded-l-xl">
-            <div className="bg-white dark:bg-[#1e1e21] rounded-xl shadow-xl p-5 mx-6 max-w-[320px] w-full border border-black/[.06] dark:border-white/[.08]">
+            <div className="bg-white dark:bg-[#1e1e21] rounded-xl shadow-xl p-4 mx-6 max-w-[320px] w-full border border-black/[.06] dark:border-white/[.08]">
               <h3 className="text-[14px] font-semibold text-slate-900 dark:text-white">Delete brand?</h3>
               <p className="text-[12.5px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
                 This will permanently delete <strong>{brand.name}</strong>.
