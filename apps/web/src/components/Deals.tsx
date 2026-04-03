@@ -283,9 +283,8 @@ function BrandsDataTable({
             {stages.slice(0, 2).map(s => (
               <span
                 key={s.id}
-                className="inline-block px-2 py-px rounded-full text-[11px] font-medium leading-[18px] whitespace-nowrap"
-                className="dark:brightness-150"
-              style={{ background: s.bg, color: s.color }}
+                className="inline-block px-2 py-px rounded-full text-[11px] font-medium leading-[18px] whitespace-nowrap dark:brightness-150"
+                style={{ background: s.bg, color: s.color }}
               >
                 {s.label}
               </span>
