@@ -1047,7 +1047,7 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
           {/* Tab bar — includes filters + view toggle flushed right */}
           <div className="flex items-center border-b border-black/[.06] dark:border-white/[.08] gap-0 pr-2">
             {/* Tabs */}
-            <div className="flex flex-1 min-w-0 overflow-x-auto scrollbar-none">
+            <div className="flex flex-1 min-w-0 flex-wrap">
               {([
                 { id: 'notes', label: 'Notes', count: noteDocs.length },
                 { id: 'resources', label: 'Resources', count: resourceDocs.length },
