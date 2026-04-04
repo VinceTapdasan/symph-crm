@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useGetCompanies, useGetDeals, useGetUsers } from '@/lib/hooks/queries'
 import { Input } from '@/components/ui/input'
-import { cn, getInitials, getBrandColor, formatDealValue, formatServiceType, totalNumericValue, formatDealTitle } from '@/lib/utils'
+import { cn, getInitials, getBrandColor, formatDealValue, formatServiceType, totalNumericValue, formatDealTitle, toPascalCase } from '@/lib/utils'
 import { STAGE_DISPLAY, STAGE_COLORS, STAGE_LABELS, CLOSED_STAGE_IDS } from '@/lib/constants'
 import type { ApiCompanyDetail, ApiDeal } from '@/lib/types'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -122,7 +122,7 @@ function BrandDetailModal({
           <div className="text-xs">
             <span className="text-slate-400">Value:</span>{' '}
             <span className="font-semibold tabular-nums" style={{ color: group.color }}>
-              {group.totalValue > 0 ? formatDealValue(String(group.totalValue)) : '—'}
+              {group.totalValue > 0 ? formatDealValue(String(group.totalValue)) : 'P0.00'}
             </span>
           </div>
         </div>
@@ -231,7 +231,7 @@ function BrandsDataTable({
             </div>
             <div className="min-w-0">
               <div className="text-ssm font-semibold text-slate-900 dark:text-white truncate">
-                {r.company.name}
+                {toPascalCase(r.company.name)}
               </div>
               {(r.company.industry || r.company.domain) && (
                 <div className="text-xxs text-slate-400 truncate">
@@ -252,8 +252,8 @@ function BrandsDataTable({
       cell: ({ getValue }) => {
         const v = getValue<number>()
         return (
-          <span className="text-ssm font-semibold tabular-nums text-primary">
-            {v > 0 ? formatDealValue(String(v)) : '—'}
+          <span className="text-ssm font-semibold tabular-nums text-slate-700 dark:text-slate-300">
+            {v > 0 ? formatDealValue(String(v)) : 'P0.00'}
           </span>
         )
       },
@@ -588,7 +588,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search brands…"
-                className="border-none bg-transparent outline-none text-[12.5px] text-slate-900 dark:text-white w-full placeholder:text-slate-400 focus:ring-0 focus-visible:ring-0 focus-visible:outline-none px-0 py-0 rounded-none h-auto shadow-none"
+                className="border-none bg-transparent outline-none text-ssm text-slate-900 dark:text-white w-full placeholder:text-slate-400 focus:ring-0 focus-visible:ring-0 focus-visible:outline-none px-0 py-0 rounded-none h-auto shadow-none"
               />
             </div>
 

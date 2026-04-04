@@ -45,7 +45,7 @@ const columns: ColumnDef<AuditLogEntry>[] = [
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-1.5">
             <span
-              className="inline-flex items-center gap-1 font-medium px-1.5 py-px rounded-full text-[10.5px]"
+              className="inline-flex items-center gap-1 font-medium px-1.5 py-px rounded-full text-xxs"
               style={{ background: cfg.bg, color: cfg.color }}
             >
               <span className="text-xxs leading-none">{cfg.icon}</span>
@@ -74,7 +74,7 @@ const columns: ColumnDef<AuditLogEntry>[] = [
         <div className="flex flex-col">
           <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{entityLabel}</span>
           {entry.entityId && (
-            <span className="text-[10.5px] text-slate-400 font-mono">#{entry.entityId.slice(0, 8)}</span>
+            <span className="text-xxs text-slate-400 font-mono">#{entry.entityId.slice(0, 8)}</span>
           )}
         </div>
       )
@@ -108,7 +108,7 @@ const columns: ColumnDef<AuditLogEntry>[] = [
       const source = row.original.source
       if (!source) return <span className="text-xxs text-slate-300 dark:text-white/20">—</span>
       return (
-        <span className="inline-block px-1.5 py-px rounded text-[10.5px] font-medium bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+        <span className="inline-block px-1.5 py-px rounded text-xxs font-medium bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400 uppercase tracking-wide">
           {source}
         </span>
       )

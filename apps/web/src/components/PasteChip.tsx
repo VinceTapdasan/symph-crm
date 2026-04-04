@@ -33,7 +33,7 @@ export function PasteChip({ text, onRemove, onClick }: PasteChipProps) {
           className="w-full h-full text-left px-2.5 py-2.5 rounded-lg bg-slate-100 dark:bg-white/[.06] border border-black/[.08] dark:border-white/[.10] hover:border-black/20 dark:hover:border-white/20 transition-colors flex flex-col overflow-hidden"
         >
           {/* Preview text — fills remaining space, clipped */}
-          <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-[1.5] line-clamp-4 break-words flex-1 overflow-hidden">
+          <p className="text-xxs text-slate-500 dark:text-slate-400 leading-[1.5] line-clamp-4 break-words flex-1 overflow-hidden">
             {preview}
           </p>
           {/* PASTED badge — pinned to bottom */}
@@ -118,7 +118,7 @@ export function PastePreviewModal({ text, onClose }: PastePreviewModalProps) {
 
         {/* Content — focusable so Ctrl+A selects within modal */}
         <div ref={contentRef} className="flex-1 overflow-y-auto outline-none" tabIndex={0}>
-          <pre className="px-6 py-5 text-[12.5px] font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed overflow-x-auto">
+          <pre className="px-6 py-5 text-ssm font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed overflow-x-auto">
             {text}
           </pre>
         </div>

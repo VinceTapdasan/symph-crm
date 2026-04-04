@@ -409,9 +409,9 @@ export function BillingSection({ dealId }: BillingSectionProps) {
             <button
               onClick={handleSave}
               disabled={upsertBilling.isPending}
-              className="flex-1 h-8 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-semibold transition-colors duration-150 active:scale-[0.98] disabled:opacity-60"
+              className="flex-1 h-8 flex items-center justify-center gap-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-semibold transition-colors duration-150 active:scale-[0.98] disabled:opacity-60"
             >
-              {upsertBilling.isPending ? 'Saving...' : billing ? 'Save Changes' : 'Save Billing'}
+              <>{upsertBilling.isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}{billing ? 'Save Changes' : 'Save Billing'}</>
             </button>
           </div>
         </>

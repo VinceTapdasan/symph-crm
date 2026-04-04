@@ -68,6 +68,22 @@ Rules:
 - Static className strings (`className="..."`) are fine without `cn()`.
 - `cn()` merges Tailwind classes correctly and handles falsy values.
 
+### Font Size Scale (MANDATORY)
+
+No arbitrary `text-[Npx]` values. Use only these classes:
+
+| Class | Size | Use Case |
+|-------|------|----------|
+| `text-atom` | 10px | Labels, uppercase section headers, tiny badges |
+| `text-xxs` | 11px | Table column headers, pill badges, secondary info |
+| `text-xs` | 12px | Body text, buttons, form inputs, tab labels |
+| `text-ssm` | 13px | Card headings, modal descriptions, nav items |
+| `text-sm` | 14px | Modal titles, input labels, prominent body text |
+| `text-sbase` | 15px | Sub-headings, slide-over titles |
+| `text-base` | 16px | Page titles |
+
+Custom classes (`text-atom`, `text-xxs`, `text-ssm`, `text-sbase`) are defined in `globals.css` under `@theme inline` and registered in `tailwind-merge` via `lib/utils.ts`.
+
 ### Design Tokens — Border Radius & Spacing (MANDATORY)
 
 - **Default border radius for all cards, containers, modals, dropdowns, popovers:** `rounded-md`. No `rounded-xl` or `rounded-lg` on card/container surfaces.

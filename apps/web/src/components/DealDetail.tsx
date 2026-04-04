@@ -164,7 +164,7 @@ function QuickActionRow({
     <button
       onClick={onClick}
       className={cn(
-        'flex items-center gap-2.5 w-full px-2 py-2 text-[12.5px] rounded-lg transition-colors text-left',
+        'flex items-center gap-2.5 w-full px-2 py-2 text-ssm rounded-lg transition-colors text-left',
         variant === 'success'
           ? 'text-[#16a34a] hover:bg-[rgba(22,163,74,0.06)]'
           : variant === 'danger'
@@ -634,20 +634,20 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
             <p className="text-sbase font-bold text-slate-900 dark:text-white mb-1">
               Advance this deal?
             </p>
-            <p className="text-ssm text-slate-500 dark:text-slate-400 mb-5">
+            <p className="text-ssm text-slate-600 dark:text-slate-400 leading-relaxed">
               Move <span className="font-medium text-slate-700 dark:text-slate-200">{deal.title}</span> to <span className="font-medium" style={{ color: `var(--stage-${nextStage}, #94a3b8)` }}>{STAGE_LABELS[nextStage] ?? nextStage}</span>. This can't be undone.
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2.5 mt-4">
               <button
                 onClick={() => setShowAdvanceConfirm(false)}
-                className="flex-1 py-2.5 rounded-lg text-ssm font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+                className="flex-1 h-8 rounded-lg text-xs font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={() => { setShowAdvanceConfirm(false); handleAdvance() }}
                 disabled={patchStage.isPending}
-                className="flex-1 py-2.5 rounded-lg text-ssm font-semibold text-white disabled:opacity-60 transition-opacity"
+                className="flex-1 h-8 rounded-lg text-xs font-semibold text-white disabled:opacity-60 transition-opacity"
                 style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
               >
                 {patchStage.isPending ? (
@@ -682,20 +682,20 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
             <p className="text-sbase font-bold text-slate-900 dark:text-white mb-1">
               Mark as Won?
             </p>
-            <p className="text-ssm text-slate-500 dark:text-slate-400 mb-5">
-              Move <span className="font-medium text-slate-700 dark:text-slate-200">{deal.title}</span> to <span className="font-medium" style={{ color: 'var(--stage-closed_won, #16a34a)' }}>Won</span>. This can’t be undone.
+            <p className="text-ssm text-slate-600 dark:text-slate-400 leading-relaxed">
+              Move <span className="font-medium text-slate-700 dark:text-slate-200">{deal.title}</span> to <span className="font-medium" style={{ color: 'var(--stage-closed_won, #16a34a)' }}>Won</span>. This can't be undone.
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2.5 mt-4">
               <button
                 onClick={() => setShowWonConfirm(false)}
-                className="flex-1 py-2.5 rounded-lg text-ssm font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+                className="flex-1 h-8 rounded-lg text-xs font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmMarkWon}
                 disabled={patchStage.isPending}
-                className="flex-1 py-2.5 rounded-lg text-ssm font-semibold text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 transition-colors"
+                className="flex-1 h-8 rounded-lg text-xs font-semibold text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 transition-colors"
               >
                 {patchStage.isPending ? (
                   <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin mx-auto" />
@@ -729,20 +729,20 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
             <p className="text-sbase font-bold text-slate-900 dark:text-white mb-1">
               Close as Lost?
             </p>
-            <p className="text-ssm text-slate-500 dark:text-slate-400 mb-5">
-              Move <span className="font-medium text-slate-700 dark:text-slate-200">{deal.title}</span> to <span className="font-medium" style={{ color: 'var(--stage-closed_lost, #dc2626)' }}>Lost</span>. This can’t be undone.
+            <p className="text-ssm text-slate-600 dark:text-slate-400 leading-relaxed">
+              Move <span className="font-medium text-slate-700 dark:text-slate-200">{deal.title}</span> to <span className="font-medium" style={{ color: 'var(--stage-closed_lost, #dc2626)' }}>Lost</span>. This can't be undone.
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2.5 mt-4">
               <button
                 onClick={() => setShowLostConfirm(false)}
-                className="flex-1 py-2.5 rounded-lg text-ssm font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+                className="flex-1 h-8 rounded-lg text-xs font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmMarkLost}
                 disabled={patchStage.isPending}
-                className="flex-1 py-2.5 rounded-lg text-ssm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 transition-colors"
+                className="flex-1 h-8 rounded-lg text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 transition-colors"
               >
                 {patchStage.isPending ? (
                   <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin mx-auto" />

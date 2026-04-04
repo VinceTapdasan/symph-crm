@@ -121,7 +121,14 @@
   --color-primary-ring: rgba(21, 71, 230, 0.2);
   --color-primary-accent: #3b82f6;
 
-  /* Custom font sizes */
+  /* Custom font sizes
+     text-atom  = 10px
+     text-xxs   = 11px
+     text-xs    = 12px (built-in)
+     text-ssm   = 13px
+     text-sm    = 14px (built-in)
+     text-sbase = 15px
+     text-base  = 16px (built-in) */
   --text-atom: 0.625rem;
   --text-atom--line-height: calc(1 / 0.625);
   --text-xxs: 0.6875rem;

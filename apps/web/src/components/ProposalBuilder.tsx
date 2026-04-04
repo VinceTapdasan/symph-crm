@@ -118,9 +118,9 @@ function NewProposalModal({
                 version: 1,
               })}
               disabled={mutation.isPending}
-              className="px-4 py-2 text-ssm rounded-lg bg-slate-900 text-white font-medium disabled:opacity-40 hover:bg-slate-700"
+              className="flex items-center gap-1.5 px-4 py-2 text-ssm rounded-lg bg-slate-900 text-white font-medium disabled:opacity-40 hover:bg-slate-700"
             >
-              {mutation.isPending ? 'Creating...' : 'Create'}
+              <>{mutation.isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Create</>
             </button>
           </div>
         </div>

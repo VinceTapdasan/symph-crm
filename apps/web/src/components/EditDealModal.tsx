@@ -167,7 +167,7 @@ export function EditDealModal({ deal, onClose }: Props) {
         <div className="px-4 py-3 border-b border-black/[.06] dark:border-white/[.08] flex items-center justify-between sticky top-0 bg-white dark:bg-[#1e1e21] z-10">
           <div>
             <div className="text-sm font-semibold text-slate-900 dark:text-white">Edit Deal</div>
-            <div className="text-[11.5px] text-slate-400 mt-0.5">Update deal details</div>
+            <div className="text-xs text-slate-400 mt-0.5">Update deal details</div>
           </div>
           <button
             onClick={onClose}
@@ -300,10 +300,10 @@ export function EditDealModal({ deal, onClose }: Props) {
             <button
               type="submit"
               disabled={isPending || !canSubmit}
-              className="flex-1 h-9 rounded-lg text-ssm font-medium text-white transition-colors disabled:opacity-50"
+              className="flex-1 h-9 flex items-center justify-center gap-1.5 rounded-lg text-ssm font-medium text-white transition-colors disabled:opacity-50"
               style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
             >
-              {isPending ? 'Saving...' : 'Save Changes'}
+              <>{isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Save Changes</>
             </button>
           </div>
         </form>

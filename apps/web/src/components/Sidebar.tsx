@@ -92,30 +92,27 @@ function LogoutConfirmModal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm px-4 flex items-center justify-center"
       onClick={onCancel}
     >
       <div
-        className="bg-white dark:bg-[#1e1e21] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-black/[.06] dark:border-white/[.08] p-6 w-[320px] flex flex-col gap-4"
+        className="max-w-sm w-full rounded-xl border border-black/[.06] dark:border-white/[.08] bg-white dark:bg-[#1e1e21] shadow-2xl p-4 animate-in zoom-in-95 fade-in-0 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex flex-col gap-1">
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">Sign out of Symph CRM?</p>
-          <p className="text-[12.5px] text-slate-500 leading-[1.5]">
-            Any unsaved work will be lost. You can sign back in anytime.
-          </p>
-        </div>
-
-        <div className="flex gap-2 mt-1">
+        <p className="text-sm font-semibold text-slate-900 dark:text-white">Sign out of Symph CRM?</p>
+        <p className="text-ssm text-slate-600 dark:text-slate-400 leading-relaxed mt-1">
+          Any unsaved work will be lost. You can sign back in anytime.
+        </p>
+        <div className="flex gap-2.5 mt-4">
           <button
             onClick={onCancel}
-            className="flex-1 h-9 rounded-lg border border-black/[.08] dark:border-white/[.08] text-ssm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors"
+            className="flex-1 h-8 rounded-lg text-xs font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-ssm font-medium text-white transition-colors"
+            className="flex-1 h-8 rounded-lg text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
           >
             Sign out
           </button>
@@ -199,7 +196,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       onMouseEnter={() => setHoveredPath(item.path)}
                       onMouseLeave={() => setHoveredPath(null)}
                       className={cn(
-                        'relative flex items-center gap-[9px] px-[10px] py-[6px] rounded text-[12.5px] w-full text-left transition-colors duration-150',
+                        'relative flex items-center gap-[9px] px-[10px] py-[6px] rounded text-ssm w-full text-left transition-colors duration-150',
                         active
                           ? 'bg-primary/[.08] dark:bg-primary/[.12] text-primary dark:text-primary font-semibold ring-1 ring-primary/20 dark:ring-primary/25'
                           : 'font-medium',

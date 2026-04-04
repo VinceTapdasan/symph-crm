@@ -283,7 +283,7 @@ function DealCard({
     <div
       onClick={onClick}
       className={cn(
-        'group rounded-lg p-3.5 cursor-pointer transition-colors duration-150',
+        'group rounded-lg p-3 cursor-pointer transition-colors duration-150',
         isWon
           ? 'bg-[rgba(22,163,74,0.05)] dark:bg-[rgba(22,163,74,0.08)] border border-[rgba(22,163,74,0.22)]'
           : isLost
@@ -294,7 +294,7 @@ function DealCard({
       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '' }}
     >
       {/* Brand name + outreach badge + actions */}
-      <div className="flex items-center justify-between mb-1.5">
+      <div className="flex items-center justify-between">
         <span className="text-xxs font-semibold uppercase tracking-[0.05em] text-slate-400 truncate max-w-[120px]">
           {brandName}
         </span>
@@ -326,8 +326,8 @@ function DealCard({
       </div>
 
       {/* Deal title */}
-      <div className="text-[12.5px] font-semibold text-slate-900 dark:text-white leading-snug mb-2.5">
-        {deal.title.toUpperCase()}
+      <div className="text-xs font-semibold text-slate-900 dark:text-white leading-snug mb-2.5">
+        {deal.title.length <= 5 ? deal.title.toUpperCase() : toPascalCase(deal.title)}
       </div>
 
       {/* Services tags */}
@@ -889,7 +889,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                   <div className="px-3.5 py-3 shrink-0 border-b border-black/[.06] dark:border-white/[.08] bg-white/60 dark:bg-white/[.04]">
                     <div className="flex items-center gap-2">
                       <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: col.color }} />
-                      <span className="text-[12.5px] font-semibold text-slate-700 dark:text-slate-300 flex-1 leading-none">{col.label}</span>
+                      <span className="text-ssm font-semibold text-slate-700 dark:text-slate-300 flex-1 leading-none">{col.label}</span>
                       <span className="bg-white dark:bg-[#1e1e21] border border-black/[.07] dark:border-white/[.08] text-slate-500 text-xxs font-semibold tabular-nums px-2 py-0.5 rounded-full">
                         {col.deals.length}
                       </span>
@@ -955,23 +955,29 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
 
       {/* Delete confirmation modal */}
       {deleteConfirmDealId && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="w-full sm:w-[420px] bg-white dark:bg-[#1e1e21] rounded-lg shadow-xl p-4 animate-in slide-in-from-bottom duration-150">
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Delete deal?</h2>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">This action cannot be undone. The deal will be permanently removed from your pipeline.</p>
-            <div className="flex items-center gap-2 justify-end">
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm px-4 flex items-center justify-center"
+          onClick={() => setDeleteConfirmDealId(null)}
+        >
+          <div
+            className="max-w-sm w-full rounded-xl border border-black/[.06] dark:border-white/[.08] bg-white dark:bg-[#1e1e21] shadow-2xl p-4 animate-in zoom-in-95 fade-in-0 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">Delete deal?</p>
+            <p className="text-ssm text-slate-600 dark:text-slate-400 leading-relaxed mt-1">This action cannot be undone. The deal will be permanently removed from your pipeline.</p>
+            <div className="flex gap-2.5 mt-4">
               <button
                 onClick={() => setDeleteConfirmDealId(null)}
-                className="px-3.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[.06] rounded-lg transition-colors"
+                className="flex-1 h-8 rounded-lg text-xs font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={deleteDeal.isPending}
-                className="px-3.5 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 rounded-lg transition-colors active:scale-[0.98]"
+                className="flex-1 h-8 flex items-center justify-center gap-1.5 rounded-lg text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 transition-colors"
               >
-                {deleteDeal.isPending ? 'Deleting…' : 'Delete'}
+                <>{deleteDeal.isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Delete</>
               </button>
             </div>
           </div>
@@ -982,28 +988,34 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
       {moveConfirm && (() => {
         const targetCol = KANBAN_STAGES.find(c => c.matches.includes(moveConfirm.targetStage))
         return (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-150">
-            <div className="w-full sm:w-[420px] bg-white dark:bg-[#1e1e21] rounded-lg shadow-xl p-4 animate-in slide-in-from-bottom duration-150">
-              <h2 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Move deal back?</h2>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
+          <div
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm px-4 flex items-center justify-center"
+            onClick={() => setMoveConfirm(null)}
+          >
+            <div
+              className="max-w-sm w-full rounded-xl border border-black/[.06] dark:border-white/[.08] bg-white dark:bg-[#1e1e21] shadow-2xl p-4 animate-in zoom-in-95 fade-in-0 duration-300"
+              onClick={e => e.stopPropagation()}
+            >
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">Move deal back?</p>
+              <p className="text-ssm text-slate-600 dark:text-slate-400 leading-relaxed mt-1">
                 Moving <span className="font-semibold text-slate-900 dark:text-white">{moveConfirm.dealTitle}</span> to{' '}
                 <span className="font-semibold" style={{ color: targetCol?.color }}>
                   {targetCol?.label ?? moveConfirm.targetStage}
                 </span>?
               </p>
-              <div className="flex items-center gap-2 justify-end">
+              <div className="flex gap-2.5 mt-4">
                 <button
                   onClick={() => setMoveConfirm(null)}
-                  className="px-3.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[.06] rounded-lg transition-colors"
+                  className="flex-1 h-8 rounded-lg text-xs font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmMove}
                   disabled={patchStage.isPending}
-                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-60 rounded-lg transition-colors active:scale-[0.98]"
+                  className="flex-1 h-8 flex items-center justify-center gap-1.5 rounded-lg text-xs font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-60 transition-colors"
                 >
-                  {patchStage.isPending ? 'Moving…' : 'Move'}
+                  <>{patchStage.isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Move</>
                 </button>
               </div>
             </div>

@@ -55,12 +55,12 @@ function eventTextClass(ev: ApiCalendarEvent): string {
 function TimePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-9 text-[12.5px]">
+      <SelectTrigger className="h-9 text-ssm">
         <SelectValue placeholder="Select time" />
       </SelectTrigger>
       <SelectContent className="max-h-[200px]">
         {TIME_SLOTS.map(slot => (
-          <SelectItem key={slot.value} value={slot.value} className="text-[12.5px]">
+          <SelectItem key={slot.value} value={slot.value} className="text-ssm">
             {slot.label}
           </SelectItem>
         ))}
@@ -116,7 +116,7 @@ function EventDetailPanel({
             {event.title}
           </h2>
 
-          <div className="flex items-start gap-2.5 text-[12.5px] text-slate-600 dark:text-slate-400">
+          <div className="flex items-start gap-2.5 text-ssm text-slate-600 dark:text-slate-400">
             <Clock size={14} className="shrink-0 mt-0.5" />
             <span>
               {new Date(event.startAt).toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' })}
@@ -126,14 +126,14 @@ function EventDetailPanel({
           </div>
 
           {event.location && (
-            <div className="flex items-start gap-2.5 text-[12.5px] text-slate-600 dark:text-slate-400">
+            <div className="flex items-start gap-2.5 text-ssm text-slate-600 dark:text-slate-400">
               <MapPin size={14} className="shrink-0 mt-0.5" />
               <span>{event.location}</span>
             </div>
           )}
 
           {event.attendeeEmails.length > 0 && (
-            <div className="flex items-start gap-2.5 text-[12.5px] text-slate-600 dark:text-slate-400">
+            <div className="flex items-start gap-2.5 text-ssm text-slate-600 dark:text-slate-400">
               <Users size={14} className="shrink-0 mt-0.5" />
               <div className="space-y-0.5 max-h-[200px] overflow-y-auto">
                 {event.attendeeEmails.map(email => (
@@ -154,7 +154,7 @@ function EventDetailPanel({
           <div className="px-4 py-3 border-t border-black/[.06] dark:border-white/[.06]">
             <button
               onClick={() => { onOpenDeal(event.dealId!); onClose() }}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-[12.5px] font-medium text-primary hover:bg-primary/[.06] rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-ssm font-medium text-primary hover:bg-primary/[.06] rounded-lg transition-colors"
             >
               Open deal
             </button>
@@ -224,7 +224,7 @@ function CreateEventModal({
 
         <div className="space-y-3">
           <div>
-            <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">Title *</label>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Title *</label>
             <Input
               className="h-9 text-ssm"
               value={form.title}
@@ -235,56 +235,56 @@ function CreateEventModal({
           </div>
 
           <div>
-            <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">Type</label>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Type</label>
             <Select value={form.eventType} onValueChange={v => set('eventType', v as CreateEventForm['eventType'])}>
-              <SelectTrigger className="h-9 text-[12.5px]">
+              <SelectTrigger className="h-9 text-ssm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="general" className="text-[12.5px]">General</SelectItem>
-                <SelectItem value="demo" className="text-[12.5px]">Demo</SelectItem>
-                <SelectItem value="discovery_call" className="text-[12.5px]">Discovery Call</SelectItem>
-                <SelectItem value="followup" className="text-[12.5px]">Follow-up</SelectItem>
+                <SelectItem value="general" className="text-ssm">General</SelectItem>
+                <SelectItem value="demo" className="text-ssm">Demo</SelectItem>
+                <SelectItem value="discovery_call" className="text-ssm">Discovery Call</SelectItem>
+                <SelectItem value="followup" className="text-ssm">Follow-up</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">Start date *</label>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Start date *</label>
               <Input
                 type="date"
-                className="h-9 text-[12.5px]"
+                className="h-9 text-ssm"
                 value={form.startDate}
                 onChange={e => { set('startDate', e.target.value); if (!form.endDate || form.endDate < e.target.value) set('endDate', e.target.value) }}
               />
             </div>
             <div>
-              <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">Start time *</label>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Start time *</label>
               <TimePicker value={form.startTime} onChange={v => set('startTime', v)} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">End date *</label>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">End date *</label>
               <Input
                 type="date"
-                className="h-9 text-[12.5px]"
+                className="h-9 text-ssm"
                 value={form.endDate}
                 onChange={e => set('endDate', e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">End time *</label>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">End time *</label>
               <TimePicker value={form.endTime} onChange={v => set('endTime', v)} />
             </div>
           </div>
 
           <div>
-            <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">Location</label>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Location</label>
             <Input
-              className="h-9 text-[12.5px]"
+              className="h-9 text-ssm"
               value={form.location}
               onChange={e => set('location', e.target.value)}
               placeholder="Google Meet, Zoom, office address..."
@@ -292,9 +292,9 @@ function CreateEventModal({
           </div>
 
           <div>
-            <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">Description</label>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Description</label>
             <Textarea
-              className="text-[12.5px] min-h-[72px] resize-none"
+              className="text-ssm min-h-[72px] resize-none"
               value={form.description}
               onChange={e => set('description', e.target.value)}
               placeholder="Agenda, notes..."
@@ -306,16 +306,16 @@ function CreateEventModal({
           <div className="flex justify-end gap-2 pt-1">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-[12.5px] rounded-lg border border-black/[.06] dark:border-white/[.08] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+              className="px-4 py-2 text-ssm rounded-lg border border-black/[.06] dark:border-white/[.08] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={() => mutation.mutate(form)}
               disabled={!canSubmit || mutation.isPending}
-              className="px-4 py-2 text-[12.5px] rounded-lg bg-primary text-white font-semibold disabled:opacity-40 hover:bg-primary/90 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 text-ssm rounded-lg bg-primary text-white font-semibold disabled:opacity-40 hover:bg-primary/90 transition-colors"
             >
-              {mutation.isPending ? 'Creating…' : 'Create Event'}
+              <>{mutation.isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Create Event</>
             </button>
           </div>
         </div>
@@ -413,7 +413,7 @@ function WeekView({
           const isToday = key === today
           return (
             <div key={key} className="py-2 text-center">
-              <div className="text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide">
+              <div className="text-atom font-semibold text-slate-400 uppercase tracking-wide">
                 {DAYS[d.getDay()]}
               </div>
               <div className={cn(
@@ -437,7 +437,7 @@ function WeekView({
           <div>
             {HOURS.map(h => (
               <div key={h} className="relative border-t border-black/[.04] dark:border-white/[.04]" style={{ height: HOUR_PX }}>
-                <span className="absolute -top-2 right-2 text-[9.5px] text-slate-400 tabular-nums select-none">
+                <span className="absolute -top-2 right-2 text-atom text-slate-400 tabular-nums select-none">
                   {h === 12 ? '12 PM' : h > 12 ? `${h - 12} PM` : `${h} AM`}
                 </span>
               </div>
@@ -519,7 +519,7 @@ function WeekView({
                     onClick={e => { e.stopPropagation(); onEventClick(ev) }}
                     title={`${ev.title} · ${formatTime(ev.startAt)}`}
                   >
-                    <div className="text-[10.5px] font-semibold truncate leading-tight">{ev.title}</div>
+                    <div className="text-xxs font-semibold truncate leading-tight">{ev.title}</div>
                     <div className="text-atom opacity-80 truncate">{formatTime(ev.startAt)}</div>
                   </div>
                 ))}
@@ -702,7 +702,7 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
             </div>
             <a
               href={`${API_BASE}/auth/google-calendar/connect?userId=${encodeURIComponent(userId ?? '')}&returnTo=%2Fcalendar`}
-              className="ml-4 shrink-0 px-4 py-2 bg-blue-600 text-white text-[12.5px] font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="ml-4 shrink-0 px-4 py-2 bg-blue-600 text-white text-ssm font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
               Connect
             </a>
@@ -775,13 +775,13 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
 
               <button
                 onClick={handleToday}
-                className="px-3 py-1.5 text-[11.5px] border border-black/[.06] dark:border-white/[.08] rounded-lg hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] text-slate-600 dark:text-slate-400 transition-colors"
+                className="px-3 py-1.5 text-xs border border-black/[.06] dark:border-white/[.08] rounded-lg hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] text-slate-600 dark:text-slate-400 transition-colors"
               >
                 Today
               </button>
               <button
                 onClick={() => { setClickedDate(undefined); setShowCreateModal(true) }}
-                className="px-3 py-1.5 text-[11.5px] bg-primary text-white rounded-lg hover:bg-primary/90 font-medium transition-colors"
+                className="px-3 py-1.5 text-xs bg-primary text-white rounded-lg hover:bg-primary/90 font-medium transition-colors"
               >
                 + Event
               </button>
@@ -794,7 +794,7 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
               <div className="border border-black/[.06] dark:border-white/[.08] rounded-lg overflow-hidden bg-white dark:bg-[#1e1e21]">
                 <div className="grid grid-cols-7 border-b border-black/[.06] dark:border-white/[.08]">
                   {DAYS.map(d => (
-                    <div key={d} className="py-2.5 text-center text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide">{d}</div>
+                    <div key={d} className="py-2.5 text-center text-atom font-semibold text-slate-400 uppercase tracking-wide">{d}</div>
                   ))}
                 </div>
                 <div className="grid grid-cols-7">
@@ -867,11 +867,11 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
                 <div className="ml-auto flex items-center gap-3">
                   <div className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-sm bg-violet-500" />
-                    <span className="text-[10.5px] text-slate-400">Organized</span>
+                    <span className="text-xxs text-slate-400">Organized</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-sm border-2 border-violet-500" style={{ background: 'rgba(139,92,246,0.1)' }} />
-                    <span className="text-[10.5px] text-slate-400">Invited</span>
+                    <span className="text-xxs text-slate-400">Invited</span>
                   </div>
                 </div>
               </div>

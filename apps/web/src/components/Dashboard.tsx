@@ -195,7 +195,7 @@ export function Dashboard() {
           <>
             <MetricCard
               label="Total Pipeline"
-              value={totalPipeline > 0 ? formatCurrency(totalPipeline) : 'P0'}
+              value={totalPipeline > 0 ? formatCurrency(totalPipeline) : 'P0.00'}
               trend={totalPipeline > 0 ? `${activeDeals} active deals` : 'No deals yet'}
               trendUp={totalPipeline > 0}
               mono
@@ -215,7 +215,7 @@ export function Dashboard() {
             />
             <MetricCard
               label="Avg Deal Size"
-              value={avgDealSize > 0 ? formatCurrency(avgDealSize) : 'P0'}
+              value={avgDealSize > 0 ? formatCurrency(avgDealSize) : 'P0.00'}
               trend={avgDealSize > 0 ? 'Per deal' : 'No data yet'}
               trendUp={avgDealSize > 0}
               mono

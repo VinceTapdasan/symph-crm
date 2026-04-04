@@ -39,7 +39,7 @@ function NotificationItem({
         {/* Deal + Brand */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {notification.dealTitle && (
-            <span className="text-[12.5px] font-semibold text-slate-900 dark:text-white truncate">
+            <span className="text-ssm font-semibold text-slate-900 dark:text-white truncate">
               {notification.dealTitle}
             </span>
           )}
@@ -48,11 +48,11 @@ function NotificationItem({
           )}
         </div>
         {/* Trigger text */}
-        <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-0.5">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
           {notification.triggerText}
         </p>
         {/* Timestamp */}
-        <p className="text-[10.5px] text-slate-400 mt-1">{timeAgo(notification.createdAt)}</p>
+        <p className="text-xxs text-slate-400 mt-1">{timeAgo(notification.createdAt)}</p>
       </div>
 
       {/* Unread dot */}
@@ -118,14 +118,14 @@ export function NotificationBell() {
 
       {/* Dropdown panel */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[340px] bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-xl shadow-2xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-[340px] bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-xl shadow-md dark:shadow-2xl z-50 overflow-hidden">
           {/* Panel header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-black/[.06] dark:border-white/[.08]">
             <span className="text-ssm font-semibold text-slate-900 dark:text-white">Notifications</span>
             {unreadCount > 0 && (
               <button
                 onClick={() => markAllRead()}
-                className="text-[11.5px] text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
               >
                 Mark all read
               </button>
@@ -172,7 +172,7 @@ export function NotificationBell() {
             {notifications.length === 0 && (
               <div className="py-10 text-center">
                 <Bell size={20} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
-                <p className="text-[12.5px] text-slate-400">No notifications yet</p>
+                <p className="text-ssm text-slate-400">No notifications yet</p>
               </div>
             )}
           </div>

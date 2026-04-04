@@ -166,7 +166,7 @@ function ConversationRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2 mb-0.5">
           <span className={cn(
-            'text-[13.5px] truncate',
+            'text-sm truncate',
             thread.unread ? 'font-semibold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-slate-300',
           )}>
             {thread.from}
@@ -176,12 +176,12 @@ function ConversationRow({
           </span>
         </div>
         <div className={cn(
-          'text-[12.5px] truncate mb-0.5',
+          'text-ssm truncate mb-0.5',
           thread.unread ? 'font-medium text-slate-800 dark:text-slate-200' : 'text-slate-600 dark:text-slate-400',
         )}>
           {thread.subject}
         </div>
-        <div className="text-[11.5px] text-slate-400 dark:text-slate-500 truncate leading-relaxed">
+        <div className="text-xs text-slate-400 dark:text-slate-500 truncate leading-relaxed">
           {thread.snippet}
         </div>
       </div>
@@ -254,11 +254,11 @@ function ChatBubble({
 
         {/* Timestamp + CC indicator */}
         <div className={cn('flex items-center gap-1.5 mt-1 px-0.5', isMine ? 'flex-row-reverse' : 'flex-row')}>
-          <span className="text-[10.5px] text-slate-400 dark:text-slate-500 tabular-nums">
+          <span className="text-xxs text-slate-400 dark:text-slate-500 tabular-nums">
             {formatChatTime(message.date)}
           </span>
           {message.cc.length > 0 && (
-            <span className="text-[10.5px] text-slate-400 dark:text-slate-500">
+            <span className="text-xxs text-slate-400 dark:text-slate-500">
               · {message.cc.length} CC
             </span>
           )}
@@ -439,7 +439,7 @@ function ThreadActionsMenu({
                 mode: 'reply',
               })
             }}
-            className="flex items-center gap-2.5 w-full px-3 py-1.5 text-[12.5px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+            className="flex items-center gap-2.5 w-full px-3 py-1.5 text-ssm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
           >
             <Mail size={13} className="text-slate-400" />
             Email
@@ -448,36 +448,36 @@ function ThreadActionsMenu({
           <button
             onClick={() => archiveMutation.mutate(thread.id)}
             disabled={archiveMutation.isPending}
-            className="flex items-center gap-2.5 w-full px-3 py-1.5 text-[12.5px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors disabled:opacity-50"
+            className="flex items-center gap-2.5 w-full px-3 py-1.5 text-ssm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors disabled:opacity-50"
           >
             <Archive size={13} className="text-slate-400" />
-            {archiveMutation.isPending ? 'Archiving…' : 'Archive'}
+            <>{archiveMutation.isPending && <span className="inline-block w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" />}Archive</>
           </button>
 
           {!deleteConfirm ? (
             <button
               onClick={() => setDeleteConfirm(true)}
-              className="flex items-center gap-2.5 w-full px-3 py-1.5 text-[12.5px] text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+              className="flex items-center gap-2.5 w-full px-3 py-1.5 text-ssm text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
             >
               <Trash2 size={13} />
               Move to trash
             </button>
           ) : (
             <div className="px-3 py-2 border-t border-black/[.04] dark:border-white/[.06]">
-              <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mb-2">Move to trash?</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Move to trash?</p>
               <div className="flex gap-1.5">
                 <button
                   onClick={() => setDeleteConfirm(false)}
-                  className="flex-1 px-2 py-1 text-[11.5px] rounded-md border border-black/[.06] dark:border-white/[.08] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+                  className="flex-1 px-2 py-1 text-xs rounded-md border border-black/[.06] dark:border-white/[.08] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => deleteMutation.mutate(thread.id)}
                   disabled={deleteMutation.isPending}
-                  className="flex-1 px-2 py-1 text-[11.5px] rounded-md bg-red-600 hover:bg-red-700 text-white font-medium transition-colors disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1 text-xs rounded-md bg-red-600 hover:bg-red-700 text-white font-medium transition-colors disabled:opacity-50"
                 >
-                  {deleteMutation.isPending ? '…' : 'Trash'}
+                  <>{deleteMutation.isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Trash</>
                 </button>
               </div>
             </div>
@@ -530,7 +530,7 @@ function ChatView({
         <Avatar name={thread.from} email={thread.fromEmail} size={36} />
         <div className="flex-1 min-w-0">
           <h2 className="text-sm font-semibold text-slate-900 dark:text-white truncate">{thread.from}</h2>
-          <p className="text-[11.5px] text-slate-400 dark:text-slate-500 truncate">{thread.subject}</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{thread.subject}</p>
         </div>
         <button
           onClick={() =>
@@ -647,13 +647,13 @@ function ChannelConnectState({ channel }: { channel: Exclude<InboxChannel, 'all'
         <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
           {cfg.label} not connected
         </p>
-        <p className="text-[12.5px] text-slate-400 dark:text-slate-500 leading-relaxed max-w-[220px]">
+        <p className="text-ssm text-slate-400 dark:text-slate-500 leading-relaxed max-w-[220px]">
           {cfg.label} integration is coming soon. Messages will appear here once connected.
         </p>
       </div>
       <button
         disabled
-        className="px-4 py-2 rounded-lg text-[12.5px] font-semibold text-white opacity-50 cursor-not-allowed"
+        className="px-4 py-2 rounded-lg text-ssm font-semibold text-white opacity-50 cursor-not-allowed"
         style={{ background: cfg.color }}
       >
         Coming Soon
@@ -776,7 +776,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
               <div>
                 <h1 className="text-ssm font-semibold text-slate-900 dark:text-white">Inbox</h1>
                 {!isLoading && !needsReconnect && (channelTab === 'all' || channelTab === 'email') && (
-                  <p className="text-[10.5px] text-slate-400 mt-0.5 tabular-nums">
+                  <p className="text-xxs text-slate-400 mt-0.5 tabular-nums">
                     {threads.length} conversation{threads.length !== 1 ? 's' : ''} this month
                   </p>
                 )}
@@ -784,7 +784,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
               {(channelTab === 'all' || channelTab === 'email') && (
                 <button
                   onClick={() => openCompose({ to: [], cc: [], subject: '', mode: 'compose' })}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white text-[11.5px] font-semibold rounded-lg transition-colors active:scale-[0.98]"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white text-xs font-semibold rounded-lg transition-colors active:scale-[0.98]"
                 >
                   <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
                     <path d="M12 5v14M5 12h14" />
@@ -849,7 +849,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Search conversations…"
-                  className="w-full pl-8 pr-3 py-[7px] text-[12.5px] bg-slate-50 dark:bg-white/[.04] border border-black/[.07] dark:border-white/[.07] rounded-lg text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-primary/40 transition-colors"
+                  className="w-full pl-8 pr-3 py-[7px] text-ssm bg-slate-50 dark:bg-white/[.04] border border-black/[.07] dark:border-white/[.07] rounded-lg text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-primary/40 transition-colors"
                 />
               </div>
               <div className="flex gap-1">
@@ -893,7 +893,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
                   <div className="text-ssm font-semibold text-slate-600 mb-1">
                     {search ? 'No matching conversations' : 'No conversations yet this month'}
                   </div>
-                  <div className="text-[11.5px] text-slate-400 leading-relaxed">
+                  <div className="text-xs text-slate-400 leading-relaxed">
                     {search ? 'Try a different search term' : 'Team emails with CC will appear here'}
                   </div>
                 </div>
@@ -916,7 +916,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
 
           {apiError && !needsReconnect && (
             <div className="shrink-0 px-3.5 py-2.5 border-t border-red-100 dark:border-red-900/40 bg-red-50 dark:bg-red-950/30">
-              <p className="text-[11.5px] text-red-600 dark:text-red-400 leading-relaxed">{apiError}</p>
+              <p className="text-xs text-red-600 dark:text-red-400 leading-relaxed">{apiError}</p>
             </div>
           )}
         </div>
@@ -950,7 +950,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
               </div>
               <div className="text-center">
                 <div className="text-ssm font-semibold text-slate-400 dark:text-slate-500">Select a conversation</div>
-                <div className="text-[11.5px] text-slate-300 dark:text-slate-600 mt-1">or compose a new message</div>
+                <div className="text-xs text-slate-300 dark:text-slate-600 mt-1">or compose a new message</div>
               </div>
             </div>
           )}

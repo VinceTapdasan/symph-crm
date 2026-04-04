@@ -57,7 +57,7 @@ export function CreateBrandModal({ onClose, onCreated }: Props) {
         <div className="px-4 py-3 border-b border-black/[.06] dark:border-white/[.08] flex items-center justify-between">
           <div>
             <div className="text-sm font-semibold text-slate-900 dark:text-white">New Brand</div>
-            <div className="text-[11.5px] text-slate-400 mt-0.5">Add a client brand to group deals under</div>
+            <div className="text-xs text-slate-400 mt-0.5">Add a client brand to group deals under</div>
           </div>
           <button
             onClick={onClose}
@@ -145,10 +145,10 @@ export function CreateBrandModal({ onClose, onCreated }: Props) {
             <button
               type="submit"
               disabled={isPending || !name.trim()}
-              className="flex-1 h-9 rounded-lg text-ssm font-medium text-white transition-colors disabled:opacity-50"
+              className="flex-1 h-9 flex items-center justify-center gap-1.5 rounded-lg text-ssm font-medium text-white transition-colors disabled:opacity-50"
               style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
             >
-              {isPending ? 'Creating\u2026' : 'Create Brand'}
+              <>{isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Create Brand</>
             </button>
           </div>
         </form>
