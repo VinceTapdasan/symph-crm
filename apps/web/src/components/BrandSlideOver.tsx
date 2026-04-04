@@ -5,10 +5,10 @@ import { useQueryClient } from '@tanstack/react-query'
 import { cn, getInitials, getBrandColor, formatDealValue, timeAgo, totalNumericValue, formatDealTitle, toPascalCase, formatPeso } from '@/lib/utils'
 import { STAGE_COLORS, STAGE_LABELS, CLOSED_STAGE_IDS } from '@/lib/constants'
 import { useGetDeals, useGetActivitiesByCompany, useGetUsers, useGetCompanies, useGetContactsByCompany } from '@/lib/hooks/queries'
-import { useAssignDealBrand, useCreateContact, useDeleteBrand, useUpdateCompany } from '@/lib/hooks/mutations'
+import { useAssignDealBrand, useCreateContact, useDeleteBrand } from '@/lib/hooks/mutations'
 import type { ApiCompanyDetail, ApiDeal, Activity } from '@/lib/types'
 import { queryKeys } from '@/lib/query-keys'
-import { X, Plus, Trash2, Copy, Check, Pencil } from 'lucide-react'
+import { X, Plus, Trash2, Copy, Check } from 'lucide-react'
 import { Avatar } from './Avatar'
 import { Input } from './ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
@@ -123,8 +123,6 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
   const [tab, setTab] = useState<'deals' | 'people'>('deals')
   const [showAddPerson, setShowAddPerson] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
-  const [editForm, setEditForm] = useState({ name: '', industry: '', domain: '', website: '', hqLocation: '' })
   const [personForm, setPersonForm] = useState({ name: '', phone: '', email: '', title: '', role: '' })
   const isDeleting = useRef(false)
   const isOpen = !!brand && !isDeleting.current
@@ -139,7 +137,6 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
       setTab('deals')
       setShowAddPerson(false)
       setShowDeleteConfirm(false)
-      setIsEditing(false)
       setPersonForm({ name: '', phone: '', email: '', title: '', role: '' })
     }
   }, [brand?.id])
@@ -185,12 +182,6 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
       qc.invalidateQueries({ queryKey: queryKeys.contacts.byCompany(brand?.id ?? '') })
       setShowAddPerson(false)
       setPersonForm({ name: '', phone: '', email: '', title: '', role: '' })
-    },
-  })
-  const updateBrand = useUpdateCompany({
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.companies.all })
-      setIsEditing(false)
     },
   })
   const deleteBrand = useDeleteBrand({
@@ -311,167 +302,64 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
           <>
             {/* Header */}
             <div className="shrink-0 px-5 pt-5 pb-4 border-b border-black/[.06] dark:border-white/[.08]">
-              {isEditing ? (
-                <form
-                  onSubmit={e => {
-                    e.preventDefault()
-                    if (!editForm.name.trim() || !brand.id) return
-                    updateBrand.mutate({
-                      id: brand.id,
-                      data: {
-                        name: editForm.name.trim(),
-                        industry: editForm.industry.trim() || null,
-                        domain: editForm.domain.trim() || null,
-                        website: editForm.website.trim() || null,
-                        hqLocation: editForm.hqLocation.trim() || null,
-                      },
-                    })
-                  }}
-                  className="space-y-2.5"
+              <div className="flex items-start gap-3">
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
+                  style={{ background: `${brandColor}18`, color: brandColor }}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-900 dark:text-white">Edit Brand</span>
-                    <button
-                      type="button"
-                      onClick={() => setIsEditing(false)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[.08] transition-colors"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                  <Input
-                    autoFocus
-                    value={editForm.name}
-                    onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder="Brand name"
-                    className="h-8 text-ssm"
-                    required
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      value={editForm.industry}
-                      onChange={e => setEditForm(f => ({ ...f, industry: e.target.value }))}
-                      placeholder="Industry"
-                      className="h-8 text-ssm"
-                    />
-                    <Input
-                      value={editForm.domain}
-                      onChange={e => setEditForm(f => ({ ...f, domain: e.target.value }))}
-                      placeholder="Domain"
-                      className="h-8 text-ssm"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      value={editForm.website}
-                      onChange={e => setEditForm(f => ({ ...f, website: e.target.value }))}
-                      placeholder="Website"
-                      className="h-8 text-ssm"
-                    />
-                    <Input
-                      value={editForm.hqLocation}
-                      onChange={e => setEditForm(f => ({ ...f, hqLocation: e.target.value }))}
-                      placeholder="HQ Location"
-                      className="h-8 text-ssm"
-                    />
-                  </div>
-                  {updateBrand.error && (
-                    <p className="text-xs text-red-500">{updateBrand.error.message}</p>
-                  )}
-                  <div className="flex items-center gap-2 pt-0.5">
-                    <button
-                      type="submit"
-                      disabled={updateBrand.isPending || !editForm.name.trim()}
-                      className="flex items-center gap-1.5 h-8 px-3.5 text-xs font-semibold text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
-                    >
-                      <>{updateBrand.isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Save</>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsEditing(false)}
-                      className="h-8 px-3.5 text-xs font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <div className="flex items-start gap-3">
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
-                    style={{ background: `${brandColor}18`, color: brandColor }}
-                  >
-                    {getInitials(brand.name)}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-sbase font-semibold text-slate-900 dark:text-white truncate">
-                      {toPascalCase(brand.name)}
-                    </h2>
-                    {!isUnassigned && (
-                      <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5 flex-wrap">
-                        {brand.industry && <span>{brand.industry}</span>}
-                        {brand.industry && contactCount > 0 && <span>&#183;</span>}
-                        {contactCount > 0 && <span>{contactCount} contact{contactCount !== 1 ? 's' : ''}</span>}
-                        {(brand.industry || contactCount > 0) && brand.website && <span>&#183;</span>}
-                        {brand.website && (
-                          <a
-                            href={brand.website.startsWith('http') ? brand.website : `https://${brand.website}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 hover:underline truncate"
-                            onClick={e => e.stopPropagation()}
-                          >
-                            {brand.domain || brand.website}
-                          </a>
-                        )}
-                      </div>
-                    )}
-                    {isUnassigned && (
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        Deals without a brand — assign one below
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-1 shrink-0">
-                    {!isUnassigned && (
-                      <button
-                        onClick={() => {
-                          setEditForm({
-                            name: brand.name ?? '',
-                            industry: brand.industry ?? '',
-                            domain: brand.domain ?? '',
-                            website: brand.website ?? '',
-                            hqLocation: brand.hqLocation ?? '',
-                          })
-                          setIsEditing(true)
-                        }}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors"
-                        title="Edit brand"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                    )}
-                    {!isUnassigned && (
-                      <button
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                        title="Delete brand"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                    <button
-                      onClick={onClose}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[.08] transition-colors"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
+                  {getInitials(brand.name)}
                 </div>
-              )}
+
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-sbase font-semibold text-slate-900 dark:text-white truncate">
+                    {toPascalCase(brand.name)}
+                  </h2>
+                  {!isUnassigned && (
+                    <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5 flex-wrap">
+                      {brand.industry && <span>{toPascalCase(brand.industry)}</span>}
+                      {brand.industry && contactCount > 0 && <span>&#183;</span>}
+                      {contactCount > 0 && <span>{contactCount} contact{contactCount !== 1 ? 's' : ''}</span>}
+                      {(brand.industry || contactCount > 0) && brand.hqLocation && <span>&#183;</span>}
+                      {brand.hqLocation && <span>{toPascalCase(brand.hqLocation)}</span>}
+                      {(brand.industry || contactCount > 0 || brand.hqLocation) && brand.website && <span>&#183;</span>}
+                      {brand.website && (
+                        <a
+                          href={brand.website.startsWith('http') ? brand.website : `https://${brand.website}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:underline truncate"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          {brand.domain || brand.website}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                  {isUnassigned && (
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Deals without a brand — assign one below
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  {!isUnassigned && (
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                      title="Delete brand"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                  <button
+                    onClick={onClose}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[.08] transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Stat cards */}
