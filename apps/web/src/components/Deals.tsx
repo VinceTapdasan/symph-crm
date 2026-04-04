@@ -47,7 +47,7 @@ function StagePill({ stage }: { stage: string }) {
   const label = STAGE_LABELS[stage] || stage
   return (
     <span
-      className="inline-block px-2 py-px rounded-full text-[11px] font-medium leading-[18px] whitespace-nowrap dark:brightness-150"
+      className="inline-block px-2 py-px rounded-full text-xxs font-medium leading-[18px] whitespace-nowrap dark:brightness-150"
       style={{ background: `${stageColor}18`, color: stageColor }}
     >
       {label}
@@ -76,16 +76,16 @@ function BrandDetailModal({
         {/* Modal header */}
         <div className="flex items-center gap-3 p-4 border-b border-black/[.06] dark:border-white/[.08] shrink-0">
           <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center text-[14px] font-semibold"
+            className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-semibold"
             style={{ background: `${group.color}15`, color: group.color }}
           >
             {getInitials(group.company.name)}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[15px] font-semibold text-slate-900 dark:text-white truncate">
+            <div className="text-sbase font-semibold text-slate-900 dark:text-white truncate">
               {group.company.name}
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+            <div className="flex items-center gap-2 text-xxs text-slate-400 mt-0.5">
               {group.company.industry && <span>{group.company.industry}</span>}
               {group.company.domain && <span>{group.company.domain}</span>}
               {group.company.website && (
@@ -111,15 +111,15 @@ function BrandDetailModal({
 
         {/* Stats bar */}
         <div className="flex items-center gap-4 px-4 py-2.5 border-b border-black/[.04] dark:border-white/[.06] bg-slate-50/50 dark:bg-white/[.02] shrink-0">
-          <div className="text-[12px]">
+          <div className="text-xs">
             <span className="text-slate-400">Deals:</span>{' '}
             <span className="font-semibold text-slate-700 dark:text-slate-300">{group.deals.length}</span>
           </div>
-          <div className="text-[12px]">
+          <div className="text-xs">
             <span className="text-slate-400">Active:</span>{' '}
             <span className="font-semibold text-slate-700 dark:text-slate-300">{group.activeCount}</span>
           </div>
-          <div className="text-[12px]">
+          <div className="text-xs">
             <span className="text-slate-400">Value:</span>{' '}
             <span className="font-semibold tabular-nums" style={{ color: group.color }}>
               {group.totalValue > 0 ? formatDealValue(String(group.totalValue)) : '—'}
@@ -130,7 +130,7 @@ function BrandDetailModal({
         {/* Deals list */}
         <div className="flex-1 overflow-y-auto">
           {group.deals.length === 0 ? (
-            <div className="py-10 text-center text-[13px] text-slate-400">
+            <div className="py-10 text-center text-ssm text-slate-400">
               No deals for this brand yet
             </div>
           ) : (
@@ -148,13 +148,13 @@ function BrandDetailModal({
                     style={{ background: STAGE_COLORS[deal.stage] || '#94a3b8' }}
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-slate-900 dark:text-white truncate">
+                    <div className="text-ssm font-medium text-slate-900 dark:text-white truncate">
                       {formatDealTitle(deal.title)}
                     </div>
                     {tags.length > 0 && (
                       <div className="flex gap-1 mt-0.5 flex-wrap">
                         {tags.slice(0, 3).map(s => (
-                          <span key={s} className="text-[9px] font-medium px-1.5 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[.06] text-slate-500 whitespace-nowrap">
+                          <span key={s} className="text-atom font-medium px-1.5 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[.06] text-slate-500 whitespace-nowrap">
                             {formatServiceType(s)}
                           </span>
                         ))}
@@ -162,7 +162,7 @@ function BrandDetailModal({
                     )}
                   </div>
                   <StagePill stage={deal.stage} />
-                  <div className="text-[13px] font-medium text-slate-700 dark:text-slate-300 tabular-nums whitespace-nowrap">
+                  <div className="text-ssm font-medium text-slate-700 dark:text-slate-300 tabular-nums whitespace-nowrap">
                     {formatDealValue(deal.value)}
                   </div>
                 </div>
@@ -182,7 +182,7 @@ function LastActivityCell({ iso }: { iso: string | null }) {
     return (
       <div className="flex items-center gap-1.5">
         <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0" />
-        <span className="text-[12px] text-slate-400">No activity</span>
+        <span className="text-xs text-slate-400">No activity</span>
       </div>
     )
   }
@@ -195,7 +195,7 @@ function LastActivityCell({ iso }: { iso: string | null }) {
   return (
     <div className="flex items-center gap-1.5">
       <span className={cn('w-2 h-2 rounded-full shrink-0', dotColor)} />
-      <span className="text-[12px] text-slate-600 dark:text-slate-400 tabular-nums">
+      <span className="text-xs text-slate-600 dark:text-slate-400 tabular-nums">
         {diffDays === 0 ? 'Today' : diffDays === 1 ? '1 day ago' : `${diffDays} days ago`}
       </span>
     </div>
@@ -224,17 +224,17 @@ function BrandsDataTable({
         return (
           <div className="flex items-center gap-2.5 py-0.5">
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-[12px] font-bold shrink-0"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
               style={{ background: `${r.color}18`, color: r.color }}
             >
               {getInitials(r.company.name)}
             </div>
             <div className="min-w-0">
-              <div className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">
+              <div className="text-ssm font-semibold text-slate-900 dark:text-white truncate">
                 {r.company.name}
               </div>
               {(r.company.industry || r.company.domain) && (
-                <div className="text-[11px] text-slate-400 truncate">
+                <div className="text-xxs text-slate-400 truncate">
                   {r.company.industry || r.company.domain}
                 </div>
               )}
@@ -252,7 +252,7 @@ function BrandsDataTable({
       cell: ({ getValue }) => {
         const v = getValue<number>()
         return (
-          <span className="text-[13px] font-semibold tabular-nums text-primary">
+          <span className="text-ssm font-semibold tabular-nums text-primary">
             {v > 0 ? formatDealValue(String(v)) : '—'}
           </span>
         )
@@ -265,7 +265,7 @@ function BrandsDataTable({
       accessorKey: 'dealCount',
       header: ({ column }) => <SortableHeader column={column}>Deals</SortableHeader>,
       cell: ({ getValue }) => (
-        <span className="text-[12px] font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
+        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
           {getValue<number>()}
         </span>
       ),
@@ -277,20 +277,20 @@ function BrandsDataTable({
       header: ({ column }) => <SortableHeader column={column}>Stage</SortableHeader>,
       cell: ({ row }) => {
         const stages = row.original.stageSummary
-        if (!stages.length) return <span className="text-[12px] text-slate-300 dark:text-slate-600">&mdash;</span>
+        if (!stages.length) return <span className="text-xs text-slate-300 dark:text-slate-600">&mdash;</span>
         return (
           <div className="flex flex-wrap gap-1">
             {stages.slice(0, 2).map(s => (
               <span
                 key={s.id}
-                className="inline-block px-2 py-px rounded-full text-[11px] font-medium leading-[18px] whitespace-nowrap dark:brightness-150"
+                className="inline-block px-2 py-px rounded-full text-xxs font-medium leading-[18px] whitespace-nowrap dark:brightness-150"
                 style={{ background: s.bg, color: s.color }}
               >
                 {s.label}
               </span>
             ))}
             {stages.length > 2 && (
-              <span className="text-[11px] text-slate-400">+{stages.length - 2}</span>
+              <span className="text-xxs text-slate-400">+{stages.length - 2}</span>
             )}
           </div>
         )
@@ -312,9 +312,9 @@ function BrandsDataTable({
         return (
           <div className="flex items-center gap-1">
             {n > 0 ? (
-              <span className="text-[12px] font-semibold text-primary tabular-nums">{n}</span>
+              <span className="text-xs font-semibold text-primary tabular-nums">{n}</span>
             ) : (
-              <span className="text-[12px] text-slate-300 dark:text-slate-600">—</span>
+              <span className="text-xs text-slate-300 dark:text-slate-600">—</span>
             )}
           </div>
         )
@@ -339,7 +339,7 @@ function BrandsDataTable({
         return (
           <div className="flex items-center gap-1.5">
             {name !== '—' && <Avatar name={name} size={20} />}
-            <span className="text-[12px] text-slate-700 dark:text-slate-300">{name}</span>
+            <span className="text-xs text-slate-700 dark:text-slate-300">{name}</span>
           </div>
         )
       },
@@ -544,8 +544,8 @@ export function Deals({ onOpenDeal }: DealsProps) {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 shrink-0">
           <div>
-            <div className="text-[13px] font-semibold text-slate-900 dark:text-white">Brands</div>
-            <div className="text-[11px] text-slate-400 mt-0.5">
+            <div className="text-ssm font-semibold text-slate-900 dark:text-white">Brands</div>
+            <div className="text-xxs text-slate-400 mt-0.5">
               {isLoading
                 ? 'Loading…'
                 : `${groups.length} brand${groups.length !== 1 ? 's' : ''} · ${totalDeals} deal${totalDeals !== 1 ? 's' : ''} · ${activePipeline > 0 ? formatDealValue(String(activePipeline)) + ' pipeline' : 'No pipeline value'}`
@@ -558,7 +558,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
             <div className="flex items-center bg-slate-100 dark:bg-white/[.06] rounded-lg p-0.5 gap-0.5">
               <button
                 onClick={() => setViewMode('table')}
-                className={`h-[26px] px-2.5 rounded-lg text-[12px] font-medium transition-all flex items-center gap-1.5 ${viewMode === 'table' ? 'bg-white dark:bg-[#1e1e21] text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'}`}
+                className={`h-[26px] px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${viewMode === 'table' ? 'bg-white dark:bg-[#1e1e21] text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'}`}
               >
                 <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="3" y1="15" x2="21" y2="15" /><line x1="9" y1="9" x2="9" y2="21" />
@@ -567,7 +567,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
               </button>
               <button
                 onClick={() => setViewMode('graph')}
-                className={`h-[26px] px-2.5 rounded-lg text-[12px] font-medium transition-all flex items-center gap-1.5 ${viewMode === 'graph' ? 'bg-white dark:bg-[#1e1e21] text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'}`}
+                className={`h-[26px] px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${viewMode === 'graph' ? 'bg-white dark:bg-[#1e1e21] text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'}`}
               >
                 <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
                   <circle cx="5" cy="12" r="2" /><circle cx="19" cy="5" r="2" /><circle cx="19" cy="19" r="2" /><circle cx="12" cy="12" r="2" />
@@ -597,7 +597,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
               <>
                 <button
                   onClick={() => setShowCreateBrand(true)}
-                  className="h-[30px] px-3 rounded-lg border border-black/[.08] dark:border-white/[.08] text-[12px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors flex items-center gap-1.5"
+                  className="h-[30px] px-3 rounded-lg border border-black/[.08] dark:border-white/[.08] text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors flex items-center gap-1.5"
                 >
                   <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
                     <path d="M12 5v14M5 12h14" />
@@ -608,7 +608,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
                 {/* New Deal */}
                 <button
                   onClick={() => setShowCreateDeal(true)}
-                  className="h-[30px] px-3 rounded-lg text-[12px] font-medium text-white transition-colors flex items-center gap-1.5"
+                  className="h-[30px] px-3 rounded-lg text-xs font-medium text-white transition-colors flex items-center gap-1.5"
                   style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
                 >
                   <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
@@ -626,7 +626,7 @@ export function Deals({ onOpenDeal }: DealsProps) {
           <div className="flex-1 flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
               <div className="w-6 h-6 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-              <p className="text-[12px] text-slate-400">Loading deals…</p>
+              <p className="text-xs text-slate-400">Loading deals…</p>
             </div>
           </div>
         )}

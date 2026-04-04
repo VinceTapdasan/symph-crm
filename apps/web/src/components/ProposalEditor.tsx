@@ -55,7 +55,7 @@ function ToolbarBtn({
       disabled={disabled}
       title={title}
       className={cn(
-        'px-2 py-1 rounded text-[12px] font-medium transition-colors',
+        'px-2 py-1 rounded text-xs font-medium transition-colors',
         active
           ? 'bg-slate-900 text-white'
           : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[.06] dark:bg-white/[.06]',
@@ -208,8 +208,8 @@ export default function ProposalEditor({ documentId, dealId, initialContent, onV
 
         {/* Right side: status + actions */}
         <div className="ml-auto flex items-center gap-3">
-          <span className="text-[11px] text-slate-400">{wordCount} words</span>
-          <span className={cn('text-[11px]',
+          <span className="text-xxs text-slate-400">{wordCount} words</span>
+          <span className={cn('text-xxs',
             saveStatus === 'saved' && 'text-green-600',
             saveStatus === 'saving' && 'text-slate-500',
             saveStatus === 'error' && 'text-red-500',
@@ -222,7 +222,7 @@ export default function ProposalEditor({ documentId, dealId, initialContent, onV
           </span>
           <button
             onClick={handleSaveVersion}
-            className="px-3 py-1 text-[12px] border border-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[.06] dark:bg-white/[.06] text-slate-700 dark:text-slate-300 font-medium"
+            className="px-3 py-1 text-xs border border-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[.06] dark:bg-white/[.06] text-slate-700 dark:text-slate-300 font-medium"
           >
             Save Version
           </button>

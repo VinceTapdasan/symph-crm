@@ -110,7 +110,7 @@ export function BillingSection({ dealId }: BillingSectionProps) {
   if (isLoading) {
     return (
       <div className="bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4">
-        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Billing</p>
+        <p className="text-atom font-semibold text-slate-400 uppercase tracking-wider mb-3">Billing</p>
         <div className="animate-pulse flex flex-col gap-3">
           {/* Type badge skeleton */}
           <div className="flex items-center justify-between">
@@ -141,18 +141,18 @@ export function BillingSection({ dealId }: BillingSectionProps) {
 
   return (
     <div className="bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4">
-      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Billing</p>
+      <p className="text-atom font-semibold text-slate-400 uppercase tracking-wider mb-3">Billing</p>
 
       {showSummary ? (
         <div>
           {/* Type badge + Edit button */}
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+            <span className="text-atom font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
               {BILLING_TYPE_LABELS[billing.billingType] ?? billing.billingType}
             </span>
             <button
               onClick={() => { setIsEditing(true); setDirty(false) }}
-              className="text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+              className="text-xxs font-medium text-primary hover:text-primary/80 transition-colors"
             >
               Edit
             </button>
@@ -160,30 +160,30 @@ export function BillingSection({ dealId }: BillingSectionProps) {
 
           {/* Amount */}
           <div className="flex items-center justify-between py-1.5 border-b border-black/[.04] dark:border-white/[.05]">
-            <span className="text-[12px] text-slate-400">Amount</span>
-            <span className="text-[12px] font-bold text-slate-800 dark:text-white tabular-nums">{formatPeso(billing.amount)}</span>
+            <span className="text-xs text-slate-400">Amount</span>
+            <span className="text-xs font-bold text-slate-800 dark:text-white tabular-nums">{formatPeso(billing.amount)}</span>
           </div>
 
           {/* Monthly rate if annual */}
           {billing.monthlyDerived && (
             <div className="flex items-center justify-between py-1.5 border-b border-black/[.04] dark:border-white/[.05]">
-              <span className="text-[12px] text-slate-400">Monthly Rate</span>
-              <span className="text-[12px] text-slate-500 tabular-nums">{formatPeso(billing.monthlyDerived)}/mo</span>
+              <span className="text-xs text-slate-400">Monthly Rate</span>
+              <span className="text-xs text-slate-500 tabular-nums">{formatPeso(billing.monthlyDerived)}/mo</span>
             </div>
           )}
 
           {/* Contract period */}
           {(billing.contractStart || billing.contractEnd) && (
             <div className="flex items-center justify-between py-1.5 border-b border-black/[.04] dark:border-white/[.05]">
-              <span className="text-[12px] text-slate-400">Period</span>
-              <span className="text-[12px] text-slate-500">{formatDate(billing.contractStart)} – {formatDate(billing.contractEnd)}</span>
+              <span className="text-xs text-slate-400">Period</span>
+              <span className="text-xs text-slate-500">{formatDate(billing.contractStart)} – {formatDate(billing.contractEnd)}</span>
             </div>
           )}
 
           {/* Milestones if milestone type */}
           {billing.billingType === 'milestone' && billing.milestones && billing.milestones.length > 0 && (
             <div className="mt-3">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Milestones</p>
+              <p className="text-atom font-semibold text-slate-400 uppercase tracking-wider mb-2">Milestones</p>
               <div className="flex flex-col gap-1.5">
                 {billing.milestones.map(m => (
                   <div key={m.id} className={cn(
@@ -196,10 +196,10 @@ export function BillingSection({ dealId }: BillingSectionProps) {
                       {m.isPaid && <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={cn('text-[11px] font-medium truncate', m.isPaid ? 'text-slate-400 line-through' : 'text-slate-800 dark:text-white')}>{m.name}</p>
+                      <p className={cn('text-xxs font-medium truncate', m.isPaid ? 'text-slate-400 line-through' : 'text-slate-800 dark:text-white')}>{m.name}</p>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] tabular-nums text-slate-500">{formatPeso(m.amount)}</span>
-                        {m.percentage && <span className="text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary tabular-nums">{parseFloat(m.percentage).toFixed(0)}%</span>}
+                        <span className="text-atom tabular-nums text-slate-500">{formatPeso(m.amount)}</span>
+                        {m.percentage && <span className="text-atom font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary tabular-nums">{parseFloat(m.percentage).toFixed(0)}%</span>}
                       </div>
                     </div>
                   </div>
@@ -210,8 +210,8 @@ export function BillingSection({ dealId }: BillingSectionProps) {
 
           {/* Billing History section */}
           <div className="mt-4 pt-3 border-t border-black/[.04] dark:border-white/[.05]">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">History</p>
-            <p className="text-[11px] text-slate-400">Changes to billing will appear here</p>
+            <p className="text-atom font-semibold text-slate-400 uppercase tracking-wider mb-2">History</p>
+            <p className="text-xxs text-slate-400">Changes to billing will appear here</p>
           </div>
         </div>
       ) : (
@@ -220,7 +220,7 @@ export function BillingSection({ dealId }: BillingSectionProps) {
 
           {/* Billing type selector */}
           <div className="mb-3">
-            <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">Type</label>
+            <label className="text-xxs font-medium text-slate-500 dark:text-slate-400 block mb-1">Type</label>
             <Select
               value={billingType}
               onValueChange={(v: string) => {
@@ -228,13 +228,13 @@ export function BillingSection({ dealId }: BillingSectionProps) {
                 setDirty(true)
               }}
             >
-              <SelectTrigger className="h-8 text-[12px]">
+              <SelectTrigger className="h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="annual" className="text-[12px]">Annual</SelectItem>
-                <SelectItem value="monthly" className="text-[12px]">Monthly</SelectItem>
-                <SelectItem value="milestone" className="text-[12px]">Milestone</SelectItem>
+                <SelectItem value="annual" className="text-xs">Annual</SelectItem>
+                <SelectItem value="monthly" className="text-xs">Monthly</SelectItem>
+                <SelectItem value="milestone" className="text-xs">Milestone</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -242,21 +242,21 @@ export function BillingSection({ dealId }: BillingSectionProps) {
           {/* Contract dates */}
           <div className="grid grid-cols-2 gap-2 mb-3">
             <div>
-              <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">Start</label>
+              <label className="text-xxs font-medium text-slate-500 dark:text-slate-400 block mb-1">Start</label>
               <input
                 type="date"
                 value={contractStart}
                 onChange={e => { setContractStart(e.target.value); setDirty(true) }}
-                className="w-full h-8 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[12px] text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
+                className="w-full h-8 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-xs text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
               />
             </div>
             <div>
-              <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">End</label>
+              <label className="text-xxs font-medium text-slate-500 dark:text-slate-400 block mb-1">End</label>
               <input
                 type="date"
                 value={contractEnd}
                 onChange={e => { setContractEnd(e.target.value); setDirty(true) }}
-                className="w-full h-8 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[12px] text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
+                className="w-full h-8 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-xs text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
               />
             </div>
           </div>
@@ -264,7 +264,7 @@ export function BillingSection({ dealId }: BillingSectionProps) {
           {/* Amount input — Annual or Monthly */}
           {billingType !== 'milestone' && (
             <div className="mb-3">
-              <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
+              <label className="text-xxs font-medium text-slate-500 dark:text-slate-400 block mb-1">
                 {billingType === 'annual' ? 'Annual Total' : 'Monthly Amount'}
               </label>
               <input
@@ -274,15 +274,15 @@ export function BillingSection({ dealId }: BillingSectionProps) {
                 placeholder="0.00"
                 value={amount}
                 onChange={e => { setAmount(e.target.value); setDirty(true) }}
-                className="w-full h-8 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[12px] text-slate-800 dark:text-white tabular-nums outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
+                className="w-full h-8 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-xs text-slate-800 dark:text-white tabular-nums outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
               />
               {billingType === 'annual' && amount && (
-                <p className="text-[10px] text-slate-400 mt-1 tabular-nums">
+                <p className="text-atom text-slate-400 mt-1 tabular-nums">
                   Monthly Rate: {formatPeso(parseFloat(amount) / 12)}/mo
                 </p>
               )}
               {billingType === 'monthly' && monthlyDerived && (
-                <p className="text-[10px] text-slate-400 mt-1 tabular-nums">
+                <p className="text-atom text-slate-400 mt-1 tabular-nums">
                   {formatPeso(monthlyDerived)}/mo
                 </p>
               )}
@@ -292,7 +292,7 @@ export function BillingSection({ dealId }: BillingSectionProps) {
           {/* Milestone section */}
           {billingType === 'milestone' && (
             <div className="mb-3">
-              <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-2">Milestones</label>
+              <label className="text-xxs font-medium text-slate-500 dark:text-slate-400 block mb-2">Milestones</label>
 
               {/* Existing milestones */}
               {billing?.milestones && billing.milestones.length > 0 && (
@@ -324,15 +324,15 @@ export function BillingSection({ dealId }: BillingSectionProps) {
                       </button>
                       <div className="flex-1 min-w-0">
                         <p className={cn(
-                          'text-[11px] font-medium truncate',
+                          'text-xxs font-medium truncate',
                           m.isPaid ? 'text-slate-400 line-through' : 'text-slate-800 dark:text-white'
                         )}>
                           {m.name}
                         </p>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] tabular-nums text-slate-500">{formatPeso(m.amount)}</span>
+                          <span className="text-atom tabular-nums text-slate-500">{formatPeso(m.amount)}</span>
                           {m.percentage && (
-                            <span className="text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary tabular-nums">
+                            <span className="text-atom font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary tabular-nums">
                               {parseFloat(m.percentage).toFixed(0)}%
                             </span>
                           )}
@@ -358,7 +358,7 @@ export function BillingSection({ dealId }: BillingSectionProps) {
                   placeholder="Milestone name"
                   value={newMilestoneName}
                   onChange={e => setNewMilestoneName(e.target.value)}
-                  className="flex-1 h-7 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[11px] text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
+                  className="flex-1 h-7 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-xxs text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
                 />
                 <input
                   type="number"
@@ -367,12 +367,12 @@ export function BillingSection({ dealId }: BillingSectionProps) {
                   placeholder="Amount"
                   value={newMilestoneAmount}
                   onChange={e => setNewMilestoneAmount(e.target.value)}
-                  className="w-[80px] h-7 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-[11px] text-slate-800 dark:text-white tabular-nums placeholder:text-slate-400 outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
+                  className="w-[80px] h-7 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-xxs text-slate-800 dark:text-white tabular-nums placeholder:text-slate-400 outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
                 />
                 <button
                   onClick={handleAddMilestone}
                   disabled={!newMilestoneName.trim() || !newMilestoneAmount.trim() || addMilestone.isPending}
-                  className="h-7 px-2 rounded-md bg-primary text-white text-[10px] font-semibold disabled:opacity-40 transition-opacity active:scale-[0.98]"
+                  className="h-7 px-2 rounded-md bg-primary text-white text-atom font-semibold disabled:opacity-40 transition-opacity active:scale-[0.98]"
                 >
                   Add
                 </button>
@@ -382,13 +382,13 @@ export function BillingSection({ dealId }: BillingSectionProps) {
               {billing?.amount && (
                 <div className="mt-2 pt-2 border-t border-black/[.04] dark:border-white/[.05]">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400">Total</span>
-                    <span className="text-[11px] font-bold text-slate-800 dark:text-white tabular-nums">{formatPeso(billing.amount)}</span>
+                    <span className="text-atom text-slate-400">Total</span>
+                    <span className="text-xxs font-bold text-slate-800 dark:text-white tabular-nums">{formatPeso(billing.amount)}</span>
                   </div>
                   {billing.monthlyDerived && (
                     <div className="flex items-center justify-between mt-0.5">
-                      <span className="text-[10px] text-slate-400">Monthly equiv.</span>
-                      <span className="text-[10px] text-slate-500 tabular-nums">{formatPeso(billing.monthlyDerived)}/mo</span>
+                      <span className="text-atom text-slate-400">Monthly equiv.</span>
+                      <span className="text-atom text-slate-500 tabular-nums">{formatPeso(billing.monthlyDerived)}/mo</span>
                     </div>
                   )}
                 </div>
@@ -401,7 +401,7 @@ export function BillingSection({ dealId }: BillingSectionProps) {
             {isEditing && billing && (
               <button
                 onClick={() => { setIsEditing(false); setDirty(false) }}
-                className="flex-1 h-8 rounded-lg border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 text-[12px] font-semibold hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+                className="flex-1 h-8 rounded-lg border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
               >
                 Cancel
               </button>
@@ -409,7 +409,7 @@ export function BillingSection({ dealId }: BillingSectionProps) {
             <button
               onClick={handleSave}
               disabled={upsertBilling.isPending}
-              className="flex-1 h-8 rounded-lg bg-primary hover:bg-primary/90 text-white text-[12px] font-semibold transition-colors duration-150 active:scale-[0.98] disabled:opacity-60"
+              className="flex-1 h-8 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-semibold transition-colors duration-150 active:scale-[0.98] disabled:opacity-60"
             >
               {upsertBilling.isPending ? 'Saving...' : billing ? 'Save Changes' : 'Save Billing'}
             </button>

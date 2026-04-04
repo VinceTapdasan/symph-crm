@@ -235,18 +235,18 @@ export function Dashboard() {
             <StageFunnelChart data={funnelData} isLoading={false} />
           )}
           <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg px-5 py-[18px] shadow-[var(--shadow-card)]">
-            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-3.5">Top Deals</div>
+            <div className="text-ssm font-semibold text-slate-900 dark:text-white mb-3.5">Top Deals</div>
             {isLoading ? <TopDealsSkeleton /> : isError ? <p className="text-xs text-slate-400 py-2">No data available</p> : <TopDeals deals={topDeals} />}
           </div>
         </div>
 
         <div className="flex flex-col gap-4">
           <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg px-5 py-[18px] shadow-[var(--shadow-card)]">
-            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-3.5">AM Leaderboard</div>
+            <div className="text-ssm font-semibold text-slate-900 dark:text-white mb-3.5">AM Leaderboard</div>
             {isLoading ? <AMLeaderboardSkeleton /> : isError ? <p className="text-xs text-slate-400 py-2">No data available</p> : <AMLeaderboard entries={amEntries} />}
           </div>
           <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg px-5 py-[18px] shadow-[var(--shadow-card)]">
-            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-3.5">Recent Activity</div>
+            <div className="text-ssm font-semibold text-slate-900 dark:text-white mb-3.5">Recent Activity</div>
             {isLoading ? <RecentActivitySkeleton /> : isError ? <p className="text-xs text-slate-400 py-2">No data available</p> : <RecentActivity entries={recentEntries} />}
           </div>
         </div>

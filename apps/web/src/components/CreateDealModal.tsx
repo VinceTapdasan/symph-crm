@@ -31,26 +31,26 @@ type Props = {
 function ServiceSelect({ value, onValueChange }: { value: string; onValueChange: (v: string) => void }) {
   return (
     <Select value={value || '__none__'} onValueChange={v => onValueChange(v === '__none__' ? '' : v)}>
-      <SelectTrigger className="h-9 text-[13px]">
+      <SelectTrigger className="h-9 text-ssm">
         <SelectValue placeholder="Select service" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="__none__" className="text-[13px] text-slate-400">No service</SelectItem>
+        <SelectItem value="__none__" className="text-ssm text-slate-400">No service</SelectItem>
         {SERVICE_TYPES.map(svc => (
           svc.children ? (
             <div key={svc.value}>
               {/* Parent label */}
-              <div className="px-2 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+              <div className="px-2 pt-2 pb-1 text-atom font-semibold text-slate-400 uppercase tracking-wider">
                 {svc.label}
               </div>
               {svc.children.map(child => (
-                <SelectItem key={child.value} value={child.value} className="text-[13px] pl-5">
+                <SelectItem key={child.value} value={child.value} className="text-ssm pl-5">
                   {child.label}
                 </SelectItem>
               ))}
             </div>
           ) : (
-            <SelectItem key={svc.value} value={svc.value} className="text-[13px]">
+            <SelectItem key={svc.value} value={svc.value} className="text-ssm">
               {svc.label}
             </SelectItem>
           )
@@ -154,7 +154,7 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
         {/* Header */}
         <div className="px-4 py-3 border-b border-black/[.06] dark:border-white/[.08] flex items-center justify-between sticky top-0 bg-white dark:bg-[#1e1e21] z-10">
           <div>
-            <div className="text-[14px] font-semibold text-slate-900 dark:text-white">New Deal</div>
+            <div className="text-sm font-semibold text-slate-900 dark:text-white">New Deal</div>
             <div className="text-[11.5px] text-slate-400 mt-0.5">Add a deal to your pipeline</div>
           </div>
           <button
@@ -171,7 +171,7 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
         <form onSubmit={handleSubmit} className="p-4 flex flex-col gap-4">
           {/* Title */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">
+            <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">
               Deal Name <span className="text-red-400">*</span>
             </label>
             <Input
@@ -179,14 +179,14 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="e.g. Jollibee HRIS Implementation"
-              className="h-9 text-[13px]"
+              className="h-9 text-ssm"
               required
             />
           </div>
 
           {/* Brand / Company — use combobox since companies list can grow large */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">
+            <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">
               Brand <span className="text-slate-400">(optional)</span>
             </label>
             <Combobox
@@ -202,14 +202,14 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
 
           {/* Service Type */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">Service</label>
+            <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">Service</label>
             <ServiceSelect value={serviceType} onValueChange={setServiceType} />
           </div>
 
           {/* Stage + Outreach */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">Stage</label>
+              <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">Stage</label>
               <Combobox
                 options={STAGE_OPTIONS}
                 value={stage}
@@ -218,14 +218,14 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">Outreach</label>
+              <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">Outreach</label>
               <Select value={outreachCategory} onValueChange={setOutreachCategory}>
-                <SelectTrigger className="h-9 text-[13px]">
+                <SelectTrigger className="h-9 text-ssm">
                   <SelectValue placeholder="—" />
                 </SelectTrigger>
                 <SelectContent>
                   {OUTREACH_OPTIONS.map(o => (
-                    <SelectItem key={o.value} value={o.value} className="text-[13px]">{o.label}</SelectItem>
+                    <SelectItem key={o.value} value={o.value} className="text-ssm">{o.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -235,7 +235,7 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
           {/* Value + Pricing Model */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">Value (₱)</label>
+              <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">Value (₱)</label>
               <Input
                 value={value}
                 onChange={e => {
@@ -246,18 +246,18 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
                   setValue(parts.join('.'))
                 }}
                 placeholder="e.g. 250,000"
-                className="h-9 text-[13px]"
+                className="h-9 text-ssm"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">Pricing Model</label>
+              <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">Pricing Model</label>
               <Select value={pricingModel} onValueChange={setPricingModel}>
-                <SelectTrigger className="h-9 text-[13px]">
+                <SelectTrigger className="h-9 text-ssm">
                   <SelectValue placeholder="—" />
                 </SelectTrigger>
                 <SelectContent>
                   {PRICING_OPTIONS.map(p => (
-                    <SelectItem key={p.value} value={p.value} className="text-[13px]">{p.label}</SelectItem>
+                    <SelectItem key={p.value} value={p.value} className="text-ssm">{p.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -267,7 +267,7 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
 
           {/* File attachments */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">
+            <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">
               Attachments <span className="text-slate-400">(optional)</span>
             </label>
             <input
@@ -293,7 +293,7 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
                 <polyline points="17 8 12 3 7 8" />
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
-              <span className="text-[12px] text-slate-500 dark:text-slate-400">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
                 {pendingFiles.length > 0 ? `${pendingFiles.length} file${pendingFiles.length !== 1 ? 's' : ''} attached` : 'Drop files or click to attach'}
               </span>
             </label>
@@ -305,7 +305,7 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                       <polyline points="14 2 14 8 20 8" />
                     </svg>
-                    <span className="text-[10px] text-slate-600 dark:text-slate-300 truncate">{file.name}</span>
+                    <span className="text-atom text-slate-600 dark:text-slate-300 truncate">{file.name}</span>
                     <button
                       type="button"
                       onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))}
@@ -322,7 +322,7 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
           </div>
 
           {error && (
-            <p className="text-[12px] text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
               {error.message}
             </p>
           )}
@@ -331,14 +331,14 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 h-9 rounded-lg border border-black/[.08] dark:border-white/[.08] text-[13px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors"
+              className="flex-1 h-9 rounded-lg border border-black/[.08] dark:border-white/[.08] text-ssm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isPending || !canSubmit}
-              className="flex-1 h-9 rounded-lg text-[13px] font-medium text-white transition-colors disabled:opacity-50"
+              className="flex-1 h-9 rounded-lg text-ssm font-medium text-white transition-colors disabled:opacity-50"
               style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
             >
               {isPending ? 'Creating…' : 'Create Deal'}

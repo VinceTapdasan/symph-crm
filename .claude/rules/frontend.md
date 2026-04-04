@@ -44,6 +44,36 @@ apps/web/src/
 - Component files are `PascalCase` for features (`Dashboard.tsx`) and `kebab-case` for ui primitives (`button.tsx`).
 - Export named components, not default exports (e.g., `export function Dashboard()`).
 
+### Conditional Styling — `cn()` Utility (MANDATORY)
+
+Every component with conditional className logic MUST use the `cn()` utility from `@/lib/utils`. No exceptions.
+
+```tsx
+// CORRECT — always use cn()
+import { cn } from '@/lib/utils'
+<div className={cn('base-classes', isActive && 'active-class', variant === 'primary' ? 'bg-primary' : 'bg-slate-100')} />
+
+// WRONG — template literals
+<div className={`base-classes ${isActive ? 'active-class' : ''}`} />
+
+// WRONG — string concatenation
+<div className={'base-classes ' + (isActive ? 'active-class' : '')} />
+
+// WRONG — ternary without cn()
+<div className={isActive ? 'classA' : 'classB'} />
+```
+
+Rules:
+- Import `cn` from `@/lib/utils` in every component that has conditional classes.
+- Static className strings (`className="..."`) are fine without `cn()`.
+- `cn()` merges Tailwind classes correctly and handles falsy values.
+
+### Design Tokens — Border Radius & Spacing (MANDATORY)
+
+- **Default border radius for all cards, containers, modals, dropdowns, popovers:** `rounded-md`. No `rounded-xl` or `rounded-lg` on card/container surfaces.
+- **Gap between card sections:** `gap-3`. All pages that stack cards vertically or in grids use `gap-3` between card elements.
+- Buttons, inputs, badges, pills, avatars may use their own radius (`rounded-lg`, `rounded-full`, etc.).
+
 ### Data Fetching — Three-Layer Architecture (MANDATORY)
 
 Data flow is strictly one-directional:

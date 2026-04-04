@@ -65,7 +65,7 @@ export default function OnboardingPage() {
           </div>
           <div>
             <div className="text-base font-bold text-slate-900 dark:text-white tracking-tight">Symph CRM</div>
-            <div className="text-[11px] text-slate-400">Sales Pipeline</div>
+            <div className="text-xxs text-slate-400">Sales Pipeline</div>
           </div>
         </div>
 
@@ -73,7 +73,7 @@ export default function OnboardingPage() {
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-sm p-7">
           {/* Header */}
           <div className="mb-6">
-            <p className="text-[13px] text-slate-400 dark:text-slate-500 mb-0.5">Welcome,</p>
+            <p className="text-ssm text-slate-400 dark:text-slate-500 mb-0.5">Welcome,</p>
             <h1 className="text-lg font-semibold text-slate-900 dark:text-white">
               {displayName}
             </h1>
@@ -85,7 +85,7 @@ export default function OnboardingPage() {
             <div>
               <label
                 htmlFor="currentTeam"
-                className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wide"
+                className="block text-xxs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wide"
               >
                 Current
               </label>
@@ -105,7 +105,7 @@ export default function OnboardingPage() {
 
             {/* Error */}
             {error && (
-              <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/40 px-3.5 py-2.5 text-[13px] text-red-600 dark:text-red-400">
+              <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/40 px-3.5 py-2.5 text-ssm text-red-600 dark:text-red-400">
                 {error}
               </div>
             )}
@@ -114,7 +114,7 @@ export default function OnboardingPage() {
             <button
               type="submit"
               disabled={isPending || !currentTeam}
-              className="w-full py-2.5 rounded-lg text-[13px] font-semibold text-white transition-opacity disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+              className="w-full py-2.5 rounded-lg text-ssm font-semibold text-white transition-opacity disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
               style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
             >
               {isPending ? 'Setting up…' : 'Get started →'}
@@ -122,7 +122,7 @@ export default function OnboardingPage() {
           </form>
         </div>
 
-        <p className="text-[11px] text-slate-400 text-center mt-4">
+        <p className="text-xxs text-slate-400 text-center mt-4">
           Symph internal use only
         </p>
       </div>

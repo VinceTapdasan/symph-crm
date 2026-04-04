@@ -1,11 +1,19 @@
 import { clsx, type ClassValue } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+import { extendTailwindMerge } from 'tailwind-merge'
 import { BRAND_PALETTE, AVATAR_COLORS, STAGE_ORDER, KANBAN_STAGES, COLUMN_TO_STAGE, PROGRESS_STAGES, SERVICE_TYPES } from './constants'
 
 // ─── Tailwind ────────────────────────────────────────────────────────────────
 
+const customTwMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      'font-size': ['text-atom', 'text-xxs', 'text-ssm', 'text-sbase'],
+    },
+  },
+})
+
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return customTwMerge(clsx(inputs))
 }
 
 // ─── Currency Formatting ─────────────────────────────────────────────────────

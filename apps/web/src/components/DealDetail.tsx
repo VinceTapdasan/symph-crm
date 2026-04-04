@@ -86,7 +86,7 @@ function StageProgress({ currentStage }: { currentStage: string }) {
               />
               <span
                 className={cn(
-                  'text-[11px] whitespace-nowrap',
+                  'text-xs whitespace-nowrap',
                   i === currentIdx
                     ? 'font-semibold text-primary'
                     : i < currentIdx
@@ -102,7 +102,7 @@ function StageProgress({ currentStage }: { currentStage: string }) {
         })}
         {isLost && (
           <div className="ml-3 shrink-0">
-            <span className="text-[11px] font-semibold text-red-500 bg-red-50 dark:bg-red-950/30 px-2.5 py-0.5 rounded-full border border-red-100 dark:border-red-500/20">
+            <span className="text-xxs font-semibold text-red-500 bg-red-50 dark:bg-red-950/30 px-2.5 py-0.5 rounded-full border border-red-100 dark:border-red-500/20">
               Lost
             </span>
           </div>
@@ -134,7 +134,7 @@ function SegmentedProgressBar({ currentStage }: { currentStage: string }) {
 function SidebarSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4">
-      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">{title}</p>
+      <p className="text-atom font-semibold text-slate-400 uppercase tracking-wider mb-3">{title}</p>
       {children}
     </div>
   )
@@ -143,8 +143,8 @@ function SidebarSection({ title, children }: { title: string; children: React.Re
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-2 py-1.5 border-b border-black/[.04] dark:border-white/[.05] last:border-0">
-      <span className="text-[12px] text-slate-400 shrink-0">{label}</span>
-      <span className="text-[12px] font-medium text-slate-800 dark:text-white text-right">{value}</span>
+      <span className="text-xs text-slate-400 shrink-0">{label}</span>
+      <span className="text-xs font-medium text-slate-800 dark:text-white text-right">{value}</span>
     </div>
   )
 }
@@ -192,7 +192,7 @@ function StagePill({ stage }: { stage: string }) {
   const label = STAGE_LABELS[stage] ?? stage
   return (
     <span
-      className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md shrink-0"
+      className="text-atom font-semibold px-1.5 py-0.5 rounded-md shrink-0"
       style={{
         color: `var(--stage-${stage}, #94a3b8)`,
         background: `color-mix(in srgb, var(--stage-${stage}, #94a3b8) 12%, transparent)`,
@@ -499,7 +499,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
       <div className="p-4 md:p-6 h-full flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-6 h-6 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-          <p className="text-[12px] text-slate-400">Loading deal&hellip;</p>
+          <p className="text-xs text-slate-400">Loading deal&hellip;</p>
         </div>
       </div>
     )
@@ -517,7 +517,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
             title="Deal not found"
             description="This deal may have been deleted or the link is invalid."
             action={
-              <button onClick={onBack} className="px-4 py-2 rounded-lg bg-primary text-white text-[12px] font-semibold">
+              <button onClick={onBack} className="px-4 py-2 rounded-lg bg-primary text-white text-xs font-semibold">
                 Back to Pipeline
               </button>
             }
@@ -559,27 +559,27 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                 </svg>
               </div>
               <div>
-                <h3 className="text-[15px] font-semibold text-slate-900 dark:text-white">Delete permanently?</h3>
-                <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">This cannot be undone.</p>
+                <h3 className="text-sbase font-semibold text-slate-900 dark:text-white">Delete permanently?</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">This cannot be undone.</p>
               </div>
             </div>
             <div className="rounded-lg bg-red-50/50 dark:bg-red-500/[.06] border border-red-100 dark:border-red-500/10 px-3 py-2.5 mb-5">
-              <p className="text-[12px] text-red-700 dark:text-red-400 font-medium truncate">{deletingDoc.title}</p>
-              <p className="text-[10px] text-red-500/70 dark:text-red-400/60 mt-0.5">
+              <p className="text-xs text-red-700 dark:text-red-400 font-medium truncate">{deletingDoc.title}</p>
+              <p className="text-atom text-red-500/70 dark:text-red-400/60 mt-0.5">
                 {deletingDoc.storagePath?.includes('/resources/') ? 'Resource file' : 'Note'} · Created {new Date(deletingDoc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setDeletingDoc(null)}
-                className="flex-1 h-9 rounded-lg text-[13px] font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[.06] hover:bg-slate-200 dark:hover:bg-white/[.10] transition-colors"
+                className="flex-1 h-9 rounded-lg text-ssm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[.06] hover:bg-slate-200 dark:hover:bg-white/[.10] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDeleteDoc}
                 disabled={deleteDoc.isPending}
-                className="flex-1 h-9 rounded-lg text-[13px] font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+                className="flex-1 h-9 rounded-lg text-ssm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
               >
                 {deleteDoc.isPending ? (
                   <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
@@ -624,30 +624,30 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
             {/* Stage transition indicator */}
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: `var(--stage-${deal.stage}, #94a3b8)` }} />
-              <span className="text-[12px] font-semibold" style={{ color: `var(--stage-${deal.stage}, #94a3b8)` }}>{stageLabel}</span>
+              <span className="text-xs font-semibold" style={{ color: `var(--stage-${deal.stage}, #94a3b8)` }}>{stageLabel}</span>
               <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="text-slate-300">
                 <polyline points="9 18 15 12 9 6" />
               </svg>
               <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: `var(--stage-${nextStage}, #94a3b8)` }} />
-              <span className="text-[12px] font-semibold" style={{ color: `var(--stage-${nextStage}, #94a3b8)` }}>{STAGE_LABELS[nextStage] ?? nextStage}</span>
+              <span className="text-xs font-semibold" style={{ color: `var(--stage-${nextStage}, #94a3b8)` }}>{STAGE_LABELS[nextStage] ?? nextStage}</span>
             </div>
-            <p className="text-[15px] font-bold text-slate-900 dark:text-white mb-1">
+            <p className="text-sbase font-bold text-slate-900 dark:text-white mb-1">
               Advance this deal?
             </p>
-            <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-5">
+            <p className="text-ssm text-slate-500 dark:text-slate-400 mb-5">
               Move <span className="font-medium text-slate-700 dark:text-slate-200">{deal.title}</span> to <span className="font-medium" style={{ color: `var(--stage-${nextStage}, #94a3b8)` }}>{STAGE_LABELS[nextStage] ?? nextStage}</span>. This can't be undone.
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowAdvanceConfirm(false)}
-                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+                className="flex-1 py-2.5 rounded-lg text-ssm font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={() => { setShowAdvanceConfirm(false); handleAdvance() }}
                 disabled={patchStage.isPending}
-                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-white disabled:opacity-60 transition-opacity"
+                className="flex-1 py-2.5 rounded-lg text-ssm font-semibold text-white disabled:opacity-60 transition-opacity"
                 style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
               >
                 {patchStage.isPending ? (
@@ -672,30 +672,30 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
             {/* Stage transition indicator */}
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: `var(--stage-${deal.stage}, #94a3b8)` }} />
-              <span className="text-[12px] font-semibold" style={{ color: `var(--stage-${deal.stage}, #94a3b8)` }}>{stageLabel}</span>
+              <span className="text-xs font-semibold" style={{ color: `var(--stage-${deal.stage}, #94a3b8)` }}>{stageLabel}</span>
               <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="text-slate-300">
                 <polyline points="9 18 15 12 9 6" />
               </svg>
               <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: 'var(--stage-closed_won, #16a34a)' }} />
-              <span className="text-[12px] font-semibold" style={{ color: 'var(--stage-closed_won, #16a34a)' }}>Won</span>
+              <span className="text-xs font-semibold" style={{ color: 'var(--stage-closed_won, #16a34a)' }}>Won</span>
             </div>
-            <p className="text-[15px] font-bold text-slate-900 dark:text-white mb-1">
+            <p className="text-sbase font-bold text-slate-900 dark:text-white mb-1">
               Mark as Won?
             </p>
-            <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-5">
+            <p className="text-ssm text-slate-500 dark:text-slate-400 mb-5">
               Move <span className="font-medium text-slate-700 dark:text-slate-200">{deal.title}</span> to <span className="font-medium" style={{ color: 'var(--stage-closed_won, #16a34a)' }}>Won</span>. This can’t be undone.
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowWonConfirm(false)}
-                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+                className="flex-1 py-2.5 rounded-lg text-ssm font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmMarkWon}
                 disabled={patchStage.isPending}
-                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 transition-colors"
+                className="flex-1 py-2.5 rounded-lg text-ssm font-semibold text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 transition-colors"
               >
                 {patchStage.isPending ? (
                   <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin mx-auto" />
@@ -719,30 +719,30 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
             {/* Stage transition indicator */}
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: `var(--stage-${deal.stage}, #94a3b8)` }} />
-              <span className="text-[12px] font-semibold" style={{ color: `var(--stage-${deal.stage}, #94a3b8)` }}>{stageLabel}</span>
+              <span className="text-xs font-semibold" style={{ color: `var(--stage-${deal.stage}, #94a3b8)` }}>{stageLabel}</span>
               <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="text-slate-300">
                 <polyline points="9 18 15 12 9 6" />
               </svg>
               <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: 'var(--stage-closed_lost, #dc2626)' }} />
-              <span className="text-[12px] font-semibold" style={{ color: 'var(--stage-closed_lost, #dc2626)' }}>Lost</span>
+              <span className="text-xs font-semibold" style={{ color: 'var(--stage-closed_lost, #dc2626)' }}>Lost</span>
             </div>
-            <p className="text-[15px] font-bold text-slate-900 dark:text-white mb-1">
+            <p className="text-sbase font-bold text-slate-900 dark:text-white mb-1">
               Close as Lost?
             </p>
-            <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-5">
+            <p className="text-ssm text-slate-500 dark:text-slate-400 mb-5">
               Move <span className="font-medium text-slate-700 dark:text-slate-200">{deal.title}</span> to <span className="font-medium" style={{ color: 'var(--stage-closed_lost, #dc2626)' }}>Lost</span>. This can’t be undone.
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowLostConfirm(false)}
-                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+                className="flex-1 py-2.5 rounded-lg text-ssm font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmMarkLost}
                 disabled={patchStage.isPending}
-                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 transition-colors"
+                className="flex-1 py-2.5 rounded-lg text-ssm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 transition-colors"
               >
                 {patchStage.isPending ? (
                   <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin mx-auto" />
@@ -756,7 +756,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
       {/* Back */}
       <button
         onClick={onBack}
-        className="flex items-center gap-1 text-[12px] font-medium text-slate-500 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors mb-4 w-fit px-4 sm:px-0"
+        className="flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors mb-4 w-fit px-4 sm:px-0"
       >
         <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><polyline points="15 18 9 12 15 6" /></svg>
         Back to Pipeline
@@ -765,13 +765,13 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
       {/* ── Mobile header (sm:hidden) ────────────────────────────────────────── */}
       <div className="sm:hidden bg-white dark:bg-[#1e1e21] border-y border-black/[.06] dark:border-white/[.08] p-4 mb-0 flex flex-col gap-3">
         {/* Company tag */}
-        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide leading-none truncate">
+        <p className="text-xxs font-semibold text-slate-400 uppercase tracking-wide leading-none truncate">
           {company?.name ?? 'No Brand'}
         </p>
 
         {/* Deal title */}
         <div className="flex items-center gap-2">
-          <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-snug -mt-1 line-clamp-2">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white leading-snug -mt-1 line-clamp-2">
             {formatDealTitle(deal.title)}
           </h1>
           <button
@@ -793,13 +793,13 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
             style={{ background: `var(--stage-${deal.stage}, ${stageColor})` }}
           />
           <span
-            className="text-[12px] font-semibold"
+            className="text-xs font-semibold"
             style={{ color: `var(--stage-${deal.stage}, ${stageColor})` }}
           >
             {stageLabel}
           </span>
           <span className="text-slate-300 dark:text-slate-600">·</span>
-          <span className="text-[15px] font-bold tabular-nums text-primary">
+          <span className="text-sbase font-bold tabular-nums text-primary">
             {formatCurrencyFull(deal.value)}
           </span>
         </div>
@@ -808,7 +808,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
         <SegmentedProgressBar currentStage={deal.stage} />
 
         {/* Context strip: days in stage + capture date */}
-        <div className="flex items-center gap-3 text-[11px] text-slate-400">
+        <div className="flex items-center gap-3 text-xxs text-slate-400">
           <span>{daysInStage}d in stage</span>
           <span className="text-slate-300 dark:text-slate-600">·</span>
           <span>Captured {formatDate(deal.createdAt)}</span>
@@ -820,7 +820,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
             <button
               onClick={() => setShowAdvanceConfirm(true)}
               disabled={patchStage.isPending}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg font-semibold text-[13px] text-white disabled:opacity-60"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg font-semibold text-ssm text-white disabled:opacity-60"
               style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
             >
               {patchStage.isPending ? (
@@ -835,7 +835,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
               )}
             </button>
           ) : (
-            <div className="flex-1 flex items-center justify-center py-2 rounded-lg text-[12px] font-medium text-slate-400 bg-slate-50 dark:bg-white/[.04]">
+            <div className="flex-1 flex items-center justify-center py-2 rounded-lg text-xs font-medium text-slate-400 bg-slate-50 dark:bg-white/[.04]">
               {deal.stage === 'closed_won' ? '🎉 Deal Won' : deal.stage === 'closed_lost' ? 'Deal Lost' : 'No next stage'}
             </div>
           )}
@@ -852,17 +852,17 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
           {/* Left: Brand + deal info */}
           <div className="flex items-center gap-3.5 min-w-0">
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-[15px] font-bold shrink-0"
+              className="w-12 h-12 rounded-xl flex items-center justify-center text-sbase font-bold shrink-0"
               style={{ background: `${brandColor}18`, color: brandColor }}
             >
               {getInitials(company?.name ?? 'No Brand')}
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide leading-none mb-1">
+              <p className="text-xxs font-semibold text-slate-400 uppercase tracking-wide leading-none mb-1">
                 {company?.name ?? 'No Brand'}
               </p>
               <div className="flex items-center gap-2">
-                <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-tight">
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
                   {formatDealTitle(deal.title)}
                 </h1>
                 <button
@@ -876,7 +876,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                   </svg>
                 </button>
               </div>
-              <p className="text-[12px] text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-400 mt-0.5">
                 {[company?.name, company?.industry].filter(Boolean).join(' \u00B7 ') || 'No brand assigned'}
               </p>
             </div>
@@ -884,11 +884,11 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
 
           {/* Right: Value → stage → advance (stacked, right-aligned) */}
           <div className="flex flex-col items-end gap-1.5 shrink-0">
-            <div className="text-[26px] font-bold tabular-nums text-primary leading-tight">
+            <div className="text-2xl font-bold tabular-nums text-primary leading-tight">
               {formatCurrencyFull(deal.value)}
             </div>
             <span
-              className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+              className="text-xxs font-semibold px-2 py-0.5 rounded-full"
               style={{
                 color: `var(--stage-${deal.stage}, ${stageColor})`,
                 background: `color-mix(in srgb, var(--stage-${deal.stage}, ${stageColor}) 12%, transparent)`,
@@ -900,7 +900,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
               <button
                 onClick={() => setShowAdvanceConfirm(true)}
                 disabled={patchStage.isPending}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold text-[12px] text-white transition-opacity disabled:opacity-60 shrink-0 mt-0.5"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold text-xs text-white transition-opacity disabled:opacity-60 shrink-0 mt-0.5"
                 style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
               >
                 {patchStage.isPending ? (
@@ -941,7 +941,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                   key={tab.id}
                   onClick={() => { setActiveTab(tab.id); setDocSearch('') }}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 sm:px-4 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
+                    'flex items-center gap-1.5 px-3 sm:px-4 py-3 text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
                     activeTab === tab.id
                       ? 'border-primary text-primary'
                       : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
@@ -950,7 +950,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                   {tab.label}
                   {tab.count !== null && tab.count > 0 && (
                     <span className={cn(
-                      'text-[10px] font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center',
+                      'text-atom font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center',
                       activeTab === tab.id
                         ? 'bg-primary/15 text-primary dark:bg-primary/20'
                         : 'bg-slate-100 dark:bg-white/[.08] text-slate-500'
@@ -976,7 +976,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                     value={docSearch}
                     onChange={e => setDocSearch(e.target.value)}
                     placeholder="Search…"
-                    className="bg-transparent text-[11px] text-slate-700 dark:text-slate-300 placeholder:text-slate-400 outline-none w-[72px]"
+                    className="bg-transparent text-xxs text-slate-700 dark:text-slate-300 placeholder:text-slate-400 outline-none w-[72px]"
                   />
                   {docSearch && (
                     <button onClick={() => setDocSearch('')} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 shrink-0">
@@ -990,27 +990,27 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                 {/* Type / ext filter — shadcn Select */}
                 {activeTab === 'notes' && noteTypes.length > 1 && (
                   <Select value={noteTypeFilter} onValueChange={setNoteTypeFilter}>
-                    <SelectTrigger className="h-7 w-auto min-w-[84px] text-[11px] border-none bg-transparent shadow-none px-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white gap-1 focus:ring-0">
+                    <SelectTrigger className="h-7 w-auto min-w-[84px] text-xxs border-none bg-transparent shadow-none px-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white gap-1 focus:ring-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all" className="text-[12px]">All types</SelectItem>
+                      <SelectItem value="all" className="text-xs">All types</SelectItem>
                       {noteTypes.map(t => (
-                        <SelectItem key={t} value={t} className="text-[12px]">{DOC_TYPE_LABELS[t] ?? t}</SelectItem>
+                        <SelectItem key={t} value={t} className="text-xs">{DOC_TYPE_LABELS[t] ?? t}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 )}
                 {activeTab === 'resources' && (
                   <Select value={resourceExtFilter} onValueChange={setResourceExtFilter}>
-                    <SelectTrigger className="h-7 w-auto min-w-[80px] text-[11px] border-none bg-transparent shadow-none px-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white gap-1 focus:ring-0">
+                    <SelectTrigger className="h-7 w-auto min-w-[80px] text-xxs border-none bg-transparent shadow-none px-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white gap-1 focus:ring-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all" className="text-[12px]">All files</SelectItem>
-                      <SelectItem value="pdf" className="text-[12px]">PDF</SelectItem>
-                      <SelectItem value="docx" className="text-[12px]">DOCX</SelectItem>
-                      <SelectItem value="image" className="text-[12px]">Images</SelectItem>
+                      <SelectItem value="all" className="text-xs">All files</SelectItem>
+                      <SelectItem value="pdf" className="text-xs">PDF</SelectItem>
+                      <SelectItem value="docx" className="text-xs">DOCX</SelectItem>
+                      <SelectItem value="image" className="text-xs">Images</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -1091,7 +1091,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                       }}
                       placeholder={notePasteChips.length > 0 ? 'Add context (optional)…' : 'Add notes, paste a transcript, drop a link…'}
                       rows={1}
-                      className="w-full bg-transparent border-none outline-none text-[13px] text-slate-900 dark:text-white leading-[1.6] resize-none overflow-hidden placeholder:text-slate-400"
+                      className="w-full bg-transparent border-none outline-none text-ssm text-slate-900 dark:text-white leading-[1.6] resize-none overflow-hidden placeholder:text-slate-400"
                       style={{ minHeight: '28px', maxHeight: '160px' }}
                     />
                   </div>
@@ -1099,15 +1099,15 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                   {/* Bottom toolbar */}
                   <div className="flex items-center gap-2 px-3 pb-3 pt-1">
                     <Select value={noteType} onValueChange={setNoteType}>
-                      <SelectTrigger className="h-7 w-auto min-w-[90px] text-[11px] border-none bg-transparent shadow-none px-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white gap-1">
+                      <SelectTrigger className="h-7 w-auto min-w-[90px] text-xxs border-none bg-transparent shadow-none px-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white gap-1">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="general" className="text-[12px]">Note</SelectItem>
-                        <SelectItem value="discovery" className="text-[12px]">Discovery</SelectItem>
-                        <SelectItem value="meeting" className="text-[12px]">Meeting Notes</SelectItem>
-                        <SelectItem value="transcript_raw" className="text-[12px]">Transcript</SelectItem>
-                        <SelectItem value="proposal" className="text-[12px]">Proposal</SelectItem>
+                        <SelectItem value="general" className="text-xs">Note</SelectItem>
+                        <SelectItem value="discovery" className="text-xs">Discovery</SelectItem>
+                        <SelectItem value="meeting" className="text-xs">Meeting Notes</SelectItem>
+                        <SelectItem value="transcript_raw" className="text-xs">Transcript</SelectItem>
+                        <SelectItem value="proposal" className="text-xs">Proposal</SelectItem>
                       </SelectContent>
                     </Select>
                     <div className="flex-1" />
@@ -1143,10 +1143,10 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                 </div>
               ) : filteredNotes.length === 0 ? (
                 <div className="py-10 text-center">
-                  <p className="text-[13px] text-slate-400">
+                  <p className="text-ssm text-slate-400">
                     {noteTypeFilter !== 'all' ? 'No notes match this filter' : 'No notes yet'}
                   </p>
-                  <p className="text-[11px] text-slate-300 mt-0.5">
+                  <p className="text-xxs text-slate-300 mt-0.5">
                     {noteTypeFilter !== 'all' ? '' : 'Add the first note above'}
                   </p>
                 </div>
@@ -1186,24 +1186,24 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                           </div>
                         </div>
                         {/* Title */}
-                        <p className="text-[12px] font-semibold text-slate-800 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                        <p className="text-xs font-semibold text-slate-800 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                           {doc.title}
                         </p>
                         {/* Excerpt */}
                         {doc.excerpt && (
-                          <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed flex-1">
+                          <p className="text-atom text-slate-400 line-clamp-2 leading-relaxed flex-1">
                             {doc.excerpt}
                           </p>
                         )}
                         {/* Footer: type badge + author + date */}
                         <div className="flex items-center gap-1.5 mt-auto pt-1 flex-wrap">
-                          <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/[.06] text-slate-500 shrink-0">
+                          <span className="text-atom font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/[.06] text-slate-500 shrink-0">
                             {DOC_TYPE_LABELS[doc.type] ?? doc.type}
                           </span>
                           {authorUser && (
                             <div className="flex items-center gap-1 min-w-0">
                               <Avatar name={authorUser.name || authorUser.email} email={authorUser.email ?? undefined} src={authorUser.image ?? undefined} size={12} />
-                              <span className="text-[9px] text-slate-400 truncate">{authorName?.split(' ')[0]}</span>
+                              <span className="text-atom text-slate-400 truncate">{authorName?.split(' ')[0]}</span>
                             </div>
                           )}
                         </div>
@@ -1236,16 +1236,16 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                         </div>
                         <div className="flex-1 min-w-0">
                           {/* Note name */}
-                          <p className="text-[13px] font-semibold text-slate-800 dark:text-white truncate leading-tight group-hover:text-primary transition-colors">
+                          <p className="text-ssm font-semibold text-slate-800 dark:text-white truncate leading-tight group-hover:text-primary transition-colors">
                             {doc.title}
                           </p>
                           {/* Excerpt */}
                           {doc.excerpt ? (
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
+                            <p className="text-atom text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
                               {doc.excerpt}
                             </p>
                           ) : (
-                            <p className="text-[10px] text-slate-300 dark:text-slate-600 italic mt-0.5">
+                            <p className="text-atom text-slate-300 dark:text-slate-600 italic mt-0.5">
                               Empty note
                             </p>
                           )}
@@ -1253,14 +1253,14 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                             {authorUser && (
                               <div className="flex items-center gap-1 shrink-0">
                                 <Avatar name={authorUser.name || authorUser.email} email={authorUser.email ?? undefined} src={authorUser.image ?? undefined} size={14} />
-                                <span className="text-[10px] text-slate-400">{authorName?.split(' ')[0] ?? 'AM'}</span>
+                                <span className="text-atom text-slate-400">{authorName?.split(' ')[0] ?? 'AM'}</span>
                               </div>
                             )}
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/[.06] text-slate-500 shrink-0">
+                            <span className="text-atom font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/[.06] text-slate-500 shrink-0">
                               {DOC_TYPE_LABELS[doc.type] ?? doc.type}
                             </span>
                             {docStage && <StagePill stage={docStage} />}
-                            <span className="text-[10px] text-slate-400">
+                            <span className="text-atom text-slate-400">
                               {new Date(doc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
                             </span>
                           </div>
@@ -1277,7 +1277,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                             </svg>
                           </button>
-                          <span className="text-[10px] font-medium text-primary flex items-center gap-0.5">
+                          <span className="text-atom font-medium text-primary flex items-center gap-0.5">
                             View
                             <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                               <polyline points="9 18 15 12 9 6" />
@@ -1336,10 +1336,10 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                     </svg>
                   )}
                   <div className="text-center">
-                    <p className="text-[12px] font-medium text-slate-600 dark:text-slate-300">
+                    <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
                       {uploading ? 'Uploading\u2026' : 'Drop files here or click to upload'}
                     </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
+                    <p className="text-atom text-slate-400 mt-0.5">
                       PDF, DOCX, PPTX, Images, Audio (m4a/mp3) — text files go to Notes
                     </p>
                   </div>
@@ -1353,7 +1353,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                           <polyline points="14 2 14 8 20 8" />
                         </svg>
-                        <span className="text-[11px] text-slate-600 dark:text-slate-300 truncate leading-tight">{file.name}</span>
+                        <span className="text-xxs text-slate-600 dark:text-slate-300 truncate leading-tight">{file.name}</span>
                         <button
                           type="button"
                           onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))}
@@ -1368,7 +1368,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                     <button
                       onClick={handleConfirmUpload}
                       disabled={uploading}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-[12px] text-white disabled:opacity-60 transition-opacity"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs text-white disabled:opacity-60 transition-opacity"
                       style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
                     >
                       {uploading ? (
@@ -1397,7 +1397,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                   viewMode === 'grid' ? (
                     /* Resources grid view */
                     <div className="mb-4">
-                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Uploaded Files</p>
+                      <p className="text-atom font-semibold text-slate-400 uppercase tracking-wider mb-2">Uploaded Files</p>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {filteredResources.map(doc => {
                           const extRaw = doc.tags?.find(t => !['resources', 'notes'].includes(t) && !t.startsWith('deal_stage:'))
@@ -1416,7 +1416,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                               {/* File icon + actions */}
                               <div className="flex items-center justify-between">
                                 <div className={cn(
-                                  'w-10 h-10 rounded-lg flex items-center justify-center text-[10px] font-bold',
+                                  'w-10 h-10 rounded-lg flex items-center justify-center text-atom font-bold',
                                   isImg
                                     ? 'bg-purple-50 dark:bg-purple-500/[.12] text-purple-600 dark:text-purple-400'
                                     : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
@@ -1449,7 +1449,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                                 </div>
                               </div>
                               {/* Filename */}
-                              <p className="text-[12px] font-medium text-slate-800 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors" title={displayName}>
+                              <p className="text-xs font-medium text-slate-800 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors" title={displayName}>
                                 {displayName}
                               </p>
                               {/* Footer: author + date */}
@@ -1457,10 +1457,10 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                                 {authorUser && (
                                   <>
                                     <Avatar name={authorUser.name || authorUser.email} email={authorUser.email ?? undefined} src={authorUser.image ?? undefined} size={12} />
-                                    <span className="text-[9px] text-slate-400 truncate">{authorName?.split(' ')[0]}</span>
+                                    <span className="text-atom text-slate-400 truncate">{authorName?.split(' ')[0]}</span>
                                   </>
                                 )}
-                                <span className="text-[9px] text-slate-400 ml-auto shrink-0">
+                                <span className="text-atom text-slate-400 ml-auto shrink-0">
                                   {new Date(doc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
                                 </span>
                               </div>
@@ -1472,7 +1472,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                   ) : (
                     /* Resources list view */
                     <div className="mb-4">
-                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Uploaded Files</p>
+                      <p className="text-atom font-semibold text-slate-400 uppercase tracking-wider mb-2">Uploaded Files</p>
                       <div className="divide-y divide-black/[.04] dark:divide-white/[.05] border border-black/[.06] dark:border-white/[.08] rounded-lg overflow-hidden">
                         {filteredResources.map(doc => {
                           const extRaw = doc.tags?.find(t => !['resources', 'notes'].includes(t) && !t.startsWith('deal_stage:'))
@@ -1491,7 +1491,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                             >
                               {/* File type indicator */}
                               <div className={cn(
-                                'w-8 h-8 rounded-md flex items-center justify-center shrink-0 text-[9px] font-bold',
+                                'w-8 h-8 rounded-md flex items-center justify-center shrink-0 text-atom font-bold',
                                 isImg
                                   ? 'bg-purple-50 dark:bg-purple-500/[.12] text-purple-600 dark:text-purple-400'
                                   : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
@@ -1499,18 +1499,18 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                                 {ext}
                               </div>
                               <div className="flex-1 min-w-0 overflow-hidden">
-                                <p className="text-[12px] font-medium text-slate-800 dark:text-white truncate group-hover:text-primary transition-colors" title={displayName}>
+                                <p className="text-xs font-medium text-slate-800 dark:text-white truncate group-hover:text-primary transition-colors" title={displayName}>
                                   {displayName}
                                 </p>
                                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                   {authorUser && (
                                     <div className="flex items-center gap-1 shrink-0">
                                       <Avatar name={authorUser.name || authorUser.email} email={authorUser.email ?? undefined} src={authorUser.image ?? undefined} size={12} />
-                                      <span className="text-[10px] text-slate-400">{authorName?.split(' ')[0] ?? 'AM'}</span>
+                                      <span className="text-atom text-slate-400">{authorName?.split(' ')[0] ?? 'AM'}</span>
                                     </div>
                                   )}
                                   {docStage && <StagePill stage={docStage} />}
-                                  <span className="text-[10px] text-slate-400">
+                                  <span className="text-atom text-slate-400">
                                     {new Date(doc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                                     {showWordCount ? ` · ${doc.wordCount} words` : ''}
                                   </span>
@@ -1539,7 +1539,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                   </svg>
                                 </button>
-                                <span className="text-[10px] font-medium text-primary flex items-center gap-0.5">
+                                <span className="text-atom font-medium text-primary flex items-center gap-0.5">
                                   View
                                   <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                                     <polyline points="9 18 15 12 9 6" />
@@ -1557,13 +1557,13 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
               {/* Quick links from deal fields */}
               {(deal.proposalLink || deal.demoLink) && (
                 <div className="flex flex-col gap-2 mb-3">
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Links</p>
+                  <p className="text-atom font-semibold text-slate-400 uppercase tracking-wider">Links</p>
                   {deal.proposalLink && (
                     <a
                       href={deal.proposalLink.startsWith('http') ? deal.proposalLink : `https://${deal.proposalLink}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-[13px] text-primary hover:underline font-medium"
+                      className="flex items-center gap-2 text-ssm text-primary hover:underline font-medium"
                     >
                       <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                       View Proposal
@@ -1574,7 +1574,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                       href={deal.demoLink.startsWith('http') ? deal.demoLink : `https://${deal.demoLink}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-[13px] text-primary hover:underline font-medium"
+                      className="flex items-center gap-2 text-ssm text-primary hover:underline font-medium"
                     >
                       <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" /></svg>
                       Demo Recording
@@ -1586,7 +1586,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
               {/* Empty state */}
               {!deal.proposalLink && !deal.demoLink && filteredResources.length === 0 && !loadingDocs && (
                 <div className="py-4 text-center">
-                  <p className="text-[11px] text-slate-300 dark:text-slate-600">
+                  <p className="text-xxs text-slate-300 dark:text-slate-600">
                     {resourceExtFilter !== 'all' ? 'No files match this filter' : 'Uploaded files and links will appear here'}
                   </p>
                 </div>
@@ -1629,13 +1629,13 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                       {/* Content */}
                       <div className={cn('flex-1 min-w-0 pb-4', i === activities.length - 1 && 'pb-0')}>
                         <div className="flex items-start justify-between gap-2">
-                          <div className="text-[12px] font-medium text-slate-800 dark:text-white">
+                          <div className="text-xs font-medium text-slate-800 dark:text-white">
                             {ACTIVITY_LABELS[a.type] ?? a.type.replace(/_/g, ' ')}
                           </div>
-                          <div className="text-[10px] text-slate-400 shrink-0">{timeAgo(a.createdAt)}</div>
+                          <div className="text-atom text-slate-400 shrink-0">{timeAgo(a.createdAt)}</div>
                         </div>
                         {a.actorId && (
-                          <div className="text-[10px] text-slate-400 mt-0.5">by {a.actorId}</div>
+                          <div className="text-atom text-slate-400 mt-0.5">by {a.actorId}</div>
                         )}
                       </div>
                     </div>
@@ -1663,7 +1663,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                 value={
                   <span
                     className={cn(
-                      'text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize',
+                      'text-atom font-semibold px-2 py-0.5 rounded-full capitalize',
                       deal.outreachCategory === 'inbound'
                         ? 'bg-[rgba(22,163,74,0.1)] text-[#16a34a]'
                         : 'bg-slate-100 dark:bg-white/[.06] text-slate-500'
@@ -1684,10 +1684,10 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
             )}
             {deal.servicesTags && deal.servicesTags.length > 0 && (
               <div className="pt-2">
-                <span className="text-[10px] text-slate-400 block mb-1.5">Services</span>
+                <span className="text-atom text-slate-400 block mb-1.5">Services</span>
                 <div className="flex flex-wrap gap-1">
                   {deal.servicesTags.map(s => (
-                    <span key={s} className="text-[10px] font-medium px-1.5 py-0.5 rounded-lg bg-primary/10 text-primary">
+                    <span key={s} className="text-atom font-medium px-1.5 py-0.5 rounded-lg bg-primary/10 text-primary">
                       {formatServiceType(s)}
                     </span>
                   ))}
@@ -1711,8 +1711,8 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                         size={34}
                       />
                       <div className="text-left min-w-0 flex-1">
-                        <p className="text-[13px] font-semibold text-slate-800 dark:text-white truncate">{amDisplayName}</p>
-                        <p className="text-[11px] text-slate-400">Account Manager</p>
+                        <p className="text-ssm font-semibold text-slate-800 dark:text-white truncate">{amDisplayName}</p>
+                        <p className="text-xxs text-slate-400">Account Manager</p>
                       </div>
                     </>
                   ) : (
@@ -1722,7 +1722,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                         </svg>
                       </div>
-                      <span className="text-[12px] text-slate-400">Unassigned</span>
+                      <span className="text-xs text-slate-400">Unassigned</span>
                     </>
                   )}
                   {/* Lock indicator */}
@@ -1749,8 +1749,8 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                           size={34}
                         />
                         <div className="text-left min-w-0 flex-1">
-                          <p className="text-[13px] font-semibold text-slate-800 dark:text-white truncate">{amDisplayName}</p>
-                          <p className="text-[11px] text-slate-400">Account Manager</p>
+                          <p className="text-ssm font-semibold text-slate-800 dark:text-white truncate">{amDisplayName}</p>
+                          <p className="text-xxs text-slate-400">Account Manager</p>
                         </div>
                       </>
                     ) : (
@@ -1760,7 +1760,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                           </svg>
                         </div>
-                        <span className="text-[12px] text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
+                        <span className="text-xs text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
                           Click to assign
                         </span>
                       </>
@@ -1774,13 +1774,13 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                   {showAssignDropdown && (
                     <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.1] rounded-lg shadow-lg overflow-hidden animate-in fade-in-0 zoom-in-95 duration-100">
                       {users.length === 0 ? (
-                        <div className="px-3 py-3 text-[11px] text-slate-400 italic text-center">No team members found</div>
+                        <div className="px-3 py-3 text-xxs text-slate-400 italic text-center">No team members found</div>
                       ) : (
                         <div className="max-h-[180px] overflow-y-auto py-1">
                           {amDisplayName && (
                             <button
                               onClick={() => handleAssignAM('')}
-                              className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-red-500 hover:bg-red-50 dark:hover:bg-red-500/[.08] transition-colors"
+                              className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-500/[.08] transition-colors"
                             >
                               <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                               Unassign
@@ -1791,7 +1791,7 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
                               key={u.id}
                               onClick={() => handleAssignAM(u.id)}
                               className={cn(
-                                'flex items-center gap-2 w-full px-3 py-1.5 text-[12px] transition-colors',
+                                'flex items-center gap-2 w-full px-3 py-1.5 text-xs transition-colors',
                                 u.id === deal.assignedTo
                                   ? 'text-primary bg-primary/[.06]'
                                   : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06]'
@@ -1854,18 +1854,18 @@ export function DealDetail({ dealId, onBack }: DealDetailProps) {
           {/* Deal flags */}
           {deal.isFlagged && (
             <div className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl p-4">
-              <p className="text-[10px] font-semibold text-red-600 uppercase tracking-wide mb-1">\u2691 Flagged</p>
-              <p className="text-[12px] text-red-700 dark:text-red-400">{deal.flagReason || 'No reason specified'}</p>
+              <p className="text-atom font-semibold text-red-600 uppercase tracking-wide mb-1">\u2691 Flagged</p>
+              <p className="text-xs text-red-700 dark:text-red-400">{deal.flagReason || 'No reason specified'}</p>
             </div>
           )}
 
           {/* Next Step (static placeholder — will be dynamic later) */}
           <div className="bg-white dark:bg-[#1e1e21] rounded-xl border border-amber-200 dark:border-amber-500/30 shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4">
-            <p className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2">Next Step</p>
+            <p className="text-atom font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2">Next Step</p>
             <div className="bg-amber-50 dark:bg-amber-500/10 rounded-lg p-3 border border-amber-100 dark:border-amber-500/20">
-              <p className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide mb-1">Action Required</p>
-              <p className="text-[13px] text-slate-700 dark:text-slate-200 leading-snug">Initial outreach — intro email + schedule call</p>
-              <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1.5">Due Mar 22, 2026</p>
+              <p className="text-atom font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide mb-1">Action Required</p>
+              <p className="text-ssm text-slate-700 dark:text-slate-200 leading-snug">Initial outreach — intro email + schedule call</p>
+              <p className="text-xxs text-amber-600 dark:text-amber-400 mt-1.5">Due Mar 22, 2026</p>
             </div>
           </div>
         </div>

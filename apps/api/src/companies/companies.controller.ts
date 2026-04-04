@@ -59,6 +59,7 @@ export class CompaniesController {
     @Body() data: typeof companies.$inferInsert,
     @Headers('x-user-id') userId?: string,
   ) {
+    if (userId && !data.createdBy) data.createdBy = userId
     return this.companiesService.create(data, userId)
   }
 

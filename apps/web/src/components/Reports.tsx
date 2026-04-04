@@ -12,7 +12,7 @@ function Spinner() {
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="w-6 h-6 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-      <p className="text-[12px] text-slate-400">Loading…</p>
+      <p className="text-xs text-slate-400">Loading…</p>
     </div>
   )
 }
@@ -139,12 +139,12 @@ export function Reports() {
           metrics.map((m) => (
             <Card key={m.label} className="flex-[1_1_200px]">
               <CardContent>
-                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">{m.label}</div>
-                <div className="text-[22px] font-bold tabular-nums leading-none" style={{ color: m.color || undefined }}>
+                <div className="text-atom font-semibold text-slate-400 uppercase tracking-wide mb-1.5">{m.label}</div>
+                <div className="text-2xl font-bold tabular-nums leading-none" style={{ color: m.color || undefined }}>
                   {!m.color && <span className="text-slate-900 dark:text-white">{m.value}</span>}
                   {m.color && m.value}
                 </div>
-                <div className="text-[11px] text-slate-500 mt-1.5">{m.trend}</div>
+                <div className="text-xxs text-slate-500 mt-1.5">{m.trend}</div>
               </CardContent>
             </Card>
           ))
@@ -157,7 +157,7 @@ export function Reports() {
         {/* Pipeline Value by Stage */}
         <Card>
           <CardContent>
-            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-4 pb-4 border-b border-black/[.06] dark:border-white/[.08]">
+            <div className="text-ssm font-semibold text-slate-900 dark:text-white mb-4 pb-4 border-b border-black/[.06] dark:border-white/[.08]">
               Pipeline Value by Stage
             </div>
             {isLoading ? (
@@ -173,7 +173,7 @@ export function Reports() {
               <div className="flex flex-col gap-2.5">
                 {activeStages.map(s => (
                   <div key={s.stage} className="flex items-center gap-2.5">
-                    <div className="w-[80px] shrink-0 text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate">
+                    <div className="w-[80px] shrink-0 text-xxs font-medium text-slate-600 dark:text-slate-400 truncate">
                       {STAGE_LABELS[s.stage] ?? s.stage}
                     </div>
                     <div className="flex-1 h-[16px] bg-slate-100 dark:bg-white/[.06] rounded overflow-hidden">
@@ -186,10 +186,10 @@ export function Reports() {
                         }}
                       />
                     </div>
-                    <div className="w-[56px] shrink-0 text-[11px] font-semibold tabular-nums text-right text-slate-700 dark:text-slate-300">
+                    <div className="w-[56px] shrink-0 text-xxs font-semibold tabular-nums text-right text-slate-700 dark:text-slate-300">
                       {formatCurrency(s.totalValue)}
                     </div>
-                    <div className="w-[18px] shrink-0 text-[10px] font-medium text-center text-slate-400 tabular-nums">
+                    <div className="w-[18px] shrink-0 text-atom font-medium text-center text-slate-400 tabular-nums">
                       {s.count}
                     </div>
                   </div>
@@ -206,7 +206,7 @@ export function Reports() {
       {/* AM Performance */}
       <Card className="mb-4">
         <CardContent>
-          <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-3.5 pb-3.5 border-b border-black/[.06] dark:border-white/[.08]">
+          <div className="text-ssm font-semibold text-slate-900 dark:text-white mb-3.5 pb-3.5 border-b border-black/[.06] dark:border-white/[.08]">
             AM Performance
           </div>
           {loadingDeals ? (
@@ -225,12 +225,12 @@ export function Reports() {
                   key={name}
                   className="grid grid-cols-[20px_1fr_auto_auto] items-center gap-3 py-2.5 px-1 border-b border-black/[.04] dark:border-white/[.06] last:border-0"
                 >
-                  <div className={`text-[11px] font-bold tabular-nums text-center ${i === 0 ? 'text-primary' : 'text-slate-400'}`}>
+                  <div className={`text-xxs font-bold tabular-nums text-center ${i === 0 ? 'text-primary' : 'text-slate-400'}`}>
                     {i + 1}
                   </div>
                   <div>
                     <div className="text-xs font-semibold text-slate-900 dark:text-white">{name}</div>
-                    <div className="text-[10px] text-slate-400">{stats.deals} deal{stats.deals !== 1 ? 's' : ''}</div>
+                    <div className="text-atom text-slate-400">{stats.deals} deal{stats.deals !== 1 ? 's' : ''}</div>
                   </div>
                   <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 tabular-nums">{formatCurrency(stats.value)}</div>
                 </div>

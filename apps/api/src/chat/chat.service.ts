@@ -159,6 +159,12 @@ export class ChatService {
     ])
   }
 
+  async deleteSession(sessionId: string) {
+    await this.db.delete(chatMessages).where(eq(chatMessages.sessionId, sessionId))
+    await this.db.delete(chatSessions).where(eq(chatSessions.id, sessionId))
+    return { deleted: true }
+  }
+
   // ─── Main send message flow ──────────────────────────────────────────────
 
   async sendMessage(dto: ChatMessageDto): Promise<ChatResponseDto> {

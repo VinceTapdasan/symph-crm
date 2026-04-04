@@ -121,6 +121,16 @@
   --color-primary-ring: rgba(21, 71, 230, 0.2);
   --color-primary-accent: #3b82f6;
 
+  /* Custom font sizes */
+  --text-atom: 0.625rem;
+  --text-atom--line-height: calc(1 / 0.625);
+  --text-xxs: 0.6875rem;
+  --text-xxs--line-height: calc(1 / 0.6875);
+  --text-ssm: 0.8125rem;
+  --text-ssm--line-height: calc(1.25 / 0.8125);
+  --text-sbase: 0.9375rem;
+  --text-sbase--line-height: calc(1.375 / 0.9375);
+
   /* Shadows */
   --shadow-card: 0 1px 2px rgba(17, 24, 39, 0.04), 0 1px 3px rgba(17, 24, 39, 0.06);
   --shadow-md: 0 2px 4px rgba(17, 24, 39, 0.04), 0 4px 8px rgba(17, 24, 39, 0.06);

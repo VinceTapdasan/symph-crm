@@ -88,7 +88,7 @@ function AddressInput({
       className="flex items-start gap-1.5 px-3.5 py-2.5 border-b border-black/[.06] dark:border-white/[.06] cursor-text"
       onClick={() => inputRef.current?.focus()}
     >
-      <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mt-[3px] shrink-0 w-6">
+      <span className="text-xxs font-semibold text-slate-400 uppercase tracking-wider mt-[3px] shrink-0 w-6">
         {label}
       </span>
       <div className="flex-1 flex flex-wrap gap-1 min-w-0">
@@ -281,7 +281,7 @@ export function ComposeWindow({
               <button
                 onClick={handleSend}
                 disabled={sendMutation.isPending}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-[12px] font-semibold rounded-lg transition-colors active:scale-[0.98]"
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors active:scale-[0.98]"
               >
                 {sendMutation.isPending ? (
                   <>
@@ -316,7 +316,7 @@ export function ComposeWindow({
           {/* Error */}
           {sendError && (
             <div className="px-3.5 py-2 bg-red-50 dark:bg-red-950/30 border-t border-red-100 dark:border-red-900/40">
-              <p className="text-[11px] text-red-600 dark:text-red-400">{sendError}</p>
+              <p className="text-xxs text-red-600 dark:text-red-400">{sendError}</p>
             </div>
           )}
         </>

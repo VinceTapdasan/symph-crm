@@ -171,7 +171,7 @@ function ConversationRow({
           )}>
             {thread.from}
           </span>
-          <span className="text-[11px] text-slate-400 shrink-0 tabular-nums">
+          <span className="text-xxs text-slate-400 shrink-0 tabular-nums">
             {formatRelativeDate(thread.latestDate)}
           </span>
         </div>
@@ -193,7 +193,7 @@ function DateSeparator({ date }: { date: string }) {
   return (
     <div className="flex items-center gap-3 px-5 py-3">
       <div className="flex-1 h-px bg-black/[.06] dark:bg-white/[.06]" />
-      <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 shrink-0">
+      <span className="text-xxs font-medium text-slate-400 dark:text-slate-500 shrink-0">
         {formatDateSeparator(date)}
       </span>
       <div className="flex-1 h-px bg-black/[.06] dark:bg-white/[.06]" />
@@ -229,7 +229,7 @@ function ChatBubble({
       <div className={cn('flex flex-col max-w-[72%]', isMine ? 'items-end' : 'items-start')}>
         {/* Sender name — only for received, only when avatar shown */}
         {!isMine && showAvatar && (
-          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1 px-0.5">
+          <span className="text-xxs font-semibold text-slate-500 dark:text-slate-400 mb-1 px-0.5">
             {message.from}
           </span>
         )}
@@ -245,7 +245,7 @@ function ChatBubble({
         >
           {/* Message body — 16px desktop, 15px mobile for readability */}
           <p className={cn(
-            'text-[14px] leading-[1.57] whitespace-pre-wrap break-words max-w-[460px]',
+            'text-sm leading-[1.57] whitespace-pre-wrap break-words max-w-[460px]',
             isMine ? 'text-white/95' : 'text-slate-800 dark:text-slate-200',
           )}>
             {bodyContent}
@@ -337,7 +337,7 @@ function ReplyBox({
           onKeyDown={handleKeyDown}
           placeholder={`Reply to ${thread.from}… (Ctrl+Enter to send)`}
           rows={1}
-          className="flex-1 min-w-0 text-[14px] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 bg-transparent outline-none border-none resize-none leading-[1.55] py-0.5 max-h-[120px]"
+          className="flex-1 min-w-0 text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 bg-transparent outline-none border-none resize-none leading-[1.55] py-0.5 max-h-[120px]"
         />
         <button
           onClick={handleSend}
@@ -361,7 +361,7 @@ function ReplyBox({
         </button>
       </div>
       {error && (
-        <p className="text-[11px] text-red-500 mt-1.5 px-1">{error}</p>
+        <p className="text-xxs text-red-500 mt-1.5 px-1">{error}</p>
       )}
     </div>
   )
@@ -529,7 +529,7 @@ function ChatView({
         )}
         <Avatar name={thread.from} email={thread.fromEmail} size={36} />
         <div className="flex-1 min-w-0">
-          <h2 className="text-[14px] font-semibold text-slate-900 dark:text-white truncate">{thread.from}</h2>
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-white truncate">{thread.from}</h2>
           <p className="text-[11.5px] text-slate-400 dark:text-slate-500 truncate">{thread.subject}</p>
         </div>
         <button
@@ -543,7 +543,7 @@ function ChatView({
               mode: 'reply',
             })
           }
-          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold text-slate-600 dark:text-slate-300 hover:text-primary border border-black/[.08] dark:border-white/[.08] hover:border-primary/40 rounded-lg transition-colors"
+          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-primary border border-black/[.08] dark:border-white/[.08] hover:border-primary/40 rounded-lg transition-colors"
           title="Open full compose for this reply"
         >
           <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -596,12 +596,12 @@ function ConnectBanner({ connectUrl }: { connectUrl: string }) {
   return (
     <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40 rounded-lg px-4 py-3 mx-4 mb-3">
       <div className="min-w-0">
-        <p className="text-[13px] font-semibold text-blue-900 dark:text-blue-300">Connect Google to use Inbox</p>
-        <p className="text-[12px] text-blue-700 dark:text-blue-400 mt-0.5">Shows this month&apos;s team emails where you&apos;re CC&apos;d.</p>
+        <p className="text-ssm font-semibold text-blue-900 dark:text-blue-300">Connect Google to use Inbox</p>
+        <p className="text-xs text-blue-700 dark:text-blue-400 mt-0.5">Shows this month&apos;s team emails where you&apos;re CC&apos;d.</p>
       </div>
       <a
         href={connectUrl}
-        className="ml-4 shrink-0 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-semibold rounded-lg transition-colors"
+        className="ml-4 shrink-0 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors"
       >
         Connect
       </a>
@@ -644,7 +644,7 @@ function ChannelConnectState({ channel }: { channel: Exclude<InboxChannel, 'all'
         </span>
       </div>
       <div className="text-center">
-        <p className="text-[14px] font-semibold text-slate-700 dark:text-slate-200 mb-1">
+        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
           {cfg.label} not connected
         </p>
         <p className="text-[12.5px] text-slate-400 dark:text-slate-500 leading-relaxed max-w-[220px]">
@@ -742,14 +742,14 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
             : 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40',
         )}>
           <p className={cn(
-            'text-[13px] font-medium',
+            'text-ssm font-medium',
             oauthBanner.type === 'success' ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300',
           )}>
             {oauthBanner.message}
           </p>
           <button
             onClick={() => setOauthBanner(null)}
-            className="ml-4 shrink-0 text-[11px] opacity-60 hover:opacity-100 transition-opacity"
+            className="ml-4 shrink-0 text-xxs opacity-60 hover:opacity-100 transition-opacity"
           >
             Dismiss
           </button>
@@ -774,7 +774,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
           <div className="px-4 pt-4 pb-0 shrink-0 border-b border-black/[.05] dark:border-white/[.05]">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h1 className="text-[13px] font-semibold text-slate-900 dark:text-white">Inbox</h1>
+                <h1 className="text-ssm font-semibold text-slate-900 dark:text-white">Inbox</h1>
                 {!isLoading && !needsReconnect && (channelTab === 'all' || channelTab === 'email') && (
                   <p className="text-[10.5px] text-slate-400 mt-0.5 tabular-nums">
                     {threads.length} conversation{threads.length !== 1 ? 's' : ''} this month
@@ -858,7 +858,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
                     key={tab}
                     onClick={() => setFilter(tab)}
                     className={cn(
-                      'px-3 py-1 rounded-full text-[11px] font-semibold capitalize transition-colors',
+                      'px-3 py-1 rounded-full text-xs font-semibold capitalize transition-colors',
                       filter === tab
                         ? 'bg-primary text-white'
                         : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/[.10]',
@@ -890,7 +890,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
                   </svg>
                 </div>
                 <div className="text-center">
-                  <div className="text-[13px] font-semibold text-slate-600 mb-1">
+                  <div className="text-ssm font-semibold text-slate-600 mb-1">
                     {search ? 'No matching conversations' : 'No conversations yet this month'}
                   </div>
                   <div className="text-[11.5px] text-slate-400 leading-relaxed">
@@ -949,7 +949,7 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
                 </svg>
               </div>
               <div className="text-center">
-                <div className="text-[13px] font-semibold text-slate-400 dark:text-slate-500">Select a conversation</div>
+                <div className="text-ssm font-semibold text-slate-400 dark:text-slate-500">Select a conversation</div>
                 <div className="text-[11.5px] text-slate-300 dark:text-slate-600 mt-1">or compose a new message</div>
               </div>
             </div>

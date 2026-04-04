@@ -58,7 +58,7 @@ export function ChatWidget({ onSubmit }: ChatWidgetProps) {
           onKeyDown={handleKeyDown}
           placeholder="Ask about your pipeline, deals, follow-ups..."
           rows={1}
-          className="flex-1 border-none outline-none bg-transparent text-[13px] text-slate-900 dark:text-white leading-[1.5] resize-none overflow-hidden min-h-5 max-h-[120px] focus-visible:ring-0 focus-visible:border-transparent px-0 py-0 rounded-none"
+          className="flex-1 border-none outline-none bg-transparent text-ssm text-slate-900 dark:text-white leading-[1.5] resize-none overflow-hidden min-h-5 max-h-[120px] focus-visible:ring-0 focus-visible:border-transparent px-0 py-0 rounded-none"
         />
 
         {/* Mic */}
@@ -93,7 +93,7 @@ export function ChatWidget({ onSubmit }: ChatWidgetProps) {
           <button
             key={prompt}
             onClick={() => onSubmit(prompt)}
-            className="px-[10px] py-1 rounded-full border border-black/[.06] dark:border-white/[.08] bg-white dark:bg-[#1e1e21] text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:text-slate-900 dark:text-white transition-colors duration-150"
+            className="px-[10px] py-1 rounded-full border border-black/[.06] dark:border-white/[.08] bg-white dark:bg-[#1e1e21] text-xxs font-medium text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:text-slate-900 dark:text-white transition-colors duration-150"
           >
             {prompt}
           </button>

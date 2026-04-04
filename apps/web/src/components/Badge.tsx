@@ -20,7 +20,7 @@ export function Badge({ stageId }: BadgeProps) {
 
   return (
     <span
-      className="inline-block px-2 py-px rounded-full text-[11px] font-semibold leading-[18px] whitespace-nowrap"
+      className="inline-block px-2 py-px rounded-full text-xxs font-semibold leading-[18px] whitespace-nowrap"
       style={{ background: bg, color }}
     >
       {stage.label}

@@ -24,7 +24,7 @@ function Spinner() {
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="w-6 h-6 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-      <p className="text-[12px] text-slate-400">Loading…</p>
+      <p className="text-xs text-slate-400">Loading…</p>
     </div>
   )
 }
@@ -47,7 +47,7 @@ function FunnelRow({
       {/* Stage row */}
       <div className="grid grid-cols-[140px_1fr_72px_28px] items-center gap-3 py-1 px-1 border-b border-black/[.04] dark:border-white/[.05] last:border-0">
         {/* Stage name */}
-        <div className="text-[12px] font-medium text-slate-700 dark:text-slate-300 truncate">
+        <div className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
           {stage.label}
         </div>
 
@@ -63,7 +63,7 @@ function FunnelRow({
               }}
             />
           </div>
-          <span className="text-[12px] font-semibold tabular-nums text-slate-700 dark:text-slate-300 w-[28px] text-right shrink-0">
+          <span className="text-xs font-semibold tabular-nums text-slate-700 dark:text-slate-300 w-[28px] text-right shrink-0">
             {stage.entryCount}
           </span>
         </div>
@@ -72,13 +72,13 @@ function FunnelRow({
         <div className="flex justify-end">
           {stage.conversionRate !== null ? (
             <span
-              className={`inline-flex items-center justify-center text-[11px] font-bold tabular-nums rounded-full px-2 py-0.5 ${conversionBg(stage.conversionRate)}`}
+              className={`inline-flex items-center justify-center text-xxs font-bold tabular-nums rounded-full px-2 py-0.5 ${conversionBg(stage.conversionRate)}`}
               style={{ color: conversionColor(stage.conversionRate) }}
             >
               {stage.conversionRate}%
             </span>
           ) : (
-            <span className="text-[11px] text-slate-300 dark:text-slate-600">—</span>
+            <span className="text-xxs text-slate-300 dark:text-slate-600">—</span>
           )}
         </div>
 
@@ -123,14 +123,14 @@ function FunnelCard({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: stage.color || '#94a3b8' }} />
-          <span className="text-[12px] font-semibold text-slate-800 dark:text-white">{stage.label}</span>
+          <span className="text-xs font-semibold text-slate-800 dark:text-white">{stage.label}</span>
           {stage.isBottleneck && (
             <svg className="w-3.5 h-3.5 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
             </svg>
           )}
         </div>
-        <span className="text-[18px] font-bold tabular-nums text-slate-900 dark:text-white">{stage.entryCount}</span>
+        <span className="text-lg font-bold tabular-nums text-slate-900 dark:text-white">{stage.entryCount}</span>
       </div>
 
       {/* Bar */}
@@ -148,9 +148,9 @@ function FunnelCard({
       {/* Conversion rate */}
       {stage.conversionRate !== null && (
         <div className="flex items-center justify-between">
-          <span className="text-[10px] text-slate-400">Conversion to next stage</span>
+          <span className="text-atom text-slate-400">Conversion to next stage</span>
           <span
-            className={`text-[11px] font-bold tabular-nums rounded-full px-2 py-0.5 ${conversionBg(stage.conversionRate)}`}
+            className={`text-xxs font-bold tabular-nums rounded-full px-2 py-0.5 ${conversionBg(stage.conversionRate)}`}
             style={{ color: conversionColor(stage.conversionRate) }}
           >
             {stage.conversionRate}%
@@ -178,25 +178,25 @@ function TerminalBadges({ wonCount, lostCount }: { wonCount: number; lostCount: 
 
   return (
     <div className="mt-2 pt-2 border-t border-black/[.06] dark:border-white/[.08]">
-      <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Terminal</div>
+      <div className="text-atom font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Terminal</div>
       <div className="flex gap-1.5">
         <div className="flex-1 rounded-md bg-green-50 dark:bg-green-950/30 px-2.5 py-1.5 flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <div className="text-[9px] font-semibold text-green-700 dark:text-green-400 uppercase tracking-wide leading-none">Won</div>
+            <div className="text-atom font-semibold text-green-700 dark:text-green-400 uppercase tracking-wide leading-none">Won</div>
             {winRate !== null && (
-              <div className="text-[9px] text-green-600 dark:text-green-500 mt-0.5 leading-none">{winRate}% win rate</div>
+              <div className="text-atom text-green-600 dark:text-green-500 mt-0.5 leading-none">{winRate}% win rate</div>
             )}
           </div>
-          <div className="text-[16px] font-bold tabular-nums text-green-700 dark:text-green-400 shrink-0">{wonCount}</div>
+          <div className="text-base font-bold tabular-nums text-green-700 dark:text-green-400 shrink-0">{wonCount}</div>
         </div>
         <div className="flex-1 rounded-md bg-red-50 dark:bg-red-950/30 px-2.5 py-1.5 flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <div className="text-[9px] font-semibold text-red-700 dark:text-red-400 uppercase tracking-wide leading-none">Lost</div>
+            <div className="text-atom font-semibold text-red-700 dark:text-red-400 uppercase tracking-wide leading-none">Lost</div>
             {total > 0 && (
-              <div className="text-[9px] text-red-600 dark:text-red-500 mt-0.5 leading-none">{total} total</div>
+              <div className="text-atom text-red-600 dark:text-red-500 mt-0.5 leading-none">{total} total</div>
             )}
           </div>
-          <div className="text-[16px] font-bold tabular-nums text-red-700 dark:text-red-400 shrink-0">{lostCount}</div>
+          <div className="text-base font-bold tabular-nums text-red-700 dark:text-red-400 shrink-0">{lostCount}</div>
         </div>
       </div>
     </div>
@@ -221,9 +221,9 @@ export function StageFunnelChart({ data, isLoading }: StageFunnelChartProps) {
       <CardContent>
         {/* Card header */}
         <div className="flex items-center justify-between mb-4 pb-4 border-b border-black/[.06] dark:border-white/[.08]">
-          <div className="text-[13px] font-semibold text-slate-900 dark:text-white">Stage Conversion Funnel</div>
+          <div className="text-ssm font-semibold text-slate-900 dark:text-white">Stage Conversion Funnel</div>
           {bottleneckCount > 0 && !isLoading && hasData && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-full px-2 py-0.5">
+            <span className="inline-flex items-center gap-1 text-atom font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-full px-2 py-0.5">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
               </svg>
@@ -247,9 +247,9 @@ export function StageFunnelChart({ data, isLoading }: StageFunnelChartProps) {
           <>
             {/* Desktop: column headers (hidden on mobile) */}
             <div className="hidden sm:grid grid-cols-[140px_1fr_72px_28px] gap-3 px-1 mb-1">
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Stage</div>
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Volume</div>
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide text-right">Conv.</div>
+              <div className="text-atom font-semibold text-slate-400 uppercase tracking-wide">Stage</div>
+              <div className="text-atom font-semibold text-slate-400 uppercase tracking-wide">Volume</div>
+              <div className="text-atom font-semibold text-slate-400 uppercase tracking-wide text-right">Conv.</div>
               <div />
             </div>
 

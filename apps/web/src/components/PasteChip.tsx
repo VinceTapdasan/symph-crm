@@ -38,7 +38,7 @@ export function PasteChip({ text, onRemove, onClick }: PasteChipProps) {
           </p>
           {/* PASTED badge — pinned to bottom */}
           <div className="mt-1.5 shrink-0">
-            <span className="text-[9px] font-semibold tracking-[0.12em] uppercase text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-white/[.15] rounded px-1.5 py-0.5">
+            <span className="text-atom font-semibold tracking-[0.12em] uppercase text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-white/[.15] rounded px-1.5 py-0.5">
               PASTED
             </span>
           </div>
@@ -99,8 +99,8 @@ export function PastePreviewModal({ text, onClose }: PastePreviewModalProps) {
             <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
           </svg>
           <div className="flex-1 min-w-0">
-            <div className="text-[14px] font-semibold text-slate-900 dark:text-white">Pasted content</div>
-            <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5">
+            <div className="text-sm font-semibold text-slate-900 dark:text-white">Pasted content</div>
+            <div className="text-xxs text-slate-400 mt-0.5 flex items-center gap-1.5">
               <span>{lineCount} {lineCount === 1 ? 'line' : 'lines'}</span>
               <span>·</span>
               <span>{sizeLabel}</span>

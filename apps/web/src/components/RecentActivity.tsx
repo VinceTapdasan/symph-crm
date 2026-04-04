@@ -36,7 +36,7 @@ export function RecentActivity({ entries }: RecentActivityProps) {
               />
               <div>
                 <div className="text-xs font-medium text-slate-900 dark:text-white leading-[1.4]">{entry.text}</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">{entry.time}</div>
+                <div className="text-atom text-slate-400 mt-0.5">{entry.time}</div>
               </div>
             </div>
           ))}

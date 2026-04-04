@@ -109,7 +109,7 @@ function CardActionsMenu({
           {/* Assign — locked for won/lost deals */}
           {isTerminal ? (
             <div
-              className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] text-slate-400 dark:text-slate-600 cursor-not-allowed select-none"
+              className="flex items-center justify-between w-full px-3 py-1.5 text-xs text-slate-400 dark:text-slate-600 cursor-not-allowed select-none"
               title="Cannot reassign AM — deal is won/lost"
             >
               <span className="flex items-center gap-2">
@@ -124,7 +124,7 @@ function CardActionsMenu({
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowAssign(v => !v); setShowAdvanceTo(false); setShowMoveTo(false) }}
-                className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                className="flex items-center justify-between w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
               >
                 <span className="flex items-center gap-2"><UserIcon size={12} /> Assign</span>
                 <ChevronRight size={11} className={cn('text-slate-400 transition-transform duration-150', showAssign && 'rotate-90')} />
@@ -132,13 +132,13 @@ function CardActionsMenu({
               {showAssign && (
                 <div className="border-t border-black/[.04] dark:border-white/[.06] max-h-[144px] overflow-y-auto">
                   {users.length === 0 ? (
-                    <div className="px-3 py-2 text-[11px] text-slate-400 italic">No team members</div>
+                    <div className="px-3 py-2 text-xxs text-slate-400 italic">No team members</div>
                   ) : (
                     users.map(u => (
                       <button
                         key={u.id}
                         onClick={(e) => { e.stopPropagation(); setOpen(false); setShowAssign(false); onAssign(u.id, u.name || u.email) }}
-                        className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                        className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
                       >
                         <Avatar name={u.name || u.email} src={u.image ?? undefined} size={16} />
                         {u.name || u.email}
@@ -155,7 +155,7 @@ function CardActionsMenu({
             <button
               onClick={(e) => { e.stopPropagation(); onAdvance() }}
               disabled={isAdvancing}
-              className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors disabled:opacity-50"
             >
               {isAdvancing ? <Spinner size={12} /> : <ChevronRight size={12} />}
               {isAdvancing ? 'Advancing…' : 'Advance'}
@@ -167,7 +167,7 @@ function CardActionsMenu({
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowAdvanceTo(v => !v); setShowAssign(false); setShowMoveTo(false) }}
-                className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                className="flex items-center justify-between w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
               >
                 <span className="flex items-center gap-2"><ChevronRight size={12} /> Advance to…</span>
                 <ChevronDown size={11} className={cn('text-slate-400 transition-transform duration-150', showAdvanceTo && 'rotate-180')} />
@@ -178,7 +178,7 @@ function CardActionsMenu({
                     <button
                       key={t.id}
                       onClick={(e) => { e.stopPropagation(); setOpen(false); onAdvanceTo(t.dbStage) }}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
                     >
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />
                       {t.label}
@@ -194,7 +194,7 @@ function CardActionsMenu({
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowMoveTo(v => !v); setShowAssign(false); setShowAdvanceTo(false) }}
-                className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                className="flex items-center justify-between w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
               >
                 <span className="flex items-center gap-2"><ChevronDown size={12} className="rotate-90" /> Move back…</span>
                 <ChevronDown size={11} className={cn('text-slate-400 transition-transform duration-150', showMoveTo && 'rotate-180')} />
@@ -205,7 +205,7 @@ function CardActionsMenu({
                     <button
                       key={t.id}
                       onClick={(e) => { e.stopPropagation(); setOpen(false); onMoveTo(t.dbStage) }}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
                     >
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />
                       {t.label}
@@ -219,7 +219,7 @@ function CardActionsMenu({
           {/* Open deal */}
           <button
             onClick={(e) => { e.stopPropagation(); setOpen(false); onOpen() }}
-            className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+            className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
           >
             <ExternalLink size={12} /> Open deal
           </button>
@@ -228,7 +228,7 @@ function CardActionsMenu({
           {isSales && (
             <button
               onClick={(e) => { e.stopPropagation(); setOpen(false); onDelete() }}
-              className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+              className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
             >
               <Trash2 size={12} /> Delete
             </button>
@@ -295,7 +295,7 @@ function DealCard({
     >
       {/* Brand name + outreach badge + actions */}
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-400 truncate max-w-[120px]">
+        <span className="text-xxs font-semibold uppercase tracking-[0.05em] text-slate-400 truncate max-w-[120px]">
           {brandName}
         </span>
         <div className="flex items-center gap-1">
@@ -315,7 +315,7 @@ function DealCard({
             />
           )}
           <span className={cn(
-            'text-[10px] font-semibold px-2 py-0.5 rounded-full',
+            'text-atom font-semibold px-1.5 py-px rounded-full leading-tight',
             outreach === 'inbound'
               ? 'bg-[rgba(22,163,74,0.1)] text-[#16a34a]'
               : 'bg-slate-100 dark:bg-white/[.06] text-slate-500'
@@ -336,21 +336,21 @@ function DealCard({
           {services.slice(0, 3).map(s => (
             <span
               key={s}
-              className="text-[10px] font-medium px-2 py-0.5 rounded-full dark:brightness-150"
+              className="text-atom font-medium px-2 py-0.5 rounded-full dark:brightness-150"
               style={{ background: `${colColor}18`, color: colColor }}
             >
               {formatServiceType(s)}
             </span>
           ))}
           {services.length > 3 && (
-            <span className="text-[10px] text-slate-400">+{services.length - 3}</span>
+            <span className="text-atom text-slate-400">+{services.length - 3}</span>
           )}
         </div>
       )}
 
       {/* Value + AM + doc indicator */}
       <div className="flex items-center justify-between pt-2 border-t border-black/[.05] dark:border-white/[.08]">
-        <span className="text-[15px] font-bold tabular-nums" style={{ color: colColor }}>
+        <span className="text-sbase font-bold tabular-nums" style={{ color: colColor }}>
           {formatPeso(parseFloat(deal.value || '0') || 0)}
         </span>
         <div className="flex items-center gap-2">
@@ -360,14 +360,14 @@ function DealCard({
               title={`${deal.documentCount} resource${(deal.documentCount ?? 0) !== 1 ? 's' : ''} attached`}
             >
               <Paperclip size={10} className="text-slate-400 shrink-0" />
-              <span className="text-[10px] font-medium text-slate-500 tabular-nums">
+              <span className="text-atom font-medium text-slate-500 tabular-nums">
                 {deal.documentCount}
               </span>
             </div>
           )}
           <div className="flex items-center gap-1">
             <Avatar name={amName} email={resolvedAm?.email ?? undefined} src={resolvedAm?.image ?? undefined} size={20} />
-            <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">{amShortName}</span>
+            <span className="text-xxs font-medium text-slate-600 dark:text-slate-400">{amShortName}</span>
           </div>
         </div>
       </div>
@@ -741,7 +741,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
         {isLoading ? (
           <div className="h-4 w-40 bg-slate-100 dark:bg-white/[.06] rounded animate-pulse" />
         ) : (
-          <span className="text-[13px] font-medium text-slate-900 dark:text-white shrink-0">
+          <span className="text-ssm font-medium text-slate-900 dark:text-white shrink-0">
             {activeDeals.length} active deal{activeDeals.length !== 1 ? 's' : ''}
             {totalValue > 0 && (
               <> &middot; <span className="tabular-nums">{formatPeso(totalValue)}</span></>
@@ -762,7 +762,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search deals…"
-                className="flex-1 bg-transparent text-[12px] text-slate-900 dark:text-white placeholder:text-slate-400 min-w-0 outline-none focus:outline-none"
+                className="flex-1 bg-transparent text-xs text-slate-900 dark:text-white placeholder:text-slate-400 min-w-0 outline-none focus:outline-none"
               />
               <button
                 onClick={() => { setSearchOpen(false); setSearch('') }}
@@ -774,7 +774,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
           ) : (
             <button
               onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 50) }}
-              className="bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.08] rounded-lg px-3 py-[5px] text-[12px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors duration-150 cursor-pointer flex items-center gap-1.5"
+              className="bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.08] rounded-lg px-3 py-[5px] text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors duration-150 cursor-pointer flex items-center gap-1.5"
               title="Search (Ctrl+F)"
             >
               <Search size={12} /> Search
@@ -786,13 +786,13 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
             <>
               <button
                 onClick={() => setShowCreateBrand(true)}
-                className="bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.08] rounded-lg px-3 py-[5px] text-[12px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors flex items-center gap-1.5"
+                className="bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.08] rounded-lg px-3 py-[5px] text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors flex items-center gap-1.5"
               >
                 + New Brand
               </button>
               <button
                 onClick={() => setShowCreateDeal(true)}
-                className="rounded-lg px-3 py-[5px] text-[12px] font-medium text-white transition-colors flex items-center gap-1.5"
+                className="rounded-lg px-3 py-[5px] text-xs font-medium text-white transition-colors flex items-center gap-1.5"
                 style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
               >
                 + New Deal
@@ -805,7 +805,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
             <button
               onClick={() => setAmDropdownOpen(o => !o)}
               className={cn(
-                'bg-white dark:bg-[#1e1e21] border rounded-lg px-3 py-[5px] text-[12px] font-medium hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors duration-150 cursor-pointer flex items-center gap-1.5',
+                'bg-white dark:bg-[#1e1e21] border rounded-lg px-3 py-[5px] text-xs font-medium hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors duration-150 cursor-pointer flex items-center gap-1.5',
                 amFilter
                   ? 'border-primary/30 text-primary'
                   : 'border-black/[.08] dark:border-white/[.08] text-slate-700 dark:text-slate-300'
@@ -819,7 +819,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                 <button
                   onClick={() => { setAmFilter(null); setAmDropdownOpen(false) }}
                   className={cn(
-                    'w-full px-3 py-1.5 text-[12px] text-left hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors',
+                    'w-full px-3 py-1.5 text-xs text-left hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors',
                     !amFilter ? 'font-semibold text-primary' : 'text-slate-700 dark:text-slate-300'
                   )}
                 >
@@ -830,7 +830,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                     key={o.id}
                     onClick={() => { setAmFilter(o.id); setAmDropdownOpen(false) }}
                     className={cn(
-                      'w-full px-3 py-1.5 text-[12px] text-left hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors',
+                      'w-full px-3 py-1.5 text-xs text-left hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors',
                       amFilter === o.id ? 'font-semibold text-primary' : 'text-slate-700 dark:text-slate-300'
                     )}
                   >
@@ -890,16 +890,16 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                     <div className="flex items-center gap-2">
                       <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: col.color }} />
                       <span className="text-[12.5px] font-semibold text-slate-700 dark:text-slate-300 flex-1 leading-none">{col.label}</span>
-                      <span className="bg-white dark:bg-[#1e1e21] border border-black/[.07] dark:border-white/[.08] text-slate-500 text-[11px] font-semibold tabular-nums px-2 py-0.5 rounded-full">
+                      <span className="bg-white dark:bg-[#1e1e21] border border-black/[.07] dark:border-white/[.08] text-slate-500 text-xxs font-semibold tabular-nums px-2 py-0.5 rounded-full">
                         {col.deals.length}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 mt-1 pl-[18px]">
-                      <span className="text-[12px] tabular-nums font-medium" style={{ color: col.total > 0 ? col.color : undefined, opacity: col.total > 0 ? 1 : 0.4 }}>
+                      <span className="text-xs tabular-nums font-medium" style={{ color: col.total > 0 ? col.color : undefined, opacity: col.total > 0 ? 1 : 0.4 }}>
                         {formatPeso(col.total)}
                       </span>
                       {totalValue > 0 && col.total > 0 && !CLOSED_STAGE_IDS.has(col.id) && (
-                        <span className="text-[10px] text-slate-400 tabular-nums">
+                        <span className="text-atom text-slate-400 tabular-nums">
                           ({Math.round((col.total / totalValue) * 100)}%)
                         </span>
                       )}
@@ -909,7 +909,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                   {/* Cards */}
                   <div className="flex flex-col gap-2 p-2.5">
                     {col.deals.length === 0 ? (
-                      <div className="py-8 text-center text-[12px] text-slate-300 dark:text-white/20">
+                      <div className="py-8 text-center text-xs text-slate-300 dark:text-white/20">
                         No deals
                       </div>
                     ) : (
@@ -957,19 +957,19 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
       {deleteConfirmDealId && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="w-full sm:w-[420px] bg-white dark:bg-[#1e1e21] rounded-lg shadow-xl p-4 animate-in slide-in-from-bottom duration-150">
-            <h2 className="text-[14px] font-semibold text-slate-900 dark:text-white mb-1">Delete deal?</h2>
-            <p className="text-[12px] text-slate-600 dark:text-slate-400 mb-4">This action cannot be undone. The deal will be permanently removed from your pipeline.</p>
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Delete deal?</h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">This action cannot be undone. The deal will be permanently removed from your pipeline.</p>
             <div className="flex items-center gap-2 justify-end">
               <button
                 onClick={() => setDeleteConfirmDealId(null)}
-                className="px-3.5 py-1.5 text-[12px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[.06] rounded-lg transition-colors"
+                className="px-3.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[.06] rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={deleteDeal.isPending}
-                className="px-3.5 py-1.5 text-[12px] font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 rounded-lg transition-colors active:scale-[0.98]"
+                className="px-3.5 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 rounded-lg transition-colors active:scale-[0.98]"
               >
                 {deleteDeal.isPending ? 'Deleting…' : 'Delete'}
               </button>
@@ -984,8 +984,8 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
         return (
           <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-150">
             <div className="w-full sm:w-[420px] bg-white dark:bg-[#1e1e21] rounded-lg shadow-xl p-4 animate-in slide-in-from-bottom duration-150">
-              <h2 className="text-[14px] font-semibold text-slate-900 dark:text-white mb-1">Move deal back?</h2>
-              <p className="text-[12px] text-slate-600 dark:text-slate-400 mb-4">
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Move deal back?</h2>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
                 Moving <span className="font-semibold text-slate-900 dark:text-white">{moveConfirm.dealTitle}</span> to{' '}
                 <span className="font-semibold" style={{ color: targetCol?.color }}>
                   {targetCol?.label ?? moveConfirm.targetStage}
@@ -994,14 +994,14 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
               <div className="flex items-center gap-2 justify-end">
                 <button
                   onClick={() => setMoveConfirm(null)}
-                  className="px-3.5 py-1.5 text-[12px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[.06] rounded-lg transition-colors"
+                  className="px-3.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[.06] rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmMove}
                   disabled={patchStage.isPending}
-                  className="px-3.5 py-1.5 text-[12px] font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-60 rounded-lg transition-colors active:scale-[0.98]"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-60 rounded-lg transition-colors active:scale-[0.98]"
                 >
                   {patchStage.isPending ? 'Moving…' : 'Move'}
                 </button>

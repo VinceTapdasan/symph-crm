@@ -26,8 +26,8 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
         onClick={() => {/* TODO: open cmd+k modal */}}
       >
         <Search size={13} strokeWidth={1.4} className="text-slate-400 shrink-0" />
-        <span className="text-[12px] text-slate-400 flex-1">Search or jump to...</span>
-        <kbd className="hidden sm:inline text-[10px] font-medium text-slate-400 bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.08] rounded px-1.5 py-px">
+        <span className="text-xs text-slate-400 flex-1">Search or jump to...</span>
+        <kbd className="hidden sm:inline text-atom font-medium text-slate-400 bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.08] rounded px-1.5 py-px">
           Cmd K
         </kbd>
       </button>

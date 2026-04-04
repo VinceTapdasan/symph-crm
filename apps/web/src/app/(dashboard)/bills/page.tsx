@@ -49,29 +49,29 @@ function BillRow({ deal, companyMap, onClick }: { deal: ApiDeal; companyMap: Map
       onClick={onClick}
       className="border-b border-black/[.04] dark:border-white/[.05] hover:bg-slate-50 dark:hover:bg-white/[.02] cursor-pointer transition-colors"
     >
-      <td className="px-4 py-3 text-[12px] font-medium text-slate-800 dark:text-white">
+      <td className="px-4 py-3 text-xs font-medium text-slate-800 dark:text-white">
         {deal.title}
       </td>
-      <td className="px-4 py-3 text-[12px] text-slate-600 dark:text-slate-400">
+      <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400">
         {deal.companyId ? (companyMap.get(deal.companyId) ?? deal.companyId.slice(0, 8)) : '--'}
       </td>
       <td className="px-4 py-3">
-        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+        <span className="text-atom font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
           {BILLING_TYPE_LABELS[billing.billingType] ?? billing.billingType}
         </span>
       </td>
-      <td className="px-4 py-3 text-[12px] font-medium text-slate-800 dark:text-white tabular-nums text-right">
+      <td className="px-4 py-3 text-xs font-medium text-slate-800 dark:text-white tabular-nums text-right">
         {formatPeso(billing.amount)}
       </td>
-      <td className="px-4 py-3 text-[12px] text-slate-500 tabular-nums text-right">
+      <td className="px-4 py-3 text-xs text-slate-500 tabular-nums text-right">
         {billing.monthlyDerived ? `${formatPeso(billing.monthlyDerived)}/mo` : '--'}
       </td>
-      <td className="px-4 py-3 text-[12px] text-slate-500">
+      <td className="px-4 py-3 text-xs text-slate-500">
         {billing.contractStart || billing.contractEnd
           ? `${formatDate(billing.contractStart)} - ${formatDate(billing.contractEnd)}`
           : '--'}
       </td>
-      <td className="px-4 py-3 text-[12px] text-slate-500">
+      <td className="px-4 py-3 text-xs text-slate-500">
         {billing.billingType === 'milestone' && totalMilestones > 0
           ? (
             <span className="tabular-nums">
@@ -105,8 +105,8 @@ export default function BillsPage() {
     <div className="p-4 md:px-6 pb-6">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 shrink-0">
         <div>
-          <div className="text-[13px] font-semibold text-slate-900 dark:text-white">Bills</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">
+          <div className="text-ssm font-semibold text-slate-900 dark:text-white">Bills</div>
+          <div className="text-xxs text-slate-400 mt-0.5">
             {isLoading ? 'Loading\u2026' : `${wonDeals.length} won deal${wonDeals.length !== 1 ? 's' : ''}`}
           </div>
         </div>
@@ -124,8 +124,8 @@ export default function BillsPage() {
               <path d="M2 10h20" />
               <path d="M6 14h4" />
             </svg>
-            <p className="text-[13px] font-medium text-slate-400">No won deals yet</p>
-            <p className="text-[11px] text-slate-300 dark:text-slate-600 mt-0.5">
+            <p className="text-ssm font-medium text-slate-400">No won deals yet</p>
+            <p className="text-xxs text-slate-300 dark:text-slate-600 mt-0.5">
               Won deals with billing will appear here
             </p>
           </div>
@@ -134,13 +134,13 @@ export default function BillsPage() {
             <table className="w-full min-w-[700px]">
               <thead>
                 <tr className="border-b border-black/[.06] dark:border-white/[.08]">
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Deal</th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Company</th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Type</th>
-                  <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Value</th>
-                  <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Monthly</th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Period</th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Milestones</th>
+                  <th className="px-4 py-2.5 text-left text-xxs font-semibold text-slate-400 uppercase tracking-wider">Deal</th>
+                  <th className="px-4 py-2.5 text-left text-xxs font-semibold text-slate-400 uppercase tracking-wider">Company</th>
+                  <th className="px-4 py-2.5 text-left text-xxs font-semibold text-slate-400 uppercase tracking-wider">Type</th>
+                  <th className="px-4 py-2.5 text-right text-xxs font-semibold text-slate-400 uppercase tracking-wider">Value</th>
+                  <th className="px-4 py-2.5 text-right text-xxs font-semibold text-slate-400 uppercase tracking-wider">Monthly</th>
+                  <th className="px-4 py-2.5 text-left text-xxs font-semibold text-slate-400 uppercase tracking-wider">Period</th>
+                  <th className="px-4 py-2.5 text-left text-xxs font-semibold text-slate-400 uppercase tracking-wider">Milestones</th>
                 </tr>
               </thead>
               <tbody>
