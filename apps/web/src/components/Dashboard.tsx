@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { MetricCard } from './MetricCard'
 import { StageFunnelChart } from './StageFunnelChart'
@@ -9,16 +10,15 @@ import { AMLeaderboard } from './AMLeaderboard'
 import { RecentActivity } from './RecentActivity'
 import {
   MetricCardSkeletonRow,
-  FunnelSkeleton,
   TopDealsSkeleton,
   AMLeaderboardSkeleton,
   RecentActivitySkeleton,
 } from './Skeletons'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { useGetFunnel, useGetUsers } from '@/lib/hooks/queries'
+import { useGetUsers } from '@/lib/hooks/queries'
 import { queryKeys } from '@/lib/query-keys'
-import { formatCurrency, timeAgo } from '@/lib/utils'
+import { formatCurrency, timeAgo, formatDealTitle } from '@/lib/utils'
 import { api } from '@/lib/api'
 import { MONTHS } from '@/lib/constants'
 import type { ApiDeal, PipelineSummary } from '@/lib/types'
@@ -51,9 +51,10 @@ function getYearOptions(): number[] {
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export function Dashboard() {
+  const router = useRouter()
   const now = new Date()
   const [filter, setFilter] = useState<DashboardFilter>({
-    mode: 'lifetime',
+    mode: 'month',
     year: now.getFullYear(),
     month: now.getMonth(),
   })
@@ -73,10 +74,10 @@ export function Dashboard() {
     retry: false,
   })
 
-  const { data: funnelData, isLoading: loadingFunnel } = useGetFunnel({ from, to })
+
 
   const { data: users = [] } = useGetUsers()
-  // Build a map from user ID → display name for AM resolution
+  // Build a map from user ID -> display name for AM resolution
   const userMap = new Map(users.map(u => [u.id, u.name || u.email]))
 
   const isLoading = loadingSummary || loadingDeals
@@ -84,13 +85,11 @@ export function Dashboard() {
 
   const totalPipeline = summary?.totalPipeline ?? 0
   const activeDeals   = summary?.activeDeals ?? 0
-  // Derive win rate from funnel data to match the terminal card calculation (Bug 3).
-  // summary?.winRate can show 100% if the 'closed_lost' stage slug doesn't match
-  // the hardcoded string in getSummary — using funnelData as source of truth instead.
-  const closedTotal   = (funnelData?.wonCount ?? 0) + (funnelData?.lostCount ?? 0)
-  const winRate       = closedTotal > 0
-    ? Math.round(((funnelData?.wonCount ?? 0) / closedTotal) * 100)
-    : summary?.winRate ?? 0
+  // Derive win rate from deals data
+  const wonDeals = deals.filter(d => d.stage === 'closed_won').length
+  const lostDeals = deals.filter(d => d.stage === 'closed_lost').length
+  const closedTotal = wonDeals + lostDeals
+  const winRate = closedTotal > 0 ? Math.round((wonDeals / closedTotal) * 100) : 0
   const avgDealSize   = summary?.avgDealSize ?? 0
 
   const topDeals = [...deals]
@@ -117,16 +116,19 @@ export function Dashboard() {
       image: users.find(u => u.id === key)?.image ?? undefined,
     }))
 
-  // Recent Activity — last-touched deals sorted by lastActivityAt
-  const recentEntries = [...deals]
-    .filter(d => d.lastActivityAt)
-    .sort((a, b) => new Date(b.lastActivityAt!).getTime() - new Date(a.lastActivityAt!).getTime())
-    .slice(0, 5)
-    .map(d => ({
-      color: '#2563eb',
-      text: d.title,
-      time: timeAgo(d.lastActivityAt),
-    }))
+  // Recent Activity — deals with recent activity, clickable to navigate
+  const recentEntries = useMemo(() => {
+    return deals
+      .filter(d => d.lastActivityAt)
+      .sort((a, b) => new Date(b.lastActivityAt!).getTime() - new Date(a.lastActivityAt!).getTime())
+      .slice(0, 5)
+      .map(d => ({
+        color: '#2563eb',
+        text: formatDealTitle(d.title),
+        time: timeAgo(d.lastActivityAt),
+        dealId: d.id,
+      }))
+  }, [deals])
 
   const yearOptions = getYearOptions()
 
@@ -195,7 +197,7 @@ export function Dashboard() {
           <>
             <MetricCard
               label="Total Pipeline"
-              value={totalPipeline > 0 ? formatCurrency(totalPipeline) : 'P0'}
+              value={totalPipeline > 0 ? formatCurrency(totalPipeline) : 'P0.00'}
               trend={totalPipeline > 0 ? `${activeDeals} active deals` : 'No deals yet'}
               trendUp={totalPipeline > 0}
               mono
@@ -215,7 +217,7 @@ export function Dashboard() {
             />
             <MetricCard
               label="Avg Deal Size"
-              value={avgDealSize > 0 ? formatCurrency(avgDealSize) : 'P0'}
+              value={avgDealSize > 0 ? formatCurrency(avgDealSize) : 'P0.00'}
               trend={avgDealSize > 0 ? 'Per deal' : 'No data yet'}
               trendUp={avgDealSize > 0}
               mono
@@ -227,27 +229,21 @@ export function Dashboard() {
       {/* 2-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 items-start">
         <div className="flex flex-col gap-4">
-          {loadingFunnel ? (
-            <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg px-5 py-[18px] shadow-[var(--shadow-card)]">
-              <FunnelSkeleton />
-            </div>
-          ) : (
-            <StageFunnelChart data={funnelData} isLoading={false} />
-          )}
+          <StageFunnelChart deals={deals} isLoading={loadingDeals} onStageClick={(stageId) => router.push(`/pipeline?stage=${stageId}`)} />
           <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg px-5 py-[18px] shadow-[var(--shadow-card)]">
-            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-3.5">Top Deals</div>
+            <div className="text-ssm font-semibold text-slate-900 dark:text-white mb-3.5">Top Deals</div>
             {isLoading ? <TopDealsSkeleton /> : isError ? <p className="text-xs text-slate-400 py-2">No data available</p> : <TopDeals deals={topDeals} />}
           </div>
         </div>
 
         <div className="flex flex-col gap-4">
           <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg px-5 py-[18px] shadow-[var(--shadow-card)]">
-            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-3.5">AM Leaderboard</div>
+            <div className="text-ssm font-semibold text-slate-900 dark:text-white mb-3.5">AM Leaderboard</div>
             {isLoading ? <AMLeaderboardSkeleton /> : isError ? <p className="text-xs text-slate-400 py-2">No data available</p> : <AMLeaderboard entries={amEntries} />}
           </div>
           <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg px-5 py-[18px] shadow-[var(--shadow-card)]">
-            <div className="text-[13px] font-semibold text-slate-900 dark:text-white mb-3.5">Recent Activity</div>
-            {isLoading ? <RecentActivitySkeleton /> : isError ? <p className="text-xs text-slate-400 py-2">No data available</p> : <RecentActivity entries={recentEntries} />}
+            <div className="text-ssm font-semibold text-slate-900 dark:text-white mb-3.5">Recent Activity</div>
+            {isLoading ? <RecentActivitySkeleton /> : isError ? <p className="text-xs text-slate-400 py-2">No data available</p> : <RecentActivity entries={recentEntries} onOpenDeal={(id) => router.push(`/deals/${id}`)} />}
           </div>
         </div>
       </div>

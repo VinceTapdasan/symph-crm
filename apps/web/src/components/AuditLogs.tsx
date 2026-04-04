@@ -5,7 +5,7 @@ import { useGetAuditLogs, useGetUsers } from '@/lib/hooks/queries'
 import { type ColumnDef } from '@tanstack/react-table'
 import { DataTable, SortableHeader } from './ui/data-table'
 import { Avatar } from './Avatar'
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import {
   Select,
   SelectTrigger,
@@ -26,7 +26,7 @@ const columns: ColumnDef<AuditLogEntry>[] = [
     size: 160,
     cell: ({ row }) => (
       <span
-        className="text-[12px] text-slate-600 dark:text-slate-400 tabular-nums"
+        className="text-xs text-slate-600 dark:text-slate-400 tabular-nums"
         title={formatFullDate(row.original.createdAt)}
       >
         {formatFullDate(row.original.createdAt)}
@@ -45,15 +45,15 @@ const columns: ColumnDef<AuditLogEntry>[] = [
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-1.5">
             <span
-              className="inline-flex items-center gap-1 font-medium px-1.5 py-px rounded-full text-[10.5px]"
+              className="inline-flex items-center gap-1 font-medium px-1.5 py-px rounded-full text-xxs"
               style={{ background: cfg.bg, color: cfg.color }}
             >
-              <span className="text-[11px] leading-none">{cfg.icon}</span>
+              <span className="text-xxs leading-none">{cfg.icon}</span>
               {cfg.label}
             </span>
           </div>
           {details && (
-            <span className="text-[11px] text-slate-400 truncate max-w-[200px]">{details}</span>
+            <span className="text-xxs text-slate-400 truncate max-w-[200px]">{details}</span>
           )}
         </div>
       )
@@ -72,9 +72,9 @@ const columns: ColumnDef<AuditLogEntry>[] = [
       const entityLabel = ENTITY_LABEL[entry.entityType] ?? entry.entityType
       return (
         <div className="flex flex-col">
-          <span className="text-[12px] font-medium text-slate-700 dark:text-slate-300">{entityLabel}</span>
+          <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{entityLabel}</span>
           {entry.entityId && (
-            <span className="text-[10.5px] text-slate-400 font-mono">#{entry.entityId.slice(0, 8)}</span>
+            <span className="text-xxs text-slate-400 font-mono">#{entry.entityId.slice(0, 8)}</span>
           )}
         </div>
       )
@@ -92,8 +92,8 @@ const columns: ColumnDef<AuditLogEntry>[] = [
       const entry = row.original
       return (
         <div className="flex items-center gap-2">
-          <Avatar name={entry.performerName || 'System'} size={24} />
-          <span className="text-[12px] font-medium text-slate-700 dark:text-slate-300 truncate">
+          <Avatar name={entry.performerName || 'System'} src={entry.performerImage ?? undefined} size={24} />
+          <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
             {entry.performerName || 'System'}
           </span>
         </div>
@@ -106,9 +106,9 @@ const columns: ColumnDef<AuditLogEntry>[] = [
     size: 80,
     cell: ({ row }) => {
       const source = row.original.source
-      if (!source) return <span className="text-[11px] text-slate-300 dark:text-white/20">—</span>
+      if (!source) return <span className="text-xxs text-slate-300 dark:text-white/20">—</span>
       return (
-        <span className="inline-block px-1.5 py-px rounded text-[10.5px] font-medium bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+        <span className="inline-block px-1.5 py-px rounded text-xxs font-medium bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400 uppercase tracking-wide">
           {source}
         </span>
       )
@@ -159,23 +159,31 @@ export function AuditLogs() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 shrink-0">
         <div>
-          <div className="text-[13px] font-semibold text-slate-900 dark:text-white">Audit Log</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">
+          <div className="text-ssm font-semibold text-slate-900 dark:text-white">Audit Log</div>
+          <div className="text-xxs text-slate-400 mt-0.5">
             {isLoading ? 'Loading...' : `${total} event${total !== 1 ? 's' : ''}`}
           </div>
         </div>
 
         <div className="sm:ml-auto flex flex-wrap gap-2 items-center">
           {/* Search */}
-          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-white/[.03] border border-black/[.06] dark:border-white/[.08] rounded-lg px-2.5 py-[5px] flex-1 sm:flex-none sm:w-[200px] min-w-[140px]">
-            <Search size={13} className="text-slate-400 shrink-0" />
+          <div className="relative flex-1 sm:flex-none sm:w-[200px] min-w-[140px]">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search logs..."
-              className="flex-1 bg-transparent outline-none text-[12px] text-slate-900 dark:text-white placeholder:text-slate-400 min-w-0"
+              className="w-full bg-slate-50 dark:bg-white/[.03] border border-black/[.06] dark:border-white/[.08] rounded-lg pl-8 pr-7 py-[5px] text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none"
             />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+              >
+                <X size={12} />
+              </button>
+            )}
           </div>
 
           {/* Entity type filter */}
@@ -183,7 +191,7 @@ export function AuditLogs() {
             value={entityFilter}
             onValueChange={v => { setEntityFilter(v); resetPage() }}
           >
-            <SelectTrigger size="sm" className="w-[130px] text-[12px]">
+            <SelectTrigger size="sm" className="w-[130px] text-xs">
               <SelectValue placeholder="All entities" />
             </SelectTrigger>
             <SelectContent>
@@ -199,7 +207,7 @@ export function AuditLogs() {
             value={actionFilter}
             onValueChange={v => { setActionFilter(v); resetPage() }}
           >
-            <SelectTrigger size="sm" className="w-[120px] text-[12px]">
+            <SelectTrigger size="sm" className="w-[120px] text-xs">
               <SelectValue placeholder="All actions" />
             </SelectTrigger>
             <SelectContent>
@@ -215,7 +223,7 @@ export function AuditLogs() {
             value={userFilter}
             onValueChange={v => { setUserFilter(v); resetPage() }}
           >
-            <SelectTrigger size="sm" className="w-[140px] text-[12px]">
+            <SelectTrigger size="sm" className="w-[140px] text-xs">
               <SelectValue placeholder="All users" />
             </SelectTrigger>
             <SelectContent>
@@ -252,7 +260,7 @@ export function AuditLogs() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-3 shrink-0">
-          <span className="text-[11px] text-slate-400">
+          <span className="text-xxs text-slate-400">
             Page {page + 1} of {totalPages} ({total} total)
           </span>
           <div className="flex gap-1">

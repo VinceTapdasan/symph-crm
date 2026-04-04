@@ -113,12 +113,17 @@ export function useUpdateDeal(
   })
 }
 
+// No static toast — callers provide deal-specific toast with stage transition info
 export function usePatchDealStage(
   options?: UseMutationOptions<unknown, Error, { id: string; stage: string }>,
 ) {
   return useMutation({
     mutationFn: ({ id, stage }) => api.patch(`/deals/${id}/stage`, { stage }),
-    ...withToast('Stage updated', options),
+    ...options,
+    onError: (error: Error, vars: { id: string; stage: string }, ctx: unknown) => {
+      toast.error(error.message || 'Stage update failed')
+      ;(options?.onError as (e: Error, v: { id: string; stage: string }, c: unknown) => void)?.(error, vars, ctx)
+    },
   })
 }
 
@@ -248,6 +253,15 @@ export function useUpdateMilestone(
     mutationFn: ({ dealId, milestoneId, data }) =>
       api.put<ApiBillingMilestone>(`/deals/${dealId}/billing/milestones/${milestoneId}`, data),
     ...withToast('Milestone updated', options),
+  })
+}
+
+export function useDeleteBilling(
+  options?: UseMutationOptions<void, Error, string>,
+) {
+  return useMutation<void, Error, string>({
+    mutationFn: (dealId: string) => api.delete<void>(`/deals/${dealId}/billing`),
+    ...withToast('Billing deleted', options),
   })
 }
 
@@ -411,6 +425,15 @@ export function useCreateChatSession(
 ) {
   return useMutation<ApiChatSessionResult, Error, CreateChatSessionInput>({
     mutationFn: (input) => api.post<ApiChatSessionResult>('/chat/sessions', input),
+    ...options,
+  })
+}
+
+export function useDeleteChatSession(
+  options?: UseMutationOptions<void, Error, string>,
+) {
+  return useMutation<void, Error, string>({
+    mutationFn: (sessionId) => api.delete(`/chat/sessions/${sessionId}`),
     ...options,
   })
 }

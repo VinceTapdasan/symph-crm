@@ -92,9 +92,9 @@ export function CommandPalette() {
             onChange={e => { setQuery(e.target.value); setSelectedIndex(0) }}
             onKeyDown={handleInputKeyDown}
             placeholder="Search or jump to..."
-            className="flex-1 bg-transparent border-none outline-none text-[14px] text-slate-900 dark:text-white placeholder:text-slate-400"
+            className="flex-1 bg-transparent border-none outline-none text-sm text-slate-900 dark:text-white placeholder:text-slate-400"
           />
-          <kbd className="text-[10px] font-medium text-slate-400 bg-slate-100 dark:bg-white/[.06] border border-black/[.06] dark:border-white/[.08] rounded px-1.5 py-0.5">
+          <kbd className="text-atom font-medium text-slate-400 bg-slate-100 dark:bg-white/[.06] border border-black/[.06] dark:border-white/[.08] rounded px-1.5 py-0.5">
             Esc
           </kbd>
         </div>
@@ -102,7 +102,7 @@ export function CommandPalette() {
         {/* Results */}
         <div className="max-h-[300px] overflow-y-auto py-1.5">
           {filtered.length === 0 ? (
-            <div className="px-4 py-6 text-center text-[13px] text-slate-400">
+            <div className="px-4 py-6 text-center text-ssm text-slate-400">
               No results for &quot;{query}&quot;
             </div>
           ) : (
@@ -112,14 +112,14 @@ export function CommandPalette() {
                 onClick={() => navigate(item.path)}
                 onMouseEnter={() => setSelectedIndex(i)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-2 text-left text-[13px] transition-colors',
+                  'w-full flex items-center gap-3 px-4 py-2 text-left text-ssm transition-colors',
                   i === selectedIndex
                     ? 'bg-slate-100 dark:bg-white/[.06] text-slate-900 dark:text-white'
                     : 'text-slate-600 dark:text-slate-400'
                 )}
               >
                 <span className="flex-1 font-medium">{item.label}</span>
-                <span className="text-[10px] text-slate-400">{item.section}</span>
+                <span className="text-atom text-slate-400">{item.section}</span>
               </button>
             ))
           )}

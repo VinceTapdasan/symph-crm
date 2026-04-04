@@ -100,10 +100,10 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
 
           {/* Title + meta */}
           <div className="flex-1 min-w-0 max-w-[calc(100%-200px)] md:max-w-none">
-            <div className="text-[14px] font-semibold text-slate-900 dark:text-white truncate" title={doc.title}>
+            <div className="text-sm font-semibold text-slate-900 dark:text-white truncate" title={doc.title}>
               {doc.title}
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5 overflow-hidden whitespace-nowrap">
+            <div className="text-xxs text-slate-400 mt-0.5 flex items-center gap-1.5 overflow-hidden whitespace-nowrap">
               {/* Clean breadcrumb — just category / filename, not the full UUID path */}
               {doc.storagePath && (() => {
                 const parts = doc.storagePath.replace(/^\//, '').split('/').filter(Boolean)
@@ -131,7 +131,7 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
             <div className="flex items-center bg-slate-100 dark:bg-white/[.06] rounded-lg p-0.5 gap-0.5 shrink-0">
               <button
                 onClick={() => setViewMode('rendered')}
-                className={`h-[26px] px-3 rounded-md text-[11px] font-medium transition-all ${
+                className={`h-[26px] px-3 rounded-md text-xxs font-medium transition-all ${
                   viewMode === 'rendered'
                     ? 'bg-white dark:bg-[#1e1e21] text-slate-900 dark:text-white shadow-sm'
                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'
@@ -141,7 +141,7 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
               </button>
               <button
                 onClick={() => setViewMode('raw')}
-                className={`h-[26px] px-3 rounded-md text-[11px] font-medium transition-all ${
+                className={`h-[26px] px-3 rounded-md text-xxs font-medium transition-all ${
                   viewMode === 'raw'
                     ? 'bg-white dark:bg-[#1e1e21] text-slate-900 dark:text-white shadow-sm'
                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'
@@ -156,7 +156,7 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
           {onDownload && (
             <button
               onClick={() => onDownload(doc)}
-              className="h-7 px-2.5 rounded-lg flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors shrink-0"
+              className="h-7 px-2.5 rounded-lg flex items-center gap-1.5 text-xxs font-semibold text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors shrink-0"
               title="Download"
             >
               <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -172,7 +172,7 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
           {onDelete && (
             <button
               onClick={() => onDelete(doc)}
-              className="h-7 px-2.5 rounded-lg flex items-center gap-1.5 text-[11px] font-semibold text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/15 transition-colors shrink-0"
+              className="h-7 px-2.5 rounded-lg flex items-center gap-1.5 text-xxs font-semibold text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/15 transition-colors shrink-0"
               title="Delete"
             >
               <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -209,8 +209,8 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
                 <circle cx="6" cy="18" r="3" />
                 <circle cx="18" cy="16" r="3" />
               </svg>
-              <p className="text-[12px] text-center">Audio playback requires Supabase Storage</p>
-              <p className="text-[10px] text-slate-300 dark:text-slate-600 text-center">
+              <p className="text-xs text-center">Audio playback requires Supabase Storage</p>
+              <p className="text-atom text-slate-300 dark:text-slate-600 text-center">
                 Add SUPABASE_SERVICE_ROLE_KEY to enable audio playback
               </p>
             </div>
@@ -222,8 +222,8 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
                 <circle cx="8.5" cy="8.5" r="1.5" />
                 <polyline points="21 15 16 10 5 21" />
               </svg>
-              <p className="text-[12px] text-center">Image preview requires Supabase Storage</p>
-              <p className="text-[10px] text-slate-300 dark:text-slate-600 text-center">
+              <p className="text-xs text-center">Image preview requires Supabase Storage</p>
+              <p className="text-atom text-slate-300 dark:text-slate-600 text-center">
                 Add SUPABASE_SERVICE_ROLE_KEY to enable inline previews
               </p>
             </div>
@@ -236,13 +236,13 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
               </svg>
               {doc.excerpt ? (
                 <div className="text-center max-w-[480px]">
-                  <p className="text-[12px] text-slate-500 dark:text-slate-400 font-medium mb-1">Preview (excerpt)</p>
-                  <p className="text-[12px] text-slate-400 leading-relaxed">{doc.excerpt}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">Preview (excerpt)</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">{doc.excerpt}</p>
                 </div>
               ) : (
                 <>
-                  <p className="text-[12px]">Content not available</p>
-                  <p className="text-[10px] text-slate-300 dark:text-slate-600">Enable Supabase Storage to view full content</p>
+                  <p className="text-xs">Content not available</p>
+                  <p className="text-atom text-slate-300 dark:text-slate-600">Enable Supabase Storage to view full content</p>
                 </>
               )}
             </div>
@@ -259,24 +259,24 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
               prose-h1:text-[1.9rem] prose-h1:leading-tight prose-h1:mb-3 prose-h1:mt-0
               prose-h2:text-[1.3rem] prose-h2:leading-snug prose-h2:mt-8 prose-h2:mb-3
               prose-h3:text-[1.05rem] prose-h3:mt-6 prose-h3:mb-2
-              prose-p:text-[15px] prose-p:leading-[1.75] prose-p:my-3
+              prose-p:text-sbase prose-p:leading-[1.75] prose-p:my-3
               prose-strong:font-semibold
               prose-a:text-primary prose-a:no-underline hover:prose-a:underline
               prose-hr:my-8 prose-hr:border-0 prose-hr:h-px prose-hr:bg-gradient-to-r prose-hr:from-transparent prose-hr:via-primary/30 prose-hr:to-transparent
-              prose-ul:my-3 prose-ul:pl-5 prose-li:my-1 prose-li:text-[15px] prose-li:leading-[1.7]
+              prose-ul:my-3 prose-ul:pl-5 prose-li:my-1 prose-li:text-sbase prose-li:leading-[1.7]
               prose-ol:my-3 prose-ol:pl-5
               prose-blockquote:border-l-[3px] prose-blockquote:border-primary/50
               prose-blockquote:pl-4 prose-blockquote:py-0 prose-blockquote:my-3
               prose-blockquote:not-italic prose-blockquote:text-slate-600 dark:prose-blockquote:text-slate-400
               prose-blockquote:bg-primary/[.03] dark:prose-blockquote:bg-primary/[.06] prose-blockquote:rounded-r prose-blockquote:font-normal
-              prose-code:text-[13px] prose-code:font-mono prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
+              prose-code:text-ssm prose-code:font-mono prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
               prose-code:bg-black/[.06] dark:prose-code:bg-white/[.08]
               prose-code:text-slate-800 dark:prose-code:text-slate-200
               prose-code:before:content-none prose-code:after:content-none
-              prose-pre:rounded-lg prose-pre:text-[13px]
+              prose-pre:rounded-lg prose-pre:text-ssm
               prose-pre:bg-black/[.04] dark:prose-pre:bg-white/[.05]
               prose-pre:border prose-pre:border-black/[.07] dark:prose-pre:border-white/[.08]
-              prose-table:text-[14px]
+              prose-table:text-sm
               prose-th:font-semibold prose-th:border-b prose-th:border-black/10 dark:prose-th:border-white/10
               prose-td:border-b prose-td:border-black/[.05] dark:prose-td:border-white/[.05]">
               <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
@@ -285,7 +285,7 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
             </div>
           ) : (
             /* Raw / plain text — mono font, whitespace preserved */
-            <pre className="px-8 py-7 text-[13px] font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed overflow-x-auto">
+            <pre className="px-8 py-7 text-ssm font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed overflow-x-auto">
               {content}
             </pre>
           )}

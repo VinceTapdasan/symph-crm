@@ -88,14 +88,14 @@ function AddressInput({
       className="flex items-start gap-1.5 px-3.5 py-2.5 border-b border-black/[.06] dark:border-white/[.06] cursor-text"
       onClick={() => inputRef.current?.focus()}
     >
-      <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mt-[3px] shrink-0 w-6">
+      <span className="text-xxs font-semibold text-slate-400 uppercase tracking-wider mt-[3px] shrink-0 w-6">
         {label}
       </span>
       <div className="flex-1 flex flex-wrap gap-1 min-w-0">
         {addresses.map((addr, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/[0.08] text-primary text-[11.5px] font-medium max-w-[200px]"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/[0.08] text-primary text-xs font-medium max-w-[200px]"
           >
             <span className="truncate">{parseDisplayName(addr)}</span>
             <button
@@ -120,7 +120,7 @@ function AddressInput({
           onBlur={() => commit(value)}
           onPaste={handlePaste}
           placeholder={addresses.length === 0 ? placeholder : ''}
-          className="flex-1 min-w-[120px] text-[12.5px] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 bg-transparent outline-none border-none py-0.5"
+          className="flex-1 min-w-[120px] text-ssm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 bg-transparent outline-none border-none py-0.5"
         />
       </div>
     </div>
@@ -210,7 +210,7 @@ export function ComposeWindow({
     >
       {/* Title bar */}
       <div className="flex items-center justify-between px-4 py-3 bg-slate-900 shrink-0 cursor-default select-none rounded-t-lg sm:rounded-t-lg">
-        <span className="text-[12.5px] font-semibold text-white">
+        <span className="text-ssm font-semibold text-white">
           {mode === 'reply' ? 'Reply' : 'New Message'}
         </span>
         <div className="flex items-center gap-1.5">
@@ -261,7 +261,7 @@ export function ComposeWindow({
               value={subject}
               onChange={e => setSubject(e.target.value)}
               placeholder="Subject"
-              className="w-full py-2.5 text-[12.5px] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 bg-transparent outline-none border-none"
+              className="w-full py-2.5 text-ssm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 bg-transparent outline-none border-none"
             />
           </div>
 
@@ -272,7 +272,7 @@ export function ComposeWindow({
             onChange={e => setBody(e.target.value)}
             placeholder="Write your message…"
             rows={8}
-            className="flex-1 min-h-[160px] px-3.5 py-3 text-[12.5px] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 bg-card outline-none border-none resize-none leading-relaxed"
+            className="flex-1 min-h-[160px] px-3.5 py-3 text-ssm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 bg-card outline-none border-none resize-none leading-relaxed"
           />
 
           {/* Footer */}
@@ -281,7 +281,7 @@ export function ComposeWindow({
               <button
                 onClick={handleSend}
                 disabled={sendMutation.isPending}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-[12px] font-semibold rounded-lg transition-colors active:scale-[0.98]"
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors active:scale-[0.98]"
               >
                 {sendMutation.isPending ? (
                   <>
@@ -298,7 +298,7 @@ export function ComposeWindow({
                   </>
                 )}
               </button>
-              <span className="text-[10.5px] text-slate-400 dark:text-slate-500">Ctrl+Enter to send</span>
+              <span className="text-xxs text-slate-400 dark:text-slate-500">Ctrl+Enter to send</span>
             </div>
             <button
               onClick={onClose}
@@ -316,7 +316,7 @@ export function ComposeWindow({
           {/* Error */}
           {sendError && (
             <div className="px-3.5 py-2 bg-red-50 dark:bg-red-950/30 border-t border-red-100 dark:border-red-900/40">
-              <p className="text-[11px] text-red-600 dark:text-red-400">{sendError}</p>
+              <p className="text-xxs text-red-600 dark:text-red-400">{sendError}</p>
             </div>
           )}
         </>

@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Param,
   Body,
   Query,
@@ -165,5 +166,10 @@ export class ChatController {
     @Body() body: { userId: string; userMessage: string; assistantMessage: string },
   ) {
     return this.chatService.saveMessages(sessionId, body.userId, body.userMessage, body.assistantMessage)
+  }
+
+  @Delete('sessions/:sessionId')
+  deleteSession(@Param('sessionId') sessionId: string) {
+    return this.chatService.deleteSession(sessionId)
   }
 }

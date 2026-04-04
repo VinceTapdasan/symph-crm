@@ -55,12 +55,12 @@ function eventTextClass(ev: ApiCalendarEvent): string {
 function TimePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-9 text-[12.5px]">
+      <SelectTrigger className="h-9 text-ssm">
         <SelectValue placeholder="Select time" />
       </SelectTrigger>
       <SelectContent className="max-h-[200px]">
         {TIME_SLOTS.map(slot => (
-          <SelectItem key={slot.value} value={slot.value} className="text-[12.5px]">
+          <SelectItem key={slot.value} value={slot.value} className="text-ssm">
             {slot.label}
           </SelectItem>
         ))}
@@ -95,11 +95,11 @@ function EventDetailPanel({
         <div className={cn('px-4 py-3 flex items-center justify-between', EVENT_TYPE_BADGE[event.eventType] ?? EVENT_TYPE_BADGE.general)}>
           <div className="flex items-center gap-2">
             <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', EVENT_TYPE_COLORS[event.eventType] ?? 'bg-slate-400')} />
-            <span className="text-[11px] font-semibold capitalize">
+            <span className="text-xxs font-semibold capitalize">
               {event.eventType.replace('_', ' ')}
             </span>
             {event.isOwner === false && (
-              <span className="text-[10px] opacity-60 font-normal">(invited)</span>
+              <span className="text-atom opacity-60 font-normal">(invited)</span>
             )}
           </div>
           <button
@@ -112,11 +112,11 @@ function EventDetailPanel({
 
         {/* Body */}
         <div className="px-4 py-4 space-y-3 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 120px)' }}>
-          <h2 className="text-[15px] font-semibold text-slate-900 dark:text-white leading-snug">
+          <h2 className="text-sbase font-semibold text-slate-900 dark:text-white leading-snug">
             {event.title}
           </h2>
 
-          <div className="flex items-start gap-2.5 text-[12.5px] text-slate-600 dark:text-slate-400">
+          <div className="flex items-start gap-2.5 text-ssm text-slate-600 dark:text-slate-400">
             <Clock size={14} className="shrink-0 mt-0.5" />
             <span>
               {new Date(event.startAt).toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' })}
@@ -126,14 +126,14 @@ function EventDetailPanel({
           </div>
 
           {event.location && (
-            <div className="flex items-start gap-2.5 text-[12.5px] text-slate-600 dark:text-slate-400">
+            <div className="flex items-start gap-2.5 text-ssm text-slate-600 dark:text-slate-400">
               <MapPin size={14} className="shrink-0 mt-0.5" />
               <span>{event.location}</span>
             </div>
           )}
 
           {event.attendeeEmails.length > 0 && (
-            <div className="flex items-start gap-2.5 text-[12.5px] text-slate-600 dark:text-slate-400">
+            <div className="flex items-start gap-2.5 text-ssm text-slate-600 dark:text-slate-400">
               <Users size={14} className="shrink-0 mt-0.5" />
               <div className="space-y-0.5 max-h-[200px] overflow-y-auto">
                 {event.attendeeEmails.map(email => (
@@ -144,7 +144,7 @@ function EventDetailPanel({
           )}
 
           {event.description && (
-            <div className="text-[12px] text-slate-500 dark:text-slate-400 leading-relaxed whitespace-pre-wrap border-t border-black/[.06] dark:border-white/[.06] pt-3">
+            <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed whitespace-pre-wrap border-t border-black/[.06] dark:border-white/[.06] pt-3">
               {event.description}
             </div>
           )}
@@ -154,7 +154,7 @@ function EventDetailPanel({
           <div className="px-4 py-3 border-t border-black/[.06] dark:border-white/[.06]">
             <button
               onClick={() => { onOpenDeal(event.dealId!); onClose() }}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-[12.5px] font-medium text-primary hover:bg-primary/[.06] rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-ssm font-medium text-primary hover:bg-primary/[.06] rounded-lg transition-colors"
             >
               Open deal
             </button>
@@ -213,7 +213,7 @@ function CreateEventModal({
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-[15px] font-semibold text-slate-900 dark:text-white">New Event</h2>
+          <h2 className="text-sbase font-semibold text-slate-900 dark:text-white">New Event</h2>
           <button
             onClick={onClose}
             className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[.08] transition-colors"
@@ -224,9 +224,9 @@ function CreateEventModal({
 
         <div className="space-y-3">
           <div>
-            <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">Title *</label>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Title *</label>
             <Input
-              className="h-9 text-[13px]"
+              className="h-9 text-ssm"
               value={form.title}
               onChange={e => set('title', e.target.value)}
               placeholder="e.g. Discovery call with Jollibee"
@@ -235,56 +235,56 @@ function CreateEventModal({
           </div>
 
           <div>
-            <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">Type</label>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Type</label>
             <Select value={form.eventType} onValueChange={v => set('eventType', v as CreateEventForm['eventType'])}>
-              <SelectTrigger className="h-9 text-[12.5px]">
+              <SelectTrigger className="h-9 text-ssm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="general" className="text-[12.5px]">General</SelectItem>
-                <SelectItem value="demo" className="text-[12.5px]">Demo</SelectItem>
-                <SelectItem value="discovery_call" className="text-[12.5px]">Discovery Call</SelectItem>
-                <SelectItem value="followup" className="text-[12.5px]">Follow-up</SelectItem>
+                <SelectItem value="general" className="text-ssm">General</SelectItem>
+                <SelectItem value="demo" className="text-ssm">Demo</SelectItem>
+                <SelectItem value="discovery_call" className="text-ssm">Discovery Call</SelectItem>
+                <SelectItem value="followup" className="text-ssm">Follow-up</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">Start date *</label>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Start date *</label>
               <Input
                 type="date"
-                className="h-9 text-[12.5px]"
+                className="h-9 text-ssm"
                 value={form.startDate}
                 onChange={e => { set('startDate', e.target.value); if (!form.endDate || form.endDate < e.target.value) set('endDate', e.target.value) }}
               />
             </div>
             <div>
-              <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">Start time *</label>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Start time *</label>
               <TimePicker value={form.startTime} onChange={v => set('startTime', v)} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">End date *</label>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">End date *</label>
               <Input
                 type="date"
-                className="h-9 text-[12.5px]"
+                className="h-9 text-ssm"
                 value={form.endDate}
                 onChange={e => set('endDate', e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">End time *</label>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">End time *</label>
               <TimePicker value={form.endTime} onChange={v => set('endTime', v)} />
             </div>
           </div>
 
           <div>
-            <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">Location</label>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Location</label>
             <Input
-              className="h-9 text-[12.5px]"
+              className="h-9 text-ssm"
               value={form.location}
               onChange={e => set('location', e.target.value)}
               placeholder="Google Meet, Zoom, office address..."
@@ -292,30 +292,30 @@ function CreateEventModal({
           </div>
 
           <div>
-            <label className="block text-[11.5px] font-medium text-slate-500 dark:text-slate-400 mb-1">Description</label>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Description</label>
             <Textarea
-              className="text-[12.5px] min-h-[72px] resize-none"
+              className="text-ssm min-h-[72px] resize-none"
               value={form.description}
               onChange={e => set('description', e.target.value)}
               placeholder="Agenda, notes..."
             />
           </div>
 
-          {error && <p className="text-[12px] text-red-500">{error}</p>}
+          {error && <p className="text-xs text-red-500">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-1">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-[12.5px] rounded-lg border border-black/[.06] dark:border-white/[.08] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+              className="px-4 py-2 text-ssm rounded-lg border border-black/[.06] dark:border-white/[.08] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={() => mutation.mutate(form)}
               disabled={!canSubmit || mutation.isPending}
-              className="px-4 py-2 text-[12.5px] rounded-lg bg-primary text-white font-semibold disabled:opacity-40 hover:bg-primary/90 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 text-ssm rounded-lg bg-primary text-white font-semibold disabled:opacity-40 hover:bg-primary/90 transition-colors"
             >
-              {mutation.isPending ? 'Creating…' : 'Create Event'}
+              <>{mutation.isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Create Event</>
             </button>
           </div>
         </div>
@@ -413,11 +413,11 @@ function WeekView({
           const isToday = key === today
           return (
             <div key={key} className="py-2 text-center">
-              <div className="text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide">
+              <div className="text-atom font-semibold text-slate-400 uppercase tracking-wide">
                 {DAYS[d.getDay()]}
               </div>
               <div className={cn(
-                'text-[15px] font-bold mx-auto w-7 h-7 flex items-center justify-center rounded-full mt-0.5 transition-colors',
+                'text-sbase font-bold mx-auto w-7 h-7 flex items-center justify-center rounded-full mt-0.5 transition-colors',
                 isToday ? 'bg-primary text-white' : 'text-slate-700 dark:text-slate-300',
               )}>
                 {d.getDate()}
@@ -437,7 +437,7 @@ function WeekView({
           <div>
             {HOURS.map(h => (
               <div key={h} className="relative border-t border-black/[.04] dark:border-white/[.04]" style={{ height: HOUR_PX }}>
-                <span className="absolute -top-2 right-2 text-[9.5px] text-slate-400 tabular-nums select-none">
+                <span className="absolute -top-2 right-2 text-atom text-slate-400 tabular-nums select-none">
                   {h === 12 ? '12 PM' : h > 12 ? `${h - 12} PM` : `${h} AM`}
                 </span>
               </div>
@@ -519,8 +519,8 @@ function WeekView({
                     onClick={e => { e.stopPropagation(); onEventClick(ev) }}
                     title={`${ev.title} · ${formatTime(ev.startAt)}`}
                   >
-                    <div className="text-[10.5px] font-semibold truncate leading-tight">{ev.title}</div>
-                    <div className="text-[10px] opacity-80 truncate">{formatTime(ev.startAt)}</div>
+                    <div className="text-xxs font-semibold truncate leading-tight">{ev.title}</div>
+                    <div className="text-atom opacity-80 truncate">{formatTime(ev.startAt)}</div>
                   </div>
                 ))}
               </div>
@@ -676,7 +676,7 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
         {/* OAuth result banner */}
         {oauthBanner && (
           <div className={cn(
-            'flex items-center justify-between rounded-lg px-4 py-3 border text-[13px]',
+            'flex items-center justify-between rounded-lg px-4 py-3 border text-ssm',
             oauthBanner.type === 'success'
               ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800/40 text-green-800 dark:text-green-300'
               : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/40 text-red-800 dark:text-red-300',
@@ -686,7 +686,7 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
             </span>
             <button
               onClick={() => setOauthBanner(null)}
-              className="ml-4 shrink-0 text-[11px] opacity-60 hover:opacity-100 transition-opacity"
+              className="ml-4 shrink-0 text-xxs opacity-60 hover:opacity-100 transition-opacity"
             >
               Dismiss
             </button>
@@ -697,12 +697,12 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
         {status && !status.connected && (
           <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40 rounded-lg px-4 py-3">
             <div>
-              <p className="text-[13px] font-semibold text-blue-900 dark:text-blue-300">Connect Google Calendar</p>
-              <p className="text-[12px] text-blue-700 dark:text-blue-400 mt-0.5">Sync your events and schedule demos directly from the CRM.</p>
+              <p className="text-ssm font-semibold text-blue-900 dark:text-blue-300">Connect Google Calendar</p>
+              <p className="text-xs text-blue-700 dark:text-blue-400 mt-0.5">Sync your events and schedule demos directly from the CRM.</p>
             </div>
             <a
               href={`${API_BASE}/auth/google-calendar/connect?userId=${encodeURIComponent(userId ?? '')}&returnTo=%2Fcalendar`}
-              className="ml-4 shrink-0 px-4 py-2 bg-blue-600 text-white text-[12.5px] font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="ml-4 shrink-0 px-4 py-2 bg-blue-600 text-white text-ssm font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
               Connect
             </a>
@@ -711,7 +711,7 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
 
         {/* Connection status pill */}
         {status?.connected && (
-          <div className="flex items-center gap-2 text-[12px] text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
             Connected as <span className="font-medium text-slate-700 dark:text-slate-300 ml-1">{status.googleEmail}</span>
             {status.lastSyncedAt && (
@@ -738,7 +738,7 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
 
           {/* Nav header */}
           <div className="shrink-0 flex items-center gap-2 mb-3 flex-wrap">
-            <div className="text-[15px] font-bold text-slate-900 dark:text-white tracking-tight truncate">
+            <div className="text-sbase font-bold text-slate-900 dark:text-white tracking-tight truncate">
               {headerTitle}
             </div>
             <div className="ml-auto flex items-center gap-1.5 flex-wrap">
@@ -749,7 +749,7 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
                     key={v}
                     onClick={() => setView(v)}
                     className={cn(
-                      'h-[26px] px-2.5 rounded-lg text-[12px] font-medium transition-all',
+                      'h-[26px] px-2.5 rounded-lg text-xs font-medium transition-all',
                       view === v
                         ? 'bg-white dark:bg-[#1e1e21] text-slate-900 dark:text-white shadow-sm'
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300',
@@ -775,13 +775,13 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
 
               <button
                 onClick={handleToday}
-                className="px-3 py-1.5 text-[11.5px] border border-black/[.06] dark:border-white/[.08] rounded-lg hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] text-slate-600 dark:text-slate-400 transition-colors"
+                className="px-3 py-1.5 text-xs border border-black/[.06] dark:border-white/[.08] rounded-lg hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] text-slate-600 dark:text-slate-400 transition-colors"
               >
                 Today
               </button>
               <button
                 onClick={() => { setClickedDate(undefined); setShowCreateModal(true) }}
-                className="px-3 py-1.5 text-[11.5px] bg-primary text-white rounded-lg hover:bg-primary/90 font-medium transition-colors"
+                className="px-3 py-1.5 text-xs bg-primary text-white rounded-lg hover:bg-primary/90 font-medium transition-colors"
               >
                 + Event
               </button>
@@ -794,7 +794,7 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
               <div className="border border-black/[.06] dark:border-white/[.08] rounded-lg overflow-hidden bg-white dark:bg-[#1e1e21]">
                 <div className="grid grid-cols-7 border-b border-black/[.06] dark:border-white/[.08]">
                   {DAYS.map(d => (
-                    <div key={d} className="py-2.5 text-center text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide">{d}</div>
+                    <div key={d} className="py-2.5 text-center text-atom font-semibold text-slate-400 uppercase tracking-wide">{d}</div>
                   ))}
                 </div>
                 <div className="grid grid-cols-7">
@@ -818,7 +818,7 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
                         )}
                       >
                         <div className={cn(
-                          'text-[11px] tabular-nums mb-1 w-5 h-5 flex items-center justify-center rounded-full',
+                          'text-xxs tabular-nums mb-1 w-5 h-5 flex items-center justify-center rounded-full',
                           isToday ? 'bg-primary text-white font-bold' : 'text-slate-500 dark:text-slate-400',
                         )}>
                           {cell.day}
@@ -831,7 +831,7 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
                               <div
                                 key={ev.id}
                                 className={cn(
-                                  'text-[10px] font-medium rounded px-1 py-px truncate leading-tight cursor-pointer hover:opacity-80 transition-opacity',
+                                  'text-atom font-medium rounded px-1 py-px truncate leading-tight cursor-pointer hover:opacity-80 transition-opacity',
                                   isOwned ? 'text-white' : '',
                                 )}
                                 style={chipStyle}
@@ -844,7 +844,7 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
                             )
                           })}
                           {cellEvents.length > 3 && (
-                            <div className="text-[10px] text-slate-400 dark:text-slate-500 pl-1">
+                            <div className="text-atom text-slate-400 dark:text-slate-500 pl-1">
                               +{cellEvents.length - 3} more
                             </div>
                           )}
@@ -860,18 +860,18 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
                 {Object.entries(EVENT_TYPE_HEX).map(([type, hex]) => (
                   <div key={type} className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-sm" style={{ background: hex }} />
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 capitalize">{type.replace('_', ' ')}</span>
+                    <span className="text-xxs text-slate-500 dark:text-slate-400 capitalize">{type.replace('_', ' ')}</span>
                   </div>
                 ))}
                 {/* Legend: owned vs invited */}
                 <div className="ml-auto flex items-center gap-3">
                   <div className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-sm bg-violet-500" />
-                    <span className="text-[10.5px] text-slate-400">Organized</span>
+                    <span className="text-xxs text-slate-400">Organized</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-sm border-2 border-violet-500" style={{ background: 'rgba(139,92,246,0.1)' }} />
-                    <span className="text-[10.5px] text-slate-400">Invited</span>
+                    <span className="text-xxs text-slate-400">Invited</span>
                   </div>
                 </div>
               </div>
@@ -901,7 +901,7 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
         {/* ── Upcoming sidebar ──────────────────────────────────────────── */}
         <div className="border border-black/[.06] dark:border-white/[.08] rounded-lg bg-white dark:bg-[#1e1e21] overflow-hidden flex flex-col lg:max-h-full">
           <div className="px-4 py-3 border-b border-black/[.06] dark:border-white/[.08] shrink-0">
-            <p className="text-[13px] font-semibold text-slate-900 dark:text-white">Upcoming</p>
+            <p className="text-ssm font-semibold text-slate-900 dark:text-white">Upcoming</p>
           </div>
           <div className="p-3 flex-1 overflow-y-auto">
             {!status?.connected ? (
@@ -937,12 +937,12 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
                         }}
                       />
                       <div className="min-w-0">
-                        <p className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 truncate">{ev.title}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{ev.title}</p>
+                        <p className="text-xxs text-slate-500 dark:text-slate-400 mt-0.5">
                           {new Date(ev.startAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })} · {formatTime(ev.startAt)}
                         </p>
                         {ev.location && (
-                          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">{ev.location}</p>
+                          <p className="text-xxs text-slate-400 dark:text-slate-500 mt-0.5 truncate">{ev.location}</p>
                         )}
                       </div>
                     </button>

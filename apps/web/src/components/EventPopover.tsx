@@ -104,7 +104,7 @@ function TimePickerDropdown({
             type="button"
             onClick={() => { onChange(slot.value); onClose() }}
             className={cn(
-              'w-full text-left px-3 py-1.5 text-[13px] transition-colors',
+              'w-full text-left px-3 py-1.5 text-ssm transition-colors',
               slot.value === value
                 ? 'bg-blue-600 text-white'
                 : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[.08]',
@@ -133,7 +133,7 @@ function TimeButton({
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="w-full h-9 rounded-lg border border-slate-200 dark:border-white/[.12] bg-white dark:bg-white/[.04] text-[13px] px-3 text-left focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 text-slate-900 dark:text-white"
+        className="w-full h-9 rounded-lg border border-slate-200 dark:border-white/[.12] bg-white dark:bg-white/[.04] text-ssm px-3 text-left focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 text-slate-900 dark:text-white"
       >
         {slot?.label ?? value}
       </button>
@@ -175,7 +175,7 @@ function DatePickerButton({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="w-full h-9 rounded-lg border border-slate-200 dark:border-white/[.12] bg-white dark:bg-white/[.04] text-[13px] px-3 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 text-slate-900 dark:text-white"
+          className="w-full h-9 rounded-lg border border-slate-200 dark:border-white/[.12] bg-white dark:bg-white/[.04] text-ssm px-3 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 text-slate-900 dark:text-white"
         >
           <span className={!value ? 'text-slate-400' : ''}>
             {selected ? format(selected, 'MMM d, yyyy') : (placeholder ?? 'Select date')}
@@ -197,8 +197,8 @@ function DatePickerButton({
 
 // ─── Input/label styles ──────────────────────────────────────────────────────
 
-const labelClass = 'text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-[0.05em] mb-1.5 block'
-const inputClass = 'w-full h-9 rounded-lg border border-slate-200 dark:border-white/[.12] bg-white dark:bg-white/[.04] text-[13px] px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500'
+const labelClass = 'text-xxs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-[0.05em] mb-1.5 block'
+const inputClass = 'w-full h-9 rounded-lg border border-slate-200 dark:border-white/[.12] bg-white dark:bg-white/[.04] text-ssm px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500'
 
 // ─── EventPopover — floating popover panel ───────────────────────────────────
 
@@ -312,7 +312,7 @@ export function EventPopover({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-4 pb-3.5 border-b border-black/[.06] dark:border-white/[.08] shrink-0">
-          <span className="text-[14px] font-semibold text-slate-900 dark:text-white">New Event</span>
+          <span className="text-sm font-semibold text-slate-900 dark:text-white">New Event</span>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
@@ -344,12 +344,12 @@ export function EventPopover({
           <div>
             <label className={labelClass}>Stage</label>
             <Select value={stage} onValueChange={setStage}>
-              <SelectTrigger className="h-9 text-[13px] w-full rounded-lg border-slate-200 dark:border-white/[.12] bg-white dark:bg-white/[.04]">
+              <SelectTrigger className="h-9 text-ssm w-full rounded-lg border-slate-200 dark:border-white/[.12] bg-white dark:bg-white/[.04]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {STAGE_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value} className="text-[13px]">
+                  <SelectItem key={opt.value} value={opt.value} className="text-ssm">
                     {opt.label}
                   </SelectItem>
                 ))}
@@ -414,14 +414,14 @@ export function EventPopover({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-black/[.06] dark:border-white/[.08] shrink-0">
-          <Button type="button" variant="outline" className="text-[13px]" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" className="text-ssm" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
             type="button"
             onClick={handleSave}
             disabled={!title.trim()}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-[13px]"
+            className="bg-blue-600 hover:bg-blue-700 text-white text-ssm"
           >
             Create Event
           </Button>

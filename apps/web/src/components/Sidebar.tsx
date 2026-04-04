@@ -29,7 +29,7 @@ function LogoutOverlay() {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-md">
       <div className="flex flex-col items-center gap-4">
         <div className="w-10 h-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-        <p className="text-[13px] font-medium text-slate-500">Signing out...</p>
+        <p className="text-ssm font-medium text-slate-500">Signing out...</p>
       </div>
     </div>
   )
@@ -38,6 +38,7 @@ function LogoutOverlay() {
 type SidebarProps = {
   isOpen?: boolean
   onClose?: () => void
+  collapsed?: boolean
 }
 
 type NavItem = {
@@ -92,30 +93,27 @@ function LogoutConfirmModal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm px-4 flex items-center justify-center"
       onClick={onCancel}
     >
       <div
-        className="bg-white dark:bg-[#1e1e21] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-black/[.06] dark:border-white/[.08] p-6 w-[320px] flex flex-col gap-4"
+        className="max-w-sm w-full rounded-xl border border-black/[.06] dark:border-white/[.08] bg-white dark:bg-[#1e1e21] shadow-2xl p-4 animate-in zoom-in-95 fade-in-0 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex flex-col gap-1">
-          <p className="text-[14px] font-semibold text-slate-900 dark:text-white">Sign out of Symph CRM?</p>
-          <p className="text-[12.5px] text-slate-500 leading-[1.5]">
-            Any unsaved work will be lost. You can sign back in anytime.
-          </p>
-        </div>
-
-        <div className="flex gap-2 mt-1">
+        <p className="text-sm font-semibold text-slate-900 dark:text-white">Sign out of Symph CRM?</p>
+        <p className="text-ssm text-slate-600 dark:text-slate-400 leading-relaxed mt-1">
+          Any unsaved work will be lost. You can sign back in anytime.
+        </p>
+        <div className="flex gap-2.5 mt-4">
           <button
             onClick={onCancel}
-            className="flex-1 h-9 rounded-lg border border-black/[.08] dark:border-white/[.08] text-[13px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors"
+            className="flex-1 h-8 rounded-lg text-xs font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-[13px] font-medium text-white transition-colors"
+            className="flex-1 h-8 rounded-lg text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
           >
             Sign out
           </button>
@@ -125,7 +123,7 @@ function LogoutConfirmModal({
   )
 }
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, collapsed = false }: SidebarProps) {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -164,15 +162,19 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       )}
 
       <aside className={cn(
-        'w-[216px] shrink-0 bg-white dark:bg-[#1e1e21] border-r border-black/[.06] dark:border-white/[.08] flex flex-col h-full',
+        'shrink-0 bg-white dark:bg-[#1e1e21] border-r border-black/[.06] dark:border-white/[.08] flex flex-col h-full overflow-hidden',
         'fixed inset-y-0 left-0 z-30 md:relative md:z-auto',
-        'transition-transform duration-150',
-        isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        'transition-all duration-200',
+        isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+        collapsed ? 'md:w-[60px] w-[216px]' : 'w-[216px]'
       )}>
         {/* Logo */}
-        <div className="h-[44px] px-4 border-b border-black/[.06] dark:border-white/[.08] flex items-center">
+        <div className={cn(
+          'h-[44px] border-b border-black/[.06] dark:border-white/[.08] flex items-center',
+          collapsed ? 'md:justify-center md:px-0 px-4' : 'px-4'
+        )}>
           <div
-            className="w-[26px] h-[26px] rounded-[6px] flex items-center justify-center text-[11px] font-extrabold text-white shrink-0 tracking-tight"
+            className="w-[26px] h-[26px] rounded-[6px] flex items-center justify-center text-xxs font-extrabold text-white shrink-0 tracking-tight"
             style={{ background: 'linear-gradient(135deg, #1547e6, #3b82f6)' }}
           >
             S
@@ -180,10 +182,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Nav */}
-        <nav className="px-2 py-1.5 flex-1 flex flex-col overflow-y-auto">
+        <nav className={cn(
+          'py-1.5 flex-1 flex flex-col overflow-y-auto',
+          collapsed ? 'md:px-1.5 px-2' : 'px-2'
+        )}>
           {navSections.map((section, si) => (
             <div key={si} className={cn(si > 0 && 'mt-2.5')}>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-400 px-[10px] pt-[4px] pb-0.5">
+              <div className={cn(
+                'text-atom font-semibold uppercase tracking-[0.06em] text-slate-400 px-[10px] pt-[4px] pb-0.5',
+                collapsed && 'md:hidden'
+              )}>
                 {section.title}
               </div>
               <div className="flex flex-col gap-px">
@@ -198,20 +206,25 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       onClick={() => onClose?.()}
                       onMouseEnter={() => setHoveredPath(item.path)}
                       onMouseLeave={() => setHoveredPath(null)}
+                      title={collapsed ? item.label : undefined}
                       className={cn(
-                        'relative flex items-center gap-[9px] px-[10px] py-[6px] rounded text-[12.5px] w-full text-left transition-colors duration-150',
+                        'relative flex items-center gap-[9px] px-[10px] py-[6px] rounded text-ssm w-full text-left transition-colors duration-150',
                         active
                           ? 'bg-primary/[.08] dark:bg-primary/[.12] text-primary dark:text-primary font-semibold ring-1 ring-primary/20 dark:ring-primary/25'
                           : 'font-medium',
                         !active && hovered && 'bg-slate-100 dark:bg-white/[.06] text-slate-900 dark:text-white',
                         !active && !hovered && 'text-slate-600 dark:text-slate-400',
+                        collapsed && 'md:justify-center md:px-0 md:py-[8px]'
                       )}
                     >
-                      <Icon size={15} strokeWidth={1.4} />
-                      <span className="flex-1">{item.label}</span>
+                      <Icon size={15} strokeWidth={1.4} className="shrink-0" />
+                      <span className={cn('flex-1', collapsed && 'md:hidden')}>{item.label}</span>
                       {item.badge && (
                         <span
-                          className="text-white text-[10px] font-bold px-1.5 py-px rounded-full tabular-nums"
+                          className={cn(
+                            'text-white text-atom font-bold px-1.5 py-px rounded-full tabular-nums',
+                            collapsed && 'md:hidden'
+                          )}
                           style={{ background: item.badgeColor || 'var(--primary)' }}
                         >
                           {item.badge}
@@ -227,32 +240,45 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Theme toggle */}
         {mounted && (
-          <div className="px-[14px] py-2 border-t border-black/[.06] dark:border-white/[.08]">
+          <div className={cn(
+            'py-2 border-t border-black/[.06] dark:border-white/[.08]',
+            collapsed ? 'md:px-1.5 px-[14px]' : 'px-[14px]'
+          )}>
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded text-[12px] font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors"
+              title={collapsed ? (theme === 'dark' ? 'Light mode' : 'Dark mode') : undefined}
+              className={cn(
+                'w-full flex items-center gap-2 px-[10px] py-[6px] rounded text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors',
+                collapsed && 'md:justify-center md:px-0'
+              )}
             >
-              {theme === 'dark' ? <Sun size={14} strokeWidth={1.4} /> : <Moon size={14} strokeWidth={1.4} />}
-              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              {theme === 'dark' ? <Sun size={14} strokeWidth={1.4} className="shrink-0" /> : <Moon size={14} strokeWidth={1.4} className="shrink-0" />}
+              <span className={cn(collapsed && 'md:hidden')}>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
             </button>
           </div>
         )}
 
         {/* User profile */}
-        <div className="px-[14px] py-2.5 border-t border-black/[.06] dark:border-white/[.08] flex items-center gap-[9px]">
+        <div className={cn(
+          'py-2.5 border-t border-black/[.06] dark:border-white/[.08] flex items-center gap-[9px]',
+          collapsed ? 'md:justify-center md:px-0 px-[14px]' : 'px-[14px]'
+        )}>
           {user?.image ? (
-            <img src={user.image} alt="" className="w-7 h-7 rounded-full" />
+            <img src={user.image} alt="" className="w-7 h-7 rounded-full shrink-0" />
           ) : (
             <Avatar name={user?.name || '?'} size={28} />
           )}
-          <div className="flex-1 min-w-0">
-            <div className="text-[12px] font-semibold text-slate-900 dark:text-white truncate">{user?.name || 'User'}</div>
-            <div className="text-[10px] text-slate-400 truncate">{user?.email || ''}</div>
+          <div className={cn('flex-1 min-w-0', collapsed && 'md:hidden')}>
+            <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">{user?.name || 'User'}</div>
+            <div className="text-atom text-slate-400 truncate">{user?.email || ''}</div>
           </div>
           <button
             onClick={() => setShowLogoutConfirm(true)}
             disabled={signingOut}
-            className="text-[10px] font-medium text-slate-400 hover:text-slate-600 dark:text-slate-400 transition-colors cursor-pointer disabled:opacity-40"
+            className={cn(
+              'text-atom font-medium text-slate-400 hover:text-slate-600 dark:text-slate-400 transition-colors cursor-pointer disabled:opacity-40',
+              collapsed && 'md:hidden'
+            )}
             title="Sign out"
           >
             Sign out

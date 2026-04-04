@@ -39,20 +39,20 @@ function NotificationItem({
         {/* Deal + Brand */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {notification.dealTitle && (
-            <span className="text-[12.5px] font-semibold text-slate-900 dark:text-white truncate">
+            <span className="text-ssm font-semibold text-slate-900 dark:text-white truncate">
               {notification.dealTitle}
             </span>
           )}
           {notification.brandName && (
-            <span className="text-[11px] text-slate-400">&middot; {notification.brandName}</span>
+            <span className="text-xxs text-slate-400">&middot; {notification.brandName}</span>
           )}
         </div>
         {/* Trigger text */}
-        <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-0.5">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
           {notification.triggerText}
         </p>
         {/* Timestamp */}
-        <p className="text-[10.5px] text-slate-400 mt-1">{timeAgo(notification.createdAt)}</p>
+        <p className="text-xxs text-slate-400 mt-1">{timeAgo(notification.createdAt)}</p>
       </div>
 
       {/* Unread dot */}
@@ -110,7 +110,7 @@ export function NotificationBell() {
       >
         <Bell size={15} strokeWidth={1.5} />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-atom font-bold flex items-center justify-center leading-none">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -118,14 +118,14 @@ export function NotificationBell() {
 
       {/* Dropdown panel */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[340px] bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-xl shadow-2xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-[340px] bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-xl shadow-md dark:shadow-2xl z-50 overflow-hidden">
           {/* Panel header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-black/[.06] dark:border-white/[.08]">
-            <span className="text-[13px] font-semibold text-slate-900 dark:text-white">Notifications</span>
+            <span className="text-ssm font-semibold text-slate-900 dark:text-white">Notifications</span>
             {unreadCount > 0 && (
               <button
                 onClick={() => markAllRead()}
-                className="text-[11.5px] text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
               >
                 Mark all read
               </button>
@@ -137,7 +137,7 @@ export function NotificationBell() {
             {dormant.length > 0 && (
               <>
                 <div className="px-4 py-2 bg-slate-50 dark:bg-white/[.02]">
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <span className="text-atom font-semibold text-slate-400 uppercase tracking-wider">
                     Needs Attention
                   </span>
                 </div>
@@ -155,7 +155,7 @@ export function NotificationBell() {
             {earlier.length > 0 && (
               <>
                 <div className="px-4 py-2 bg-slate-50 dark:bg-white/[.02]">
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <span className="text-atom font-semibold text-slate-400 uppercase tracking-wider">
                     Earlier
                   </span>
                 </div>
@@ -172,7 +172,7 @@ export function NotificationBell() {
             {notifications.length === 0 && (
               <div className="py-10 text-center">
                 <Bell size={20} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
-                <p className="text-[12.5px] text-slate-400">No notifications yet</p>
+                <p className="text-ssm text-slate-400">No notifications yet</p>
               </div>
             )}
           </div>
@@ -182,7 +182,7 @@ export function NotificationBell() {
             <div className="border-t border-black/[.06] dark:border-white/[.08] px-4 py-2.5 text-center">
               <button
                 onClick={() => setOpen(false)}
-                className="text-[12px] text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
               >
                 View all notifications
               </button>

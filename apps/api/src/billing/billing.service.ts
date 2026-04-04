@@ -147,6 +147,12 @@ export class BillingService implements OnModuleInit {
     return milestone
   }
 
+  async deleteBilling(dealId: string) {
+    await this.db
+      .delete(dealBilling)
+      .where(eq(dealBilling.dealId, dealId))
+  }
+
   async deleteMilestone(milestoneId: string) {
     const [deleted] = await this.db
       .delete(billingMilestones)

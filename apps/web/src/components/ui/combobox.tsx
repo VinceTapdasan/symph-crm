@@ -112,7 +112,7 @@ export function Combobox({
         onKeyDown={handleKeyDown}
         placeholder={value ? selectedLabel : placeholder}
         className={cn(
-          'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-[13px] shadow-sm transition-colors',
+          'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-ssm shadow-sm transition-colors',
           'placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
           'dark:bg-transparent dark:border-white/10',
           className,
@@ -139,7 +139,7 @@ export function Combobox({
               onMouseDown={e => { e.preventDefault(); select(o.value) }}
               onMouseEnter={() => setHighlightIdx(i)}
               className={cn(
-                'flex w-full items-center px-3 py-1.5 text-[13px] text-left transition-colors',
+                'flex w-full items-center px-3 py-1.5 text-ssm text-left transition-colors',
                 i === highlightIdx
                   ? 'bg-primary/10 text-primary'
                   : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04]',
@@ -157,7 +157,7 @@ export function Combobox({
         </div>
       )}
       {open && filtered.length === 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-lg border border-black/[.08] dark:border-white/[.1] bg-white dark:bg-[#1e1e21] shadow-lg py-3 px-3 text-[12px] text-slate-400 text-center">
+        <div className="absolute z-50 mt-1 w-full rounded-lg border border-black/[.08] dark:border-white/[.1] bg-white dark:bg-[#1e1e21] shadow-lg py-3 px-3 text-xs text-slate-400 text-center">
           {allowCustom ? `Press Enter to use "${query}"` : 'No results'}
         </div>
       )}

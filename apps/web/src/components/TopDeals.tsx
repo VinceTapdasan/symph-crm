@@ -40,8 +40,8 @@ export function TopDeals({ deals, onViewAll }: TopDealsProps) {
                   {getInitials(d.title)}
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">{d.title}</div>
-                  <div className="text-[11px] text-slate-400 mt-px">
+                  <div className="text-ssm font-semibold text-slate-900 dark:text-white truncate">{d.title}</div>
+                  <div className="text-xxs text-slate-400 mt-px">
                     {d.assignedTo || 'Unassigned'} &middot; <span className="capitalize">{d.stage.replace(/_/g, ' ')}</span>
                   </div>
                 </div>

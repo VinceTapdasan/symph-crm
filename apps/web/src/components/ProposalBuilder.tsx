@@ -38,7 +38,7 @@ import { queryKeys } from '@/lib/query-keys'
 const ProposalEditor = dynamic(() => import('./ProposalEditor'), {
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center h-64 text-[13px] text-slate-400">
+    <div className="flex items-center justify-center h-64 text-ssm text-slate-400">
       Loading editor...
     </div>
   ),
@@ -72,14 +72,14 @@ function NewProposalModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white dark:bg-[#1e1e21] rounded-lg shadow-xl w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-[15px] font-semibold text-slate-900 dark:text-white">New Proposal</h2>
+          <h2 className="text-sbase font-semibold text-slate-900 dark:text-white">New Proposal</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:text-slate-400">x</button>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-[12px] font-medium text-slate-600 dark:text-slate-400 mb-1">Title</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Title</label>
             <Input
-              className="h-9 text-[13px]"
+              className="h-9 text-ssm"
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="e.g. Jollibee HRIS Proposal"
@@ -87,12 +87,12 @@ function NewProposalModal({
             />
           </div>
           <div>
-            <label className="block text-[12px] font-medium text-slate-600 dark:text-slate-400 mb-1">Deal (optional)</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Deal (optional)</label>
             <Select
               value={dealId || '__none__'}
               onValueChange={v => setDealId(v === '__none__' ? '' : v)}
             >
-              <SelectTrigger className="w-full text-[13px] h-9">
+              <SelectTrigger className="w-full text-ssm h-9">
                 <SelectValue placeholder="None" />
               </SelectTrigger>
               <SelectContent>
@@ -103,9 +103,9 @@ function NewProposalModal({
               </SelectContent>
             </Select>
           </div>
-          {error && <p className="text-[12px] text-red-500">{error}</p>}
+          {error && <p className="text-xs text-red-500">{error}</p>}
           <div className="flex justify-end gap-2 pt-1">
-            <button onClick={onClose} className="px-4 py-2 text-[13px] rounded-lg border border-black/[.06] dark:border-white/[.08] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04]">
+            <button onClick={onClose} className="px-4 py-2 text-ssm rounded-lg border border-black/[.06] dark:border-white/[.08] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04]">
               Cancel
             </button>
             <button
@@ -118,9 +118,9 @@ function NewProposalModal({
                 version: 1,
               })}
               disabled={mutation.isPending}
-              className="px-4 py-2 text-[13px] rounded-lg bg-slate-900 text-white font-medium disabled:opacity-40 hover:bg-slate-700"
+              className="flex items-center gap-1.5 px-4 py-2 text-ssm rounded-lg bg-slate-900 text-white font-medium disabled:opacity-40 hover:bg-slate-700"
             >
-              {mutation.isPending ? 'Creating...' : 'Create'}
+              <>{mutation.isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Create</>
             </button>
           </div>
         </div>
@@ -161,10 +161,10 @@ export function ProposalBuilder() {
       {/* Sidebar — proposal list */}
       <div className="w-64 shrink-0 border-r border-black/[.06] dark:border-white/[.08] bg-slate-50 dark:bg-white/[.03] flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-black/[.06] dark:border-white/[.08]">
-          <span className="text-[13px] font-semibold text-slate-900 dark:text-white">Proposals</span>
+          <span className="text-ssm font-semibold text-slate-900 dark:text-white">Proposals</span>
           <button
             onClick={() => setShowNewModal(true)}
-            className="text-[12px] px-2 py-1 bg-slate-900 text-white rounded-lg hover:bg-slate-700 font-medium"
+            className="text-xs px-2 py-1 bg-slate-900 text-white rounded-lg hover:bg-slate-700 font-medium"
           >
             + New
           </button>
@@ -201,11 +201,11 @@ export function ProposalBuilder() {
                     : 'border-transparent',
                 )}
               >
-                <p className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 truncate">{doc.title}</p>
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{doc.title}</p>
                 {doc.excerpt && (
-                  <p className="text-[11px] text-slate-500 mt-0.5 truncate">{doc.excerpt}</p>
+                  <p className="text-xxs text-slate-500 mt-0.5 truncate">{doc.excerpt}</p>
                 )}
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-atom text-slate-400 mt-1">
                   {new Date(doc.updatedAt ?? '').toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
                   {doc.wordCount ? ` · ${doc.wordCount} words` : ''}
                 </p>
@@ -230,16 +230,16 @@ export function ProposalBuilder() {
             {/* Editor header */}
             <div className="flex items-center px-6 py-3 border-b border-black/[.06] dark:border-white/[.08] bg-white dark:bg-[#1e1e21] gap-3">
               <div className="min-w-0">
-                <p className="text-[14px] font-semibold text-slate-900 dark:text-white truncate">{selected?.title}</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{selected?.title}</p>
                 {selected?.dealId && (
-                  <p className="text-[11px] text-slate-500">Linked to deal</p>
+                  <p className="text-xxs text-slate-500">Linked to deal</p>
                 )}
               </div>
               <div className="ml-auto flex items-center gap-2">
                 {versions.length > 0 && (
                   <button
                     onClick={() => setShowVersions(v => !v)}
-                    className="text-[12px] px-3 py-1.5 border border-black/[.06] dark:border-white/[.08] rounded-lg hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] text-slate-600 dark:text-slate-400"
+                    className="text-xs px-3 py-1.5 border border-black/[.06] dark:border-white/[.08] rounded-lg hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] text-slate-600 dark:text-slate-400"
                   >
                     {versions.length} version{versions.length !== 1 ? 's' : ''}
                   </button>
@@ -250,13 +250,13 @@ export function ProposalBuilder() {
             {/* Version history panel */}
             {showVersions && versions.length > 0 && (
               <div className="border-b border-black/[.06] dark:border-white/[.08] bg-amber-50 dark:bg-amber-950/30 px-6 py-3">
-                <p className="text-[12px] font-semibold text-amber-900 mb-2">Version History</p>
+                <p className="text-xs font-semibold text-amber-900 mb-2">Version History</p>
                 <div className="flex gap-2 flex-wrap">
                   {versions.map(v => (
                     <button
                       key={v.id}
                       onClick={() => setSelectedId(v.id)}
-                      className="text-[11px] px-2.5 py-1 border border-amber-300 dark:border-amber-700 rounded-lg bg-white dark:bg-[#1e1e21] hover:bg-amber-50 dark:bg-amber-950/30 text-amber-800"
+                      className="text-xxs px-2.5 py-1 border border-amber-300 dark:border-amber-700 rounded-lg bg-white dark:bg-[#1e1e21] hover:bg-amber-50 dark:bg-amber-950/30 text-amber-800"
                     >
                       {v.title}
                     </button>

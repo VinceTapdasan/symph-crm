@@ -33,12 +33,12 @@ export function PasteChip({ text, onRemove, onClick }: PasteChipProps) {
           className="w-full h-full text-left px-2.5 py-2.5 rounded-lg bg-slate-100 dark:bg-white/[.06] border border-black/[.08] dark:border-white/[.10] hover:border-black/20 dark:hover:border-white/20 transition-colors flex flex-col overflow-hidden"
         >
           {/* Preview text — fills remaining space, clipped */}
-          <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-[1.5] line-clamp-4 break-words flex-1 overflow-hidden">
+          <p className="text-xxs text-slate-500 dark:text-slate-400 leading-[1.5] line-clamp-4 break-words flex-1 overflow-hidden">
             {preview}
           </p>
           {/* PASTED badge — pinned to bottom */}
           <div className="mt-1.5 shrink-0">
-            <span className="text-[9px] font-semibold tracking-[0.12em] uppercase text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-white/[.15] rounded px-1.5 py-0.5">
+            <span className="text-atom font-semibold tracking-[0.12em] uppercase text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-white/[.15] rounded px-1.5 py-0.5">
               PASTED
             </span>
           </div>
@@ -99,8 +99,8 @@ export function PastePreviewModal({ text, onClose }: PastePreviewModalProps) {
             <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
           </svg>
           <div className="flex-1 min-w-0">
-            <div className="text-[14px] font-semibold text-slate-900 dark:text-white">Pasted content</div>
-            <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5">
+            <div className="text-sm font-semibold text-slate-900 dark:text-white">Pasted content</div>
+            <div className="text-xxs text-slate-400 mt-0.5 flex items-center gap-1.5">
               <span>{lineCount} {lineCount === 1 ? 'line' : 'lines'}</span>
               <span>·</span>
               <span>{sizeLabel}</span>
@@ -118,7 +118,7 @@ export function PastePreviewModal({ text, onClose }: PastePreviewModalProps) {
 
         {/* Content — focusable so Ctrl+A selects within modal */}
         <div ref={contentRef} className="flex-1 overflow-y-auto outline-none" tabIndex={0}>
-          <pre className="px-6 py-5 text-[12.5px] font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed overflow-x-auto">
+          <pre className="px-6 py-5 text-ssm font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed overflow-x-auto">
             {text}
           </pre>
         </div>

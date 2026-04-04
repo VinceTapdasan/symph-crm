@@ -99,9 +99,9 @@ export function DataTable<TData, TValue>({
         {table.getRowModel().rows.length === 0 ? (
           <TableRow>
             <TableCell colSpan={columns.length} className="h-32 text-center">
-              <div className="text-[13px] text-slate-400">{emptyMessage}</div>
+              <div className="text-ssm text-slate-400">{emptyMessage}</div>
               {emptyDescription && (
-                <div className="text-[11px] text-slate-300 dark:text-white/20 mt-1">{emptyDescription}</div>
+                <div className="text-xxs text-slate-300 dark:text-white/20 mt-1">{emptyDescription}</div>
               )}
             </TableCell>
           </TableRow>

@@ -19,18 +19,38 @@ import { cn, formatPeso, formatServiceType, getAdvanceTargets, getMoveBackTarget
 import type { ApiDeal, ApiCompany, ApiUser } from '@/lib/types'
 import {
   KANBAN_STAGES, COLUMN_TO_STAGE, STAGE_ORDER,
-  STAGE_ADVANCE_MAP, CLOSED_STAGE_IDS,
+  STAGE_ADVANCE_MAP, CLOSED_STAGE_IDS, STAGE_LABELS, STAGE_COLORS,
 } from '@/lib/constants'
+import { toast } from 'sonner'
 import { Avatar } from './Avatar'
 import { CreateDealModal } from './CreateDealModal'
 import { CreateBrandModal } from './CreateBrandModal'
+import { EditDealModal } from './EditDealModal'
 import { queryKeys } from '@/lib/query-keys'
 import { usePatchDealStage, useDeleteDeal, useUpdateDeal } from '@/lib/hooks/mutations'
 import { useUser } from '@/lib/hooks/use-user'
 import {
   MoreHorizontal, Search, X, Trash2, ExternalLink,
   ChevronDown, ChevronRight, User as UserIcon, Paperclip,
+  Pencil, ArrowRight, ArrowLeft,
 } from 'lucide-react'
+
+function stageToast(fromStage: string, toStage: string, dealTitle: string) {
+  const fromColor = STAGE_COLORS[fromStage] ?? '#94a3b8'
+  const toColor = STAGE_COLORS[toStage] ?? '#94a3b8'
+  const fromLabel = STAGE_LABELS[fromStage] ?? fromStage
+  const toLabel = STAGE_LABELS[toStage] ?? toStage
+  toast(
+    <span className="flex items-center gap-1.5">
+      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: fromColor }} />
+      {fromLabel}
+      <span className="text-slate-400">→</span>
+      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: toColor }} />
+      {toLabel}
+    </span>,
+    { description: `${toPascalCase(dealTitle)} updated` },
+  )
+}
 
 type PipelineProps = {
   onOpenDeal: (id: string) => void
@@ -50,24 +70,24 @@ function Spinner({ size = 14 }: { size?: number }) {
 function CardActionsMenu({
   deal,
   currentStage,
-  onOpen,
   onDelete,
   onAdvance,
   onAdvanceTo,
   onMoveTo,
   onAssign,
+  onEdit,
   isSales,
   users,
   isAdvancing,
 }: {
   deal: ApiDeal
   currentStage: string
-  onOpen: () => void
   onDelete: () => void
   onAdvance: () => void
   onAdvanceTo: (stage: string) => void
   onMoveTo: (stage: string) => void
   onAssign: (id: string, name: string) => void
+  onEdit: () => void
   isSales: boolean
   users: ApiUser[]
   isAdvancing: boolean
@@ -109,13 +129,13 @@ function CardActionsMenu({
           {/* Assign — locked for won/lost deals */}
           {isTerminal ? (
             <div
-              className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] text-slate-400 dark:text-slate-600 cursor-not-allowed select-none"
+              className="flex items-center justify-between w-full px-3 py-1.5 text-ssm text-slate-400 dark:text-slate-600 cursor-not-allowed select-none"
               title="Cannot reassign AM — deal is won/lost"
             >
               <span className="flex items-center gap-2">
-                <UserIcon size={12} /> Assign
+                <UserIcon size={14} /> Assign
               </span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 dark:text-slate-600">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 dark:text-slate-600">
                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
@@ -124,23 +144,23 @@ function CardActionsMenu({
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowAssign(v => !v); setShowAdvanceTo(false); setShowMoveTo(false) }}
-                className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                className="flex items-center justify-between w-full px-3 py-1.5 text-ssm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
               >
-                <span className="flex items-center gap-2"><UserIcon size={12} /> Assign</span>
-                <ChevronRight size={11} className={cn('text-slate-400 transition-transform duration-150', showAssign && 'rotate-90')} />
+                <span className="flex items-center gap-2"><UserIcon size={14} /> Assign</span>
+                <ChevronRight size={12} className={cn('text-slate-400 transition-transform duration-150', showAssign && 'rotate-90')} />
               </button>
               {showAssign && (
                 <div className="border-t border-black/[.04] dark:border-white/[.06] max-h-[144px] overflow-y-auto">
                   {users.length === 0 ? (
-                    <div className="px-3 py-2 text-[11px] text-slate-400 italic">No team members</div>
+                    <div className="px-3 py-2 text-xs text-slate-400 italic">No team members</div>
                   ) : (
                     users.map(u => (
                       <button
                         key={u.id}
                         onClick={(e) => { e.stopPropagation(); setOpen(false); setShowAssign(false); onAssign(u.id, u.name || u.email) }}
-                        className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                        className="flex items-center gap-2 w-full px-3 py-1.5 text-ssm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
                       >
-                        <Avatar name={u.name || u.email} src={u.image ?? undefined} size={16} />
+                        <Avatar name={u.name || u.email} src={u.image ?? undefined} size={18} />
                         {u.name || u.email}
                       </button>
                     ))
@@ -155,9 +175,9 @@ function CardActionsMenu({
             <button
               onClick={(e) => { e.stopPropagation(); onAdvance() }}
               disabled={isAdvancing}
-              className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 w-full px-3 py-1.5 text-ssm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors disabled:opacity-50"
             >
-              {isAdvancing ? <Spinner size={12} /> : <ChevronRight size={12} />}
+              {isAdvancing ? <Spinner size={14} /> : <ChevronRight size={14} />}
               {isAdvancing ? 'Advancing…' : 'Advance'}
             </button>
           )}
@@ -167,10 +187,10 @@ function CardActionsMenu({
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowAdvanceTo(v => !v); setShowAssign(false); setShowMoveTo(false) }}
-                className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                className="flex items-center justify-between w-full px-3 py-1.5 text-ssm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
               >
-                <span className="flex items-center gap-2"><ChevronRight size={12} /> Advance to…</span>
-                <ChevronDown size={11} className={cn('text-slate-400 transition-transform duration-150', showAdvanceTo && 'rotate-180')} />
+                <span className="flex items-center gap-2"><ChevronRight size={14} /> Advance to…</span>
+                <ChevronDown size={12} className={cn('text-slate-400 transition-transform duration-150', showAdvanceTo && 'rotate-180')} />
               </button>
               {showAdvanceTo && (
                 <div className="border-t border-black/[.04] dark:border-white/[.06] max-h-[200px] overflow-y-auto">
@@ -178,7 +198,7 @@ function CardActionsMenu({
                     <button
                       key={t.id}
                       onClick={(e) => { e.stopPropagation(); setOpen(false); onAdvanceTo(t.dbStage) }}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                      className="flex items-center gap-2 w-full px-3 py-1.5 text-ssm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
                     >
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />
                       {t.label}
@@ -194,10 +214,10 @@ function CardActionsMenu({
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowMoveTo(v => !v); setShowAssign(false); setShowAdvanceTo(false) }}
-                className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                className="flex items-center justify-between w-full px-3 py-1.5 text-ssm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
               >
-                <span className="flex items-center gap-2"><ChevronDown size={12} className="rotate-90" /> Move back…</span>
-                <ChevronDown size={11} className={cn('text-slate-400 transition-transform duration-150', showMoveTo && 'rotate-180')} />
+                <span className="flex items-center gap-2"><ChevronDown size={14} className="rotate-90" /> Move back…</span>
+                <ChevronDown size={12} className={cn('text-slate-400 transition-transform duration-150', showMoveTo && 'rotate-180')} />
               </button>
               {showMoveTo && (
                 <div className="border-t border-black/[.04] dark:border-white/[.06] max-h-[200px] overflow-y-auto">
@@ -205,7 +225,7 @@ function CardActionsMenu({
                     <button
                       key={t.id}
                       onClick={(e) => { e.stopPropagation(); setOpen(false); onMoveTo(t.dbStage) }}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                      className="flex items-center gap-2 w-full px-3 py-1.5 text-ssm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
                     >
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />
                       {t.label}
@@ -216,21 +236,21 @@ function CardActionsMenu({
             </>
           )}
 
-          {/* Open deal */}
+          {/* Edit deal */}
           <button
-            onClick={(e) => { e.stopPropagation(); setOpen(false); onOpen() }}
-            className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+            onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit() }}
+            className="flex items-center gap-2 w-full px-3 py-1.5 text-ssm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
           >
-            <ExternalLink size={12} /> Open deal
+            <Pencil size={14} /> Edit deal
           </button>
 
           {/* Delete */}
           {isSales && (
             <button
               onClick={(e) => { e.stopPropagation(); setOpen(false); onDelete() }}
-              className="flex items-center gap-2 w-full px-3 py-1.5 text-[12px] text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+              className="flex items-center gap-2 w-full px-3 py-1.5 text-ssm text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
             >
-              <Trash2 size={12} /> Delete
+              <Trash2 size={14} /> Delete
             </button>
           )}
         </div>
@@ -250,6 +270,7 @@ function DealCard({
   onAdvanceTo,
   onMoveTo,
   onAssign,
+  onEdit,
   isSales,
   users,
   isAdvancing,
@@ -263,6 +284,7 @@ function DealCard({
   onAdvanceTo?: (stage: string) => void
   onMoveTo?: (stage: string) => void
   onAssign?: (id: string, name: string) => void
+  onEdit?: () => void
   isSales?: boolean
   users?: ApiUser[]
   isAdvancing?: boolean
@@ -283,7 +305,7 @@ function DealCard({
     <div
       onClick={onClick}
       className={cn(
-        'group rounded-lg p-3.5 cursor-pointer transition-colors duration-150',
+        'group rounded-lg p-3 cursor-pointer transition-colors duration-150',
         isWon
           ? 'bg-[rgba(22,163,74,0.05)] dark:bg-[rgba(22,163,74,0.08)] border border-[rgba(22,163,74,0.22)]'
           : isLost
@@ -294,28 +316,28 @@ function DealCard({
       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '' }}
     >
       {/* Brand name + outreach badge + actions */}
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-400 truncate max-w-[120px]">
+      <div className="flex items-center justify-between">
+        <span className="text-xxs font-semibold uppercase tracking-[0.05em] text-slate-400 truncate max-w-[120px]">
           {brandName}
         </span>
         <div className="flex items-center gap-1">
-          {onDelete !== undefined && onAdvance !== undefined && onAssign !== undefined && onAdvanceTo !== undefined && onMoveTo !== undefined && (
+          {onDelete !== undefined && onAdvance !== undefined && onAssign !== undefined && onAdvanceTo !== undefined && onMoveTo !== undefined && onEdit !== undefined && (
             <CardActionsMenu
               deal={deal}
               currentStage={deal.stage}
-              onOpen={onClick}
               onDelete={onDelete}
               onAdvance={onAdvance}
               onAdvanceTo={onAdvanceTo}
               onMoveTo={onMoveTo}
               onAssign={onAssign}
+              onEdit={onEdit}
               isSales={isSales ?? false}
               users={users ?? []}
               isAdvancing={isAdvancing ?? false}
             />
           )}
           <span className={cn(
-            'text-[10px] font-semibold px-2 py-0.5 rounded-full',
+            'text-atom font-semibold px-1.5 py-px rounded-full leading-tight',
             outreach === 'inbound'
               ? 'bg-[rgba(22,163,74,0.1)] text-[#16a34a]'
               : 'bg-slate-100 dark:bg-white/[.06] text-slate-500'
@@ -326,8 +348,8 @@ function DealCard({
       </div>
 
       {/* Deal title */}
-      <div className="text-[12.5px] font-semibold text-slate-900 dark:text-white leading-snug mb-2.5">
-        {deal.title.toUpperCase()}
+      <div className="text-xs font-semibold text-slate-900 dark:text-white leading-snug mb-2.5">
+        {deal.title.length <= 5 ? deal.title.toUpperCase() : toPascalCase(deal.title)}
       </div>
 
       {/* Services tags */}
@@ -336,21 +358,21 @@ function DealCard({
           {services.slice(0, 3).map(s => (
             <span
               key={s}
-              className="text-[10px] font-medium px-2 py-0.5 rounded-full dark:brightness-150"
+              className="text-atom font-medium px-2 py-0.5 rounded-full dark:brightness-150"
               style={{ background: `${colColor}18`, color: colColor }}
             >
               {formatServiceType(s)}
             </span>
           ))}
           {services.length > 3 && (
-            <span className="text-[10px] text-slate-400">+{services.length - 3}</span>
+            <span className="text-atom text-slate-400">+{services.length - 3}</span>
           )}
         </div>
       )}
 
       {/* Value + AM + doc indicator */}
       <div className="flex items-center justify-between pt-2 border-t border-black/[.05] dark:border-white/[.08]">
-        <span className="text-[15px] font-bold tabular-nums" style={{ color: colColor }}>
+        <span className="text-sbase font-bold tabular-nums" style={{ color: colColor }}>
           {formatPeso(parseFloat(deal.value || '0') || 0)}
         </span>
         <div className="flex items-center gap-2">
@@ -360,14 +382,14 @@ function DealCard({
               title={`${deal.documentCount} resource${(deal.documentCount ?? 0) !== 1 ? 's' : ''} attached`}
             >
               <Paperclip size={10} className="text-slate-400 shrink-0" />
-              <span className="text-[10px] font-medium text-slate-500 tabular-nums">
+              <span className="text-atom font-medium text-slate-500 tabular-nums">
                 {deal.documentCount}
               </span>
             </div>
           )}
           <div className="flex items-center gap-1">
             <Avatar name={amName} email={resolvedAm?.email ?? undefined} src={resolvedAm?.image ?? undefined} size={20} />
-            <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">{amShortName}</span>
+            <span className="text-xxs font-medium text-slate-600 dark:text-slate-400">{amShortName}</span>
           </div>
         </div>
       </div>
@@ -377,7 +399,7 @@ function DealCard({
 
 // --- DraggableDealCard —wraps DealCard without touching it ---
 function DraggableDealCard({
-  deal, colColor, brandName, onClick, onDelete, onAdvance, onAdvanceTo, onMoveTo, onAssign, isSales, users, isAdvancing,
+  deal, colColor, brandName, onClick, onDelete, onAdvance, onAdvanceTo, onMoveTo, onAssign, onEdit, isSales, users, isAdvancing,
 }: {
   deal: ApiDeal
   colColor: string
@@ -388,6 +410,7 @@ function DraggableDealCard({
   onAdvanceTo?: (stage: string) => void
   onMoveTo?: (stage: string) => void
   onAssign?: (id: string, name: string) => void
+  onEdit?: () => void
   isSales?: boolean
   users?: ApiUser[]
   isAdvancing?: boolean
@@ -415,6 +438,7 @@ function DraggableDealCard({
         onAdvanceTo={onAdvanceTo}
         onMoveTo={onMoveTo}
         onAssign={onAssign}
+        onEdit={onEdit}
         isSales={isSales}
         users={users}
         isAdvancing={isAdvancing}
@@ -431,13 +455,191 @@ function DroppableColumn({ col, children }: { col: (typeof KANBAN_STAGES)[number
       ref={setNodeRef}
       data-stage-id={col.id}
       className={cn(
-        'w-[252px] shrink-0 flex flex-col rounded-lg transition-all duration-150',
+        'w-[252px] shrink-0 flex flex-col rounded-lg transition-all duration-150 self-stretch',
         'bg-[rgba(0,0,0,0.02)] dark:bg-white/[.02]',
         isOver ? 'border-2 border-dashed' : 'border border-black/[.07] dark:border-white/[.08]',
       )}
       style={isOver ? { borderColor: col.color } : undefined}
     >
       {children}
+    </div>
+  )
+}
+
+// --- MobileActionSheet ---
+function MobileActionSheet({
+  deal,
+  brandName,
+  onClose,
+  onDelete,
+  onAdvanceTo,
+  onMoveTo,
+  onAssign,
+  onEdit,
+  onViewDeal,
+  isSales,
+  users,
+  showAdvance,
+  setShowAdvance,
+  showMoveBack,
+  setShowMoveBack,
+  showAssign,
+  setShowAssign,
+}: {
+  deal: ApiDeal
+  brandName: string
+  onClose: () => void
+  onDelete: () => void
+  onAdvanceTo: (stage: string) => void
+  onMoveTo: (stage: string) => void
+  onAssign: (id: string, name: string) => void
+  onEdit: () => void
+  onViewDeal: () => void
+  isSales: boolean
+  users: ApiUser[]
+  showAdvance: boolean
+  setShowAdvance: (v: boolean) => void
+  showMoveBack: boolean
+  setShowMoveBack: (v: boolean) => void
+  showAssign: boolean
+  setShowAssign: (v: boolean) => void
+}) {
+  const isTerminal = deal.stage === 'closed_won' || deal.stage === 'closed_lost'
+  const advanceTargets = getAdvanceTargets(deal.stage)
+  const moveBackTargets = getMoveBackTargets(deal.stage)
+
+  return (
+    <div className="fixed inset-0 z-50 md:hidden" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50 animate-in fade-in-0 duration-200" />
+      <div
+        className="absolute bottom-0 left-0 right-0 bg-white dark:bg-[#1e1e21] rounded-t-xl max-h-[70vh] overflow-y-auto animate-in slide-in-from-bottom duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Context label */}
+        <div className="px-4 pt-4 pb-3 border-b border-black/[.06] dark:border-white/[.08]">
+          <p className="text-xxs font-semibold text-slate-400 uppercase tracking-wide">{brandName}</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5">{toPascalCase(deal.title)}</p>
+        </div>
+
+        {/* Actions */}
+        <div>
+          {/* Assign */}
+          {!isTerminal && (
+            <>
+              <button
+                onClick={() => { setShowAssign(!showAssign); setShowAdvance(false); setShowMoveBack(false) }}
+                className="flex items-center justify-between w-full py-3.5 px-4 text-sm text-slate-700 dark:text-slate-300 border-b border-black/[.04] dark:border-white/[.06] active:bg-slate-50 dark:active:bg-white/[.04]"
+              >
+                <span className="flex items-center gap-3"><UserIcon size={16} /> Assign</span>
+                <ChevronRight size={14} className={cn('text-slate-400 transition-transform duration-150', showAssign && 'rotate-90')} />
+              </button>
+              {showAssign && (
+                <div className="border-b border-black/[.04] dark:border-white/[.06] bg-slate-50/50 dark:bg-white/[.02]">
+                  {users.length === 0 ? (
+                    <div className="px-4 py-3 text-xs text-slate-400">No team members</div>
+                  ) : (
+                    users.map(u => (
+                      <button
+                        key={u.id}
+                        onClick={() => { onAssign(u.id, u.name || u.email); onClose() }}
+                        className="flex items-center gap-3 w-full py-2.5 px-6 text-sm text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-white/[.04]"
+                      >
+                        <Avatar name={u.name || u.email} src={u.image ?? undefined} size={22} />
+                        {u.name || u.email}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Advance to... */}
+          {advanceTargets.length > 0 && (
+            <>
+              <button
+                onClick={() => { setShowAdvance(!showAdvance); setShowMoveBack(false); setShowAssign(false) }}
+                className="flex items-center justify-between w-full py-3.5 px-4 text-sm text-slate-700 dark:text-slate-300 border-b border-black/[.04] dark:border-white/[.06] active:bg-slate-50 dark:active:bg-white/[.04]"
+              >
+                <span className="flex items-center gap-3"><ArrowRight size={16} /> Advance to...</span>
+                <ChevronDown size={14} className={cn('text-slate-400 transition-transform duration-150', showAdvance && 'rotate-180')} />
+              </button>
+              {showAdvance && (
+                <div className="border-b border-black/[.04] dark:border-white/[.06] bg-slate-50/50 dark:bg-white/[.02]">
+                  {advanceTargets.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => { onAdvanceTo(t.dbStage); onClose() }}
+                      className="flex items-center gap-3 w-full py-2.5 px-6 text-sm text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-white/[.04]"
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Move back... */}
+          {moveBackTargets.length > 0 && (
+            <>
+              <button
+                onClick={() => { setShowMoveBack(!showMoveBack); setShowAdvance(false); setShowAssign(false) }}
+                className="flex items-center justify-between w-full py-3.5 px-4 text-sm text-slate-700 dark:text-slate-300 border-b border-black/[.04] dark:border-white/[.06] active:bg-slate-50 dark:active:bg-white/[.04]"
+              >
+                <span className="flex items-center gap-3"><ArrowLeft size={16} /> Move back...</span>
+                <ChevronDown size={14} className={cn('text-slate-400 transition-transform duration-150', showMoveBack && 'rotate-180')} />
+              </button>
+              {showMoveBack && (
+                <div className="border-b border-black/[.04] dark:border-white/[.06] bg-slate-50/50 dark:bg-white/[.02]">
+                  {moveBackTargets.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => { onMoveTo(t.dbStage); onClose() }}
+                      className="flex items-center gap-3 w-full py-2.5 px-6 text-sm text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-white/[.04]"
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* View deal */}
+          <button
+            onClick={() => { onViewDeal(); onClose() }}
+            className="flex items-center gap-3 w-full py-3.5 px-4 text-sm text-slate-700 dark:text-slate-300 border-b border-black/[.04] dark:border-white/[.06] active:bg-slate-50 dark:active:bg-white/[.04]"
+          >
+            <ExternalLink size={16} /> View deal
+          </button>
+
+          {/* Edit deal */}
+          {isSales && (
+            <button
+              onClick={() => { onEdit(); onClose() }}
+              className="flex items-center gap-3 w-full py-3.5 px-4 text-sm text-slate-700 dark:text-slate-300 border-b border-black/[.04] dark:border-white/[.06] active:bg-slate-50 dark:active:bg-white/[.04]"
+            >
+              <Pencil size={16} /> Edit deal
+            </button>
+          )}
+
+          {/* Delete */}
+          {isSales && (
+            <button
+              onClick={() => { onDelete(); onClose() }}
+              className="flex items-center gap-3 w-full py-3.5 px-4 text-sm text-red-600 border-b border-black/[.04] dark:border-white/[.06] active:bg-red-50 dark:active:bg-red-500/10"
+            >
+              <Trash2 size={16} /> Delete
+            </button>
+          )}
+        </div>
+
+        {/* Bottom safe area */}
+        <div className="h-6" />
+      </div>
     </div>
   )
 }
@@ -450,10 +652,16 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   const [amFilter, setAmFilter] = useState<string | null>(null)
   const [amDropdownOpen, setAmDropdownOpen] = useState(false)
   const [deleteConfirmDealId, setDeleteConfirmDealId] = useState<string | null>(null)
-  const [moveConfirm, setMoveConfirm] = useState<{ dealId: string; targetStage: string; dealTitle: string } | null>(null)
+  const [moveConfirm, setMoveConfirm] = useState<{ dealId: string; currentStage: string; targetStage: string; dealTitle: string } | null>(null)
   const [advancingDealId, setAdvancingDealId] = useState<string | null>(null)
   const [showCreateDeal, setShowCreateDeal] = useState(false)
   const [showCreateBrand, setShowCreateBrand] = useState(false)
+  const [editingDeal, setEditingDeal] = useState<ApiDeal | null>(null)
+  const [mobileStageFilter, setMobileStageFilter] = useState<string | null>(null)
+  const [mobileActionDeal, setMobileActionDeal] = useState<ApiDeal | null>(null)
+  const [mobileShowAdvance, setMobileShowAdvance] = useState(false)
+  const [mobileShowMoveBack, setMobileShowMoveBack] = useState(false)
+  const [mobileShowAssign, setMobileShowAssign] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const amDropdownRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
@@ -462,9 +670,10 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   const scrolledRef = useRef(false)
   const { isSales } = useUser()
 
-  const { data: deals = [], isLoading } = useGetDeals()
-  const { data: companies = [] } = useGetCompanies()
-  const { data: users = [] } = useGetUsers()
+  const { data: deals = [], isLoading: dealsLoading } = useGetDeals()
+  const { data: companies = [], isLoading: companiesLoading } = useGetCompanies()
+  const { data: users = [], isLoading: usersLoading } = useGetUsers()
+  const isLoading = dealsLoading || companiesLoading || usersLoading
 
   const companyMap = useMemo(() => {
     const m = new Map<string, string>()
@@ -538,6 +747,14 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
     return result
   }, [deals, search, amFilter, amOptions, companyMap])
 
+  // Mobile: further filter by stage when a pill is selected
+  const mobileFilteredDeals = useMemo(() => {
+    if (!mobileStageFilter) return filteredDeals
+    const col = KANBAN_STAGES.find(c => c.id === mobileStageFilter)
+    if (!col) return filteredDeals
+    return filteredDeals.filter(d => col.matches.includes(d.stage))
+  }, [filteredDeals, mobileStageFilter])
+
   const handleDeleteDeal = useCallback((dealId: string) => {
     setDeleteConfirmDealId(dealId)
   }, [])
@@ -561,14 +778,16 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
     queryClient.setQueryData<ApiDeal[]>(queryKeys.deals.all, old =>
       old?.map(d => d.id === dealId ? { ...d, stage: nextStage } : d) ?? []
     )
+    const dealTitle = deals.find(d => d.id === dealId)?.title ?? 'Deal'
     patchStage.mutate({ id: dealId, stage: nextStage }, {
+      onSuccess: () => stageToast(currentStage, nextStage, dealTitle),
       onError: () => queryClient.setQueryData(queryKeys.deals.all, previousDeals),
       onSettled: () => {
         setAdvancingDealId(null)
         queryClient.invalidateQueries({ queryKey: queryKeys.deals.all })
       },
     })
-  }, [patchStage, queryClient])
+  }, [deals, patchStage, queryClient])
 
   /**
    * Advance to a specific forward stage.
@@ -596,8 +815,8 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
     queryClient.setQueryData<ApiDeal[]>(queryKeys.deals.all, old =>
       old?.map(d => d.id === dealId ? { ...d, stage: targetStage } : d) ?? []
     )
+    const origStage = deal.stage
     try {
-      // Apply each intermediate stage sequentially
       for (const stage of stages) {
         await new Promise<void>((resolve, reject) => {
           patchStage.mutate({ id: dealId, stage }, {
@@ -606,6 +825,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
           })
         })
       }
+      stageToast(origStage, targetStage, deal.title)
     } catch {
       queryClient.setQueryData(queryKeys.deals.all, previousDeals)
     } finally {
@@ -614,21 +834,24 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
     }
   }, [deals, patchStage, queryClient])
 
-  /** Move deal back to a previous stage — shows confirmation modal */
+  // Move deal back to a previous stage — shows confirmation modal
   const handleMoveTo = useCallback((dealId: string, targetStage: string) => {
     const deal = deals.find(d => d.id === dealId)
     if (!deal) return
-    setMoveConfirm({ dealId, targetStage, dealTitle: deal.title })
+    setMoveConfirm({ dealId, currentStage: deal.stage, targetStage, dealTitle: deal.title })
   }, [deals])
 
   const confirmMove = useCallback(() => {
     if (!moveConfirm) return
-    const { dealId, targetStage } = moveConfirm
+    const { dealId, targetStage, dealTitle } = moveConfirm
+    const deal = deals.find(d => d.id === dealId)
+    const fromStage = deal?.stage ?? 'lead'
     const previousDeals = queryClient.getQueryData<ApiDeal[]>(queryKeys.deals.all)
     queryClient.setQueryData<ApiDeal[]>(queryKeys.deals.all, old =>
       old?.map(d => d.id === dealId ? { ...d, stage: targetStage } : d) ?? []
     )
     patchStage.mutate({ id: dealId, stage: targetStage }, {
+      onSuccess: () => stageToast(fromStage, targetStage, dealTitle),
       onError: () => queryClient.setQueryData(queryKeys.deals.all, previousDeals),
       onSettled: () => {
         setMoveConfirm(null)
@@ -698,16 +921,18 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
     if (currentCol?.id === over.id) return
     const currentOrder = STAGE_ORDER[deal.stage] ?? 0
     const targetOrder = STAGE_ORDER[targetStage] ?? 0
-    // Backward drag → show confirmation modal instead of direct move
+    // Backward drag — show confirmation modal instead of direct move
     if (targetOrder < currentOrder) {
-      setMoveConfirm({ dealId: deal.id, targetStage, dealTitle: deal.title })
+      setMoveConfirm({ dealId: deal.id, currentStage: deal.stage, targetStage, dealTitle: deal.title })
       return
     }
     const previousDeals = queryClient.getQueryData<ApiDeal[]>(queryKeys.deals.all)
+    const origStage = deal.stage
     queryClient.setQueryData<ApiDeal[]>(queryKeys.deals.all, old =>
       old?.map(d => d.id === deal.id ? { ...d, stage: targetStage } : d) ?? []
     )
     patchStage.mutate({ id: deal.id, stage: targetStage }, {
+      onSuccess: () => stageToast(origStage, targetStage, deal.title),
       onError: () => queryClient.setQueryData(queryKeys.deals.all, previousDeals),
       onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.deals.all }),
     })
@@ -736,12 +961,12 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
         />
       )}
 
-      {/* Stats + actions */}
-      <div className="flex items-center justify-between gap-2 px-4 py-2.5 shrink-0">
+      {/* ── Desktop stats + actions (hidden on mobile) ── */}
+      <div className="hidden md:flex items-center justify-between gap-2 px-4 py-2.5 shrink-0">
         {isLoading ? (
           <div className="h-4 w-40 bg-slate-100 dark:bg-white/[.06] rounded animate-pulse" />
         ) : (
-          <span className="text-[13px] font-medium text-slate-900 dark:text-white shrink-0">
+          <span className="text-ssm font-medium text-slate-900 dark:text-white shrink-0">
             {activeDeals.length} active deal{activeDeals.length !== 1 ? 's' : ''}
             {totalValue > 0 && (
               <> &middot; <span className="tabular-nums">{formatPeso(totalValue)}</span></>
@@ -762,7 +987,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search deals…"
-                className="flex-1 bg-transparent text-[12px] text-slate-900 dark:text-white placeholder:text-slate-400 min-w-0 outline-none focus:outline-none"
+                className="flex-1 bg-transparent text-xs text-slate-900 dark:text-white placeholder:text-slate-400 min-w-0 outline-none focus:outline-none"
               />
               <button
                 onClick={() => { setSearchOpen(false); setSearch('') }}
@@ -774,7 +999,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
           ) : (
             <button
               onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 50) }}
-              className="bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.08] rounded-lg px-3 py-[5px] text-[12px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors duration-150 cursor-pointer flex items-center gap-1.5"
+              className="bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.08] rounded-lg px-3 py-[5px] text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors duration-150 cursor-pointer flex items-center gap-1.5"
               title="Search (Ctrl+F)"
             >
               <Search size={12} /> Search
@@ -786,13 +1011,13 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
             <>
               <button
                 onClick={() => setShowCreateBrand(true)}
-                className="bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.08] rounded-lg px-3 py-[5px] text-[12px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors flex items-center gap-1.5"
+                className="bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.08] rounded-lg px-3 py-[5px] text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors flex items-center gap-1.5"
               >
                 + New Brand
               </button>
               <button
                 onClick={() => setShowCreateDeal(true)}
-                className="rounded-lg px-3 py-[5px] text-[12px] font-medium text-white transition-colors flex items-center gap-1.5"
+                className="rounded-lg px-3 py-[5px] text-xs font-medium text-white transition-colors flex items-center gap-1.5"
                 style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
               >
                 + New Deal
@@ -805,7 +1030,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
             <button
               onClick={() => setAmDropdownOpen(o => !o)}
               className={cn(
-                'bg-white dark:bg-[#1e1e21] border rounded-lg px-3 py-[5px] text-[12px] font-medium hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors duration-150 cursor-pointer flex items-center gap-1.5',
+                'bg-white dark:bg-[#1e1e21] border rounded-lg px-3 py-[5px] text-xs font-medium hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors duration-150 cursor-pointer flex items-center gap-1.5',
                 amFilter
                   ? 'border-primary/30 text-primary'
                   : 'border-black/[.08] dark:border-white/[.08] text-slate-700 dark:text-slate-300'
@@ -819,7 +1044,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                 <button
                   onClick={() => { setAmFilter(null); setAmDropdownOpen(false) }}
                   className={cn(
-                    'w-full px-3 py-1.5 text-[12px] text-left hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors',
+                    'w-full px-3 py-1.5 text-xs text-left hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors',
                     !amFilter ? 'font-semibold text-primary' : 'text-slate-700 dark:text-slate-300'
                   )}
                 >
@@ -830,7 +1055,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                     key={o.id}
                     onClick={() => { setAmFilter(o.id); setAmDropdownOpen(false) }}
                     className={cn(
-                      'w-full px-3 py-1.5 text-[12px] text-left hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors',
+                      'w-full px-3 py-1.5 text-xs text-left hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors',
                       amFilter === o.id ? 'font-semibold text-primary' : 'text-slate-700 dark:text-slate-300'
                     )}
                   >
@@ -843,8 +1068,8 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
         </div>
       </div>
 
-      {/* Board */}
-      <div className="flex-1 overflow-auto">
+      {/* ── Desktop board (hidden on mobile) ── */}
+      <div className="hidden md:block flex-1 overflow-auto">
         {isLoading ? (
           <div className="flex gap-2.5 px-4 pb-4" style={{ minWidth: 'max-content' }}>
             {KANBAN_STAGES.map(col => (
@@ -882,24 +1107,24 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div className="flex gap-2.5 px-4 pb-4" style={{ minWidth: 'max-content' }}>
+            <div className="flex items-stretch gap-2.5 px-4 pb-4 min-h-full" style={{ minWidth: 'max-content' }}>
               {columnDeals.map(col => (
                 <DroppableColumn key={col.id} col={col}>
                   {/* Column header */}
                   <div className="px-3.5 py-3 shrink-0 border-b border-black/[.06] dark:border-white/[.08] bg-white/60 dark:bg-white/[.04]">
                     <div className="flex items-center gap-2">
                       <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: col.color }} />
-                      <span className="text-[12.5px] font-semibold text-slate-700 dark:text-slate-300 flex-1 leading-none">{col.label}</span>
-                      <span className="bg-white dark:bg-[#1e1e21] border border-black/[.07] dark:border-white/[.08] text-slate-500 text-[11px] font-semibold tabular-nums px-2 py-0.5 rounded-full">
+                      <span className="text-ssm font-semibold text-slate-700 dark:text-slate-300 flex-1 leading-none">{col.label}</span>
+                      <span className="bg-white dark:bg-[#1e1e21] border border-black/[.07] dark:border-white/[.08] text-slate-500 text-xxs font-semibold tabular-nums px-2 py-0.5 rounded-full">
                         {col.deals.length}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 mt-1 pl-[18px]">
-                      <span className="text-[12px] tabular-nums font-medium" style={{ color: col.total > 0 ? col.color : undefined, opacity: col.total > 0 ? 1 : 0.4 }}>
+                      <span className="text-xs tabular-nums font-medium" style={{ color: col.total > 0 ? col.color : undefined, opacity: col.total > 0 ? 1 : 0.4 }}>
                         {formatPeso(col.total)}
                       </span>
                       {totalValue > 0 && col.total > 0 && !CLOSED_STAGE_IDS.has(col.id) && (
-                        <span className="text-[10px] text-slate-400 tabular-nums">
+                        <span className="text-atom text-slate-400 tabular-nums">
                           ({Math.round((col.total / totalValue) * 100)}%)
                         </span>
                       )}
@@ -909,7 +1134,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                   {/* Cards */}
                   <div className="flex flex-col gap-2 p-2.5">
                     {col.deals.length === 0 ? (
-                      <div className="py-8 text-center text-[12px] text-slate-300 dark:text-white/20">
+                      <div className="py-8 text-center text-xs text-slate-300 dark:text-white/20">
                         No deals
                       </div>
                     ) : (
@@ -926,6 +1151,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                           onAdvanceTo={(stage) => handleAdvanceTo(d.id, stage)}
                           onMoveTo={(stage) => handleMoveTo(d.id, stage)}
                           onAssign={(id, name) => handleAssignDeal(d.id, id, name)}
+                          onEdit={() => setEditingDeal(d)}
                           isSales={isSales}
                           isAdvancing={advancingDealId === d.id}
                         />
@@ -953,25 +1179,255 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
         )}
       </div>
 
+      {/* ── Mobile pipeline view (hidden on desktop) ── */}
+      <div className="flex flex-col flex-1 overflow-hidden md:hidden">
+        {/* Mobile header */}
+        <div className="px-4 pt-3 pb-2.5 shrink-0">
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-bold text-slate-900 dark:text-white">Deals</h1>
+              {!isLoading && (
+                <span className="bg-slate-100 dark:bg-white/[.06] text-slate-500 text-xxs font-semibold tabular-nums px-2 py-0.5 rounded-full">
+                  {filteredDeals.length}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {searchOpen ? (
+                <div className="flex items-center gap-1.5 bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.08] rounded-lg px-2.5 py-[5px] w-[160px]">
+                  <Search size={13} className="text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Search..."
+                    autoFocus
+                    className="flex-1 bg-transparent text-xs text-slate-900 dark:text-white placeholder:text-slate-400 min-w-0 outline-none focus:outline-none"
+                  />
+                  <button onClick={() => { setSearchOpen(false); setSearch('') }} className="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                    <X size={13} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setSearchOpen(true)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 border border-black/[.08] dark:border-white/[.08] bg-white dark:bg-[#1e1e21]"
+                >
+                  <Search size={14} />
+                </button>
+              )}
+              {isSales && (
+                <>
+                  <button
+                    onClick={() => setShowCreateBrand(true)}
+                    className="h-8 rounded-lg px-2.5 text-xs font-medium text-slate-700 dark:text-slate-300 border border-black/[.08] dark:border-white/[.08] bg-white dark:bg-[#1e1e21]"
+                  >
+                    + Brand
+                  </button>
+                  <button
+                    onClick={() => setShowCreateDeal(true)}
+                    className="h-8 rounded-lg px-2.5 text-xs font-medium text-white"
+                    style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
+                  >
+                    + Deal
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Stage filter pills */}
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
+            <button
+              onClick={() => setMobileStageFilter(null)}
+              className={cn(
+                'rounded-full text-xxs font-semibold px-3 py-1 whitespace-nowrap shrink-0 transition-colors duration-150',
+                mobileStageFilter === null
+                  ? 'bg-primary text-white'
+                  : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
+              )}
+            >
+              All stages
+            </button>
+            {KANBAN_STAGES.map(col => {
+              const count = filteredDeals.filter(d => col.matches.includes(d.stage)).length
+              return (
+                <button
+                  key={col.id}
+                  onClick={() => setMobileStageFilter(col.id)}
+                  className={cn(
+                    'rounded-full text-xxs font-semibold px-3 py-1 whitespace-nowrap shrink-0 transition-colors duration-150 flex items-center gap-1.5',
+                    mobileStageFilter === col.id
+                      ? 'bg-primary text-white'
+                      : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
+                  )}
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: col.color }} />
+                  {col.label}
+                  {count > 0 && <span className="tabular-nums">{count}</span>}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Mobile deal cards list */}
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          {isLoading ? (
+            <div className="flex flex-col gap-2.5">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="rounded-lg p-3.5 bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] animate-pulse">
+                  <div className="h-2.5 w-20 bg-slate-100 dark:bg-white/[.06] rounded mb-2" />
+                  <div className="h-4 w-full bg-slate-100 dark:bg-white/[.06] rounded mb-3" />
+                  <div className="h-3 w-16 bg-slate-100 dark:bg-white/[.06] rounded-full mb-3" />
+                  <div className="border-t border-black/[.04] dark:border-white/[.06] pt-2.5 flex items-center justify-between">
+                    <div className="h-4 w-16 bg-slate-100 dark:bg-white/[.06] rounded" />
+                    <div className="h-5 w-5 bg-slate-100 dark:bg-white/[.06] rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : mobileFilteredDeals.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-400 dark:text-white/20">
+              No deals found
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {mobileFilteredDeals.map(d => {
+                const brandName = companyMap.get(d.companyId) ?? 'No Brand'
+                const stageCol = KANBAN_STAGES.find(c => c.matches.includes(d.stage))
+                const stageColor = stageCol?.color ?? '#94a3b8'
+                const stageLabel = STAGE_LABELS[d.stage] ?? d.stage
+                const outreach = d.outreachCategory || 'outbound'
+                const services = d.servicesTags || []
+                const resolvedAm = users.find(u => u.id === d.assignedTo)
+                const amShortName = resolvedAm
+                  ? (resolvedAm.nickname ?? resolvedAm.firstName ?? resolvedAm.name?.split(' ')[0] ?? resolvedAm.email?.split('@')[0] ?? '?')
+                  : (d.assignedTo ? '?' : '-')
+                const amName = resolvedAm?.name ?? resolvedAm?.email ?? d.assignedTo ?? 'Unassigned'
+
+                return (
+                  <div
+                    key={d.id}
+                    onClick={() => setMobileActionDeal(d)}
+                    className="rounded-lg p-3 bg-white dark:bg-[#222225] border border-black/[.08] dark:border-white/[.1] active:bg-slate-50 dark:active:bg-white/[.04] transition-colors cursor-pointer"
+                  >
+                    {/* Top: stage dot + brand + outreach pill + stage pill */}
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: stageColor }} />
+                        <span className="text-xxs font-semibold uppercase tracking-wide text-slate-400 truncate">
+                          {brandName}
+                        </span>
+                        <span className={cn(
+                          'text-atom font-semibold px-1.5 py-px rounded-full leading-tight shrink-0',
+                          outreach === 'inbound'
+                            ? 'bg-[rgba(22,163,74,0.1)] text-[#16a34a]'
+                            : 'bg-slate-100 dark:bg-white/[.06] text-slate-500'
+                        )}>
+                          {outreach === 'inbound' ? 'Inbound' : 'Outbound'}
+                        </span>
+                      </div>
+                      <span
+                        className="text-atom font-semibold px-2 py-0.5 rounded-full shrink-0"
+                        style={{
+                          background: `color-mix(in srgb, ${stageColor} 12%, transparent)`,
+                          color: stageColor,
+                        }}
+                      >
+                        {stageLabel}
+                      </span>
+                    </div>
+
+                    {/* Deal title */}
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white leading-snug mb-1.5">
+                      {d.title.length <= 5 ? d.title.toUpperCase() : toPascalCase(d.title)}
+                    </p>
+
+                    {/* Service tag */}
+                    {services.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2.5">
+                        {services.slice(0, 2).map(s => (
+                          <span
+                            key={s}
+                            className="text-atom font-medium px-2 py-0.5 rounded-full dark:brightness-150"
+                            style={{ background: `${stageColor}18`, color: stageColor }}
+                          >
+                            {formatServiceType(s)}
+                          </span>
+                        ))}
+                        {services.length > 2 && (
+                          <span className="text-atom text-slate-400">+{services.length - 2}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Divider + bottom row */}
+                    <div className="flex items-center justify-between pt-2 border-t border-black/[.05] dark:border-white/[.08]">
+                      <span className="text-sm font-bold tabular-nums" style={{ color: stageColor }}>
+                        {formatPeso(parseFloat(d.value || '0') || 0)}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <Avatar name={amName} email={resolvedAm?.email ?? undefined} src={resolvedAm?.image ?? undefined} size={20} />
+                        <span className="text-xxs font-medium text-slate-600 dark:text-slate-400">{amShortName}</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile action sheet */}
+      {mobileActionDeal && (
+        <MobileActionSheet
+          deal={mobileActionDeal}
+          brandName={companyMap.get(mobileActionDeal.companyId) ?? 'No Brand'}
+          onClose={() => { setMobileActionDeal(null); setMobileShowAdvance(false); setMobileShowMoveBack(false); setMobileShowAssign(false) }}
+          onDelete={() => handleDeleteDeal(mobileActionDeal.id)}
+          onAdvanceTo={(stage) => handleAdvanceTo(mobileActionDeal.id, stage)}
+          onMoveTo={(stage) => handleMoveTo(mobileActionDeal.id, stage)}
+          onAssign={(id, name) => handleAssignDeal(mobileActionDeal.id, id, name)}
+          onEdit={() => setEditingDeal(mobileActionDeal)}
+          onViewDeal={() => onOpenDeal(mobileActionDeal.id)}
+          isSales={isSales}
+          users={users}
+          showAdvance={mobileShowAdvance}
+          setShowAdvance={setMobileShowAdvance}
+          showMoveBack={mobileShowMoveBack}
+          setShowMoveBack={setMobileShowMoveBack}
+          showAssign={mobileShowAssign}
+          setShowAssign={setMobileShowAssign}
+        />
+      )}
+
       {/* Delete confirmation modal */}
       {deleteConfirmDealId && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="w-full sm:w-[420px] bg-white dark:bg-[#1e1e21] rounded-lg shadow-xl p-4 animate-in slide-in-from-bottom duration-150">
-            <h2 className="text-[14px] font-semibold text-slate-900 dark:text-white mb-1">Delete deal?</h2>
-            <p className="text-[12px] text-slate-600 dark:text-slate-400 mb-4">This action cannot be undone. The deal will be permanently removed from your pipeline.</p>
-            <div className="flex items-center gap-2 justify-end">
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm px-4 flex items-center justify-center"
+          onClick={() => setDeleteConfirmDealId(null)}
+        >
+          <div
+            className="max-w-sm w-full rounded-xl border border-black/[.06] dark:border-white/[.08] bg-white dark:bg-[#1e1e21] shadow-2xl p-4 animate-in zoom-in-95 fade-in-0 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">Delete deal?</p>
+            <p className="text-ssm text-slate-600 dark:text-slate-400 leading-relaxed mt-1">This action cannot be undone. The deal will be permanently removed from your pipeline.</p>
+            <div className="flex gap-2.5 mt-4">
               <button
                 onClick={() => setDeleteConfirmDealId(null)}
-                className="px-3.5 py-1.5 text-[12px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[.06] rounded-lg transition-colors"
+                className="flex-1 h-8 rounded-lg text-xs font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={deleteDeal.isPending}
-                className="px-3.5 py-1.5 text-[12px] font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 rounded-lg transition-colors active:scale-[0.98]"
+                className="flex-1 h-8 flex items-center justify-center gap-1.5 rounded-lg text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 transition-colors"
               >
-                {deleteDeal.isPending ? 'Deleting…' : 'Delete'}
+                <>{deleteDeal.isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Delete</>
               </button>
             </div>
           </div>
@@ -980,36 +1436,61 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
 
       {/* Move-back confirmation modal */}
       {moveConfirm && (() => {
+        const currentCol = KANBAN_STAGES.find(c => c.matches.includes(moveConfirm.currentStage))
         const targetCol = KANBAN_STAGES.find(c => c.matches.includes(moveConfirm.targetStage))
         return (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-150">
-            <div className="w-full sm:w-[420px] bg-white dark:bg-[#1e1e21] rounded-lg shadow-xl p-4 animate-in slide-in-from-bottom duration-150">
-              <h2 className="text-[14px] font-semibold text-slate-900 dark:text-white mb-1">Move deal back?</h2>
-              <p className="text-[12px] text-slate-600 dark:text-slate-400 mb-4">
-                Moving <span className="font-semibold text-slate-900 dark:text-white">{moveConfirm.dealTitle}</span> to{' '}
+          <div
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm px-4 flex items-center justify-center"
+            onClick={() => setMoveConfirm(null)}
+          >
+            <div
+              className="max-w-sm w-full rounded-xl border border-black/[.06] dark:border-white/[.08] bg-white dark:bg-[#1e1e21] shadow-2xl p-4 animate-in zoom-in-95 fade-in-0 duration-300"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Stage transition indicator */}
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: currentCol?.color ?? '#94a3b8' }} />
+                <span className="text-xs font-semibold" style={{ color: currentCol?.color ?? '#94a3b8' }}>{currentCol?.label ?? moveConfirm.currentStage}</span>
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="text-slate-300">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: targetCol?.color ?? '#94a3b8' }} />
+                <span className="text-xs font-semibold" style={{ color: targetCol?.color ?? '#94a3b8' }}>{targetCol?.label ?? moveConfirm.targetStage}</span>
+              </div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">Move deal back?</p>
+              <p className="text-ssm text-slate-600 dark:text-slate-400 leading-relaxed mt-1">
+                Move <span className="font-semibold text-slate-900 dark:text-white">{moveConfirm.dealTitle}</span> back to{' '}
                 <span className="font-semibold" style={{ color: targetCol?.color }}>
                   {targetCol?.label ?? moveConfirm.targetStage}
-                </span>?
+                </span>.
               </p>
-              <div className="flex items-center gap-2 justify-end">
+              <div className="flex gap-2.5 mt-4">
                 <button
                   onClick={() => setMoveConfirm(null)}
-                  className="px-3.5 py-1.5 text-[12px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[.06] rounded-lg transition-colors"
+                  className="flex-1 h-8 rounded-lg text-xs font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmMove}
                   disabled={patchStage.isPending}
-                  className="px-3.5 py-1.5 text-[12px] font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-60 rounded-lg transition-colors active:scale-[0.98]"
+                  className="flex-1 h-8 flex items-center justify-center gap-1.5 rounded-lg text-xs font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-60 transition-colors"
                 >
-                  {patchStage.isPending ? 'Moving…' : 'Move'}
+                  <>{patchStage.isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Move</>
                 </button>
               </div>
             </div>
           </div>
         )
       })()}
+
+      {/* Edit Deal Modal */}
+      {editingDeal && (
+        <EditDealModal
+          deal={editingDeal as import('@/lib/types').ApiDealDetail}
+          onClose={() => setEditingDeal(null)}
+        />
+      )}
     </div>
   )
 }

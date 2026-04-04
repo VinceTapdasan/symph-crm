@@ -47,14 +47,14 @@ export function EmptyState({ icon, title, description, action, className, compac
       </div>
       <div className={cn(
         'font-semibold text-slate-900 dark:text-white',
-        compact ? 'text-[12px]' : 'text-[13px]'
+        compact ? 'text-xs' : 'text-ssm'
       )}>
         {title}
       </div>
       {description && (
         <div className={cn(
           'text-slate-400 mt-1 max-w-[280px]',
-          compact ? 'text-[11px]' : 'text-[12px]'
+          compact ? 'text-xxs' : 'text-xs'
         )}>
           {description}
         </div>

@@ -39,6 +39,12 @@ export class BillingController {
     return this.billingService.updateMilestone(milestoneId, dto)
   }
 
+  @Delete()
+  async deleteBilling(@Param('id') dealId: string) {
+    await this.billingService.deleteBilling(dealId)
+    return { ok: true }
+  }
+
   @Delete('milestones/:mid')
   async deleteMilestone(@Param('mid') milestoneId: string) {
     await this.billingService.deleteMilestone(milestoneId)

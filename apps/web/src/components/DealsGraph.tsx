@@ -545,8 +545,8 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
       {companies.length === 0 && deals.length === 0 ? (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-[13px] text-white/30">No data to graph yet</div>
-            <div className="text-[11px] text-white/20 mt-1">Add brands and deals to see the graph</div>
+            <div className="text-ssm text-white/30">No data to graph yet</div>
+            <div className="text-xxs text-white/20 mt-1">Add brands and deals to see the graph</div>
           </div>
         </div>
       ) : (
@@ -555,8 +555,8 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
           {matchedNodeIds !== null && matchCount === 0 && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center bg-[#1a1d27]/90 backdrop-blur-sm rounded-xl px-6 py-4 border border-white/[0.08]">
-                <div className="text-[13px] text-white/50">No matches for &ldquo;{debouncedSearch}&rdquo;</div>
-                <div className="text-[11px] text-white/25 mt-1">Try a different search term</div>
+                <div className="text-ssm text-white/50">No matches for &ldquo;{debouncedSearch}&rdquo;</div>
+                <div className="text-xxs text-white/25 mt-1">Try a different search term</div>
               </div>
             </div>
           )}
@@ -570,25 +570,25 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
           style={{ left: tooltip.x + 14, top: tooltip.y - 10 }}
         >
           <div className="bg-[#1a1d27] border border-white/10 rounded-lg px-3 py-2 shadow-2xl min-w-[140px]">
-            <p className="text-[12px] font-semibold text-white/90 leading-snug max-w-[200px] break-words">
+            <p className="text-xs font-semibold text-white/90 leading-snug max-w-[200px] break-words">
               {tooltip.node.label}
             </p>
             {tooltip.node.sublabel && (
-              <p className="text-[10px] mt-0.5 font-medium" style={{ color: tooltip.node.color }}>
+              <p className="text-atom mt-0.5 font-medium" style={{ color: tooltip.node.color }}>
                 {tooltip.node.sublabel}
               </p>
             )}
             {tooltip.node.kind === 'deal' && tooltip.node.value && (
-              <p className="text-[10px] text-white/40 mt-0.5 tabular-nums">
+              <p className="text-atom text-white/40 mt-0.5 tabular-nums">
                 {formatGraphValue(tooltip.node.value)}
               </p>
             )}
             {tooltip.node.kind === 'company' && (tooltip.node.documentCount ?? 0) > 0 && (
-              <p className="text-[10px] text-white/40 mt-0.5">
+              <p className="text-atom text-white/40 mt-0.5">
                 📎 {tooltip.node.documentCount} resource{tooltip.node.documentCount !== 1 ? 's' : ''}
               </p>
             )}
-            <p className="text-[9px] text-white/25 mt-1.5 border-t border-white/[0.06] pt-1.5">
+            <p className="text-atom text-white/25 mt-1.5 border-t border-white/[0.06] pt-1.5">
               {tooltip.node.kind === 'deal' ? 'Click to open deal →' : 'Click to view brand →'}
             </p>
           </div>
@@ -597,12 +597,12 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
 
       {/* Stage legend — 7 kanban stages */}
       <div className="absolute top-3 left-3 bg-[#1a1d27]/90 backdrop-blur-sm border border-white/[0.08] rounded-lg px-3 py-2.5 pointer-events-none">
-        <p className="text-[9px] font-semibold text-white/30 uppercase tracking-wider mb-2">Stages</p>
+        <p className="text-atom font-semibold text-white/30 uppercase tracking-wider mb-2">Stages</p>
         <div className="flex flex-col gap-1">
           {KANBAN_STAGES.map(s => (
             <div key={s.id} className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full shrink-0" style={{ background: s.color }} />
-              <span className="text-[9px] text-white/40">{s.label}</span>
+              <span className="text-atom text-white/40">{s.label}</span>
             </div>
           ))}
         </div>
@@ -610,7 +610,7 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
 
       {/* Controls hint */}
       <div className="absolute bottom-3 right-3 bg-[#1a1d27]/80 backdrop-blur-sm border border-white/[0.08] rounded-lg px-2.5 py-1.5 pointer-events-none">
-        <span className="text-[10px] text-white/30">Scroll to zoom · Drag to pan · Ctrl+F to search</span>
+        <span className="text-atom text-white/30">Scroll to zoom · Drag to pan · Ctrl+F to search</span>
       </div>
     </div>
   )

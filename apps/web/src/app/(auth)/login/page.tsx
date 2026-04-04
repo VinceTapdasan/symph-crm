@@ -14,7 +14,7 @@ export default function LoginPage() {
           </div>
           <div>
             <div className="text-base font-bold text-slate-900 tracking-tight">Symph CRM</div>
-            <div className="text-[11px] text-slate-400">Sales Pipeline</div>
+            <div className="text-xxs text-slate-400">Sales Pipeline</div>
           </div>
         </div>
 
@@ -23,7 +23,7 @@ export default function LoginPage() {
           <h1 className="text-lg font-semibold text-slate-900 text-center mb-1">
             Sign in
           </h1>
-          <p className="text-[13px] text-slate-500 text-center mb-6">
+          <p className="text-ssm text-slate-500 text-center mb-6">
             Use your Symph Google account to continue
           </p>
 
@@ -35,7 +35,7 @@ export default function LoginPage() {
           >
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-[13px] font-medium text-slate-700 transition-colors duration-150 cursor-pointer"
+              className="w-full flex items-center justify-center gap-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-ssm font-medium text-slate-700 transition-colors duration-150 cursor-pointer"
             >
               <svg width="18" height="18" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -48,7 +48,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-[11px] text-slate-400 text-center mt-4">
+        <p className="text-xxs text-slate-400 text-center mt-4">
           Symph internal use only
         </p>
       </div>

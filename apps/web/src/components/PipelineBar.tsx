@@ -35,7 +35,7 @@ export function PipelineBar({ deals }: PipelineBarProps) {
             }}
           >
             <div
-              className="text-[11px] font-medium truncate"
+              className="text-xxs font-medium truncate"
               style={{ color: hasDeals ? s.color : '#94a3b8' }}
             >
               {s.label}
@@ -51,7 +51,7 @@ export function PipelineBar({ deals }: PipelineBarProps) {
               />
             </div>
             <div
-              className="text-[15px] font-bold tabular-nums text-slate-900 dark:text-white"
+              className="text-sbase font-bold tabular-nums text-slate-900 dark:text-white"
               style={!hasDeals ? { color: '#94a3b8' } : undefined}
             >
               {s.count}

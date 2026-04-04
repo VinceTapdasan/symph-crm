@@ -46,18 +46,18 @@ export function CreateBrandModal({ onClose, onCreated }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-[2px]"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-[2px] animate-in fade-in-0 duration-200"
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-[#1e1e21] rounded-lg shadow-[0_8px_40px_rgba(0,0,0,0.18)] border border-black/[.06] dark:border-white/[.08] w-full max-w-[400px] mx-4"
+        className="bg-white dark:bg-[#1e1e21] rounded-lg shadow-[0_8px_40px_rgba(0,0,0,0.18)] border border-black/[.06] dark:border-white/[.08] w-full max-w-[400px] mx-4 animate-in zoom-in-95 fade-in-0 duration-200"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-4 py-3 border-b border-black/[.06] dark:border-white/[.08] flex items-center justify-between">
           <div>
-            <div className="text-[14px] font-semibold text-slate-900 dark:text-white">New Brand</div>
-            <div className="text-[11.5px] text-slate-400 mt-0.5">Add a client brand to group deals under</div>
+            <div className="text-sm font-semibold text-slate-900 dark:text-white">New Brand</div>
+            <div className="text-xs text-slate-400 mt-0.5">Add a client brand to group deals under</div>
           </div>
           <button
             onClick={onClose}
@@ -72,7 +72,7 @@ export function CreateBrandModal({ onClose, onCreated }: Props) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-4 flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">
+            <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">
               Brand Name <span className="text-red-400">*</span>
             </label>
             <Input
@@ -80,14 +80,14 @@ export function CreateBrandModal({ onClose, onCreated }: Props) {
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="e.g. Jollibee, BPI, SM Group"
-              className="h-9 text-[13px]"
+              className="h-9 text-ssm"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">Industry</label>
+              <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">Industry</label>
               <Combobox
                 options={INDUSTRY_OPTIONS.map(i => ({ value: i, label: i }))}
                 value={industry}
@@ -97,39 +97,39 @@ export function CreateBrandModal({ onClose, onCreated }: Props) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">Domain</label>
+              <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">Domain</label>
               <Input
                 value={domain}
                 onChange={e => setDomain(e.target.value)}
                 placeholder="e.g. jollibee.com.ph"
-                className="h-9 text-[13px]"
+                className="h-9 text-ssm"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">Website</label>
+              <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">Website</label>
               <Input
                 value={website}
                 onChange={e => setWebsite(e.target.value)}
                 placeholder="https://..."
-                className="h-9 text-[13px]"
+                className="h-9 text-ssm"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.05em]">HQ Location</label>
+              <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">HQ Location</label>
               <Input
                 value={hqLocation}
                 onChange={e => setHqLocation(e.target.value)}
                 placeholder="e.g. Manila, PH"
-                className="h-9 text-[13px]"
+                className="h-9 text-ssm"
               />
             </div>
           </div>
 
           {error && (
-            <p className="text-[12px] text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
               {error.message}
             </p>
           )}
@@ -138,17 +138,17 @@ export function CreateBrandModal({ onClose, onCreated }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 h-9 rounded-lg border border-black/[.08] dark:border-white/[.08] text-[13px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors"
+              className="flex-1 h-9 rounded-lg border border-black/[.08] dark:border-white/[.08] text-ssm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isPending || !name.trim()}
-              className="flex-1 h-9 rounded-lg text-[13px] font-medium text-white transition-colors disabled:opacity-50"
+              className="flex-1 h-9 flex items-center justify-center gap-1.5 rounded-lg text-ssm font-medium text-white transition-colors disabled:opacity-50"
               style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
             >
-              {isPending ? 'Creating\u2026' : 'Create Brand'}
+              <>{isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Create Brand</>
             </button>
           </div>
         </form>

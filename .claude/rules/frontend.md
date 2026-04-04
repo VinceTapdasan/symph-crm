@@ -44,6 +44,52 @@ apps/web/src/
 - Component files are `PascalCase` for features (`Dashboard.tsx`) and `kebab-case` for ui primitives (`button.tsx`).
 - Export named components, not default exports (e.g., `export function Dashboard()`).
 
+### Conditional Styling — `cn()` Utility (MANDATORY)
+
+Every component with conditional className logic MUST use the `cn()` utility from `@/lib/utils`. No exceptions.
+
+```tsx
+// CORRECT — always use cn()
+import { cn } from '@/lib/utils'
+<div className={cn('base-classes', isActive && 'active-class', variant === 'primary' ? 'bg-primary' : 'bg-slate-100')} />
+
+// WRONG — template literals
+<div className={`base-classes ${isActive ? 'active-class' : ''}`} />
+
+// WRONG — string concatenation
+<div className={'base-classes ' + (isActive ? 'active-class' : '')} />
+
+// WRONG — ternary without cn()
+<div className={isActive ? 'classA' : 'classB'} />
+```
+
+Rules:
+- Import `cn` from `@/lib/utils` in every component that has conditional classes.
+- Static className strings (`className="..."`) are fine without `cn()`.
+- `cn()` merges Tailwind classes correctly and handles falsy values.
+
+### Font Size Scale (MANDATORY)
+
+No arbitrary `text-[Npx]` values. Use only these classes:
+
+| Class | Size | Use Case |
+|-------|------|----------|
+| `text-atom` | 10px | Labels, uppercase section headers, tiny badges |
+| `text-xxs` | 11px | Table column headers, pill badges, secondary info |
+| `text-xs` | 12px | Body text, buttons, form inputs, tab labels |
+| `text-ssm` | 13px | Card headings, modal descriptions, nav items |
+| `text-sm` | 14px | Modal titles, input labels, prominent body text |
+| `text-sbase` | 15px | Sub-headings, slide-over titles |
+| `text-base` | 16px | Page titles |
+
+Custom classes (`text-atom`, `text-xxs`, `text-ssm`, `text-sbase`) are defined in `globals.css` under `@theme inline` and registered in `tailwind-merge` via `lib/utils.ts`.
+
+### Design Tokens — Border Radius & Spacing (MANDATORY)
+
+- **Default border radius for all cards, containers, modals, dropdowns, popovers:** `rounded-md`. No `rounded-xl` or `rounded-lg` on card/container surfaces.
+- **Gap between card sections:** `gap-3`. All pages that stack cards vertically or in grids use `gap-3` between card elements.
+- Buttons, inputs, badges, pills, avatars may use their own radius (`rounded-lg`, `rounded-full`, etc.).
+
 ### Data Fetching — Three-Layer Architecture (MANDATORY)
 
 Data flow is strictly one-directional:
