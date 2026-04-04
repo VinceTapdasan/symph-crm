@@ -12,7 +12,7 @@ import {
 } from '@/lib/constants'
 import { PasteChip, PastePreviewModal } from './PasteChip'
 import { useGetChatSessions, useGetChatHistory } from '@/lib/hooks/queries'
-import { useCreateChatSession } from '@/lib/hooks/mutations'
+import { useCreateChatSession, useDeleteChatSession } from '@/lib/hooks/mutations'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query-keys'
 
@@ -280,16 +280,24 @@ function SessionSidebar({
   activeSessionId,
   onSelect,
   onNewChat,
+  onDeleteSession,
   isOpen,
   onToggle,
+  expanded,
+  onToggleExpand,
 }: {
   sessions: { id: string; title: string | null; updatedAt: string; contextType: string | null }[]
   activeSessionId: string | undefined
   onSelect: (id: string) => void
   onNewChat: () => void
+  onDeleteSession: (id: string) => void
   isOpen: boolean
   onToggle: () => void
+  expanded: boolean
+  onToggleExpand: () => void
 }) {
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+
   return (
     <>
       {/* Mobile toggle button */}
@@ -321,56 +329,139 @@ function SessionSidebar({
       {/* Sidebar panel (mobile: slide-in, desktop: always visible) */}
       <div
         className={cn(
-          'fixed lg:relative z-30 top-0 left-0 h-full w-[260px] bg-white dark:bg-[#16171a] border-r border-black/[.06] dark:border-white/[.08] flex flex-col transition-transform duration-200 ease-out shrink-0',
+          'fixed lg:relative z-30 top-0 left-0 h-full bg-white dark:bg-[#16171a] border-r border-black/[.06] dark:border-white/[.08] flex flex-col transition-all duration-200 ease-out shrink-0',
+          expanded ? 'w-[260px]' : 'w-[52px]',
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        {/* Header + New Chat */}
-        <div className="px-3 pt-3 pb-2 shrink-0">
-          <button
-            onClick={onNewChat}
-            className="w-full h-9 rounded-lg border border-black/[.08] dark:border-white/[.1] bg-white dark:bg-white/[.04] hover:bg-slate-50 dark:hover:bg-white/[.06] flex items-center gap-2 px-3 text-xs font-semibold text-slate-600 dark:text-slate-300 transition-colors"
-          >
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            New Chat
-          </button>
+        {/* Header + New Chat + Collapse toggle */}
+        <div className="px-1.5 pt-3 pb-2 shrink-0 flex flex-col gap-1.5">
+          {expanded ? (
+            <div className="flex items-center gap-1.5 px-1.5">
+              <button
+                onClick={onNewChat}
+                className="flex-1 h-9 rounded-lg border border-black/[.08] dark:border-white/[.1] bg-white dark:bg-white/[.04] hover:bg-slate-50 dark:hover:bg-white/[.06] flex items-center gap-2 px-3 text-xs font-semibold text-slate-600 dark:text-slate-300 transition-colors"
+              >
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                New Chat
+              </button>
+              <button
+                onClick={onToggleExpand}
+                title="Collapse sidebar"
+                className="h-9 w-9 shrink-0 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+              >
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M9 3v18" />
+                  <path d="M14 9l-3 3 3 3" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-1.5">
+              <button
+                onClick={onToggleExpand}
+                title="Expand sidebar"
+                className="h-9 w-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+              >
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M9 3v18" />
+                  <path d="M13 15l3-3-3-3" />
+                </svg>
+              </button>
+              <button
+                onClick={onNewChat}
+                title="New Chat"
+                className="h-9 w-9 rounded-lg border border-black/[.08] dark:border-white/[.1] bg-white dark:bg-white/[.04] hover:bg-slate-50 dark:hover:bg-white/[.06] flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors"
+              >
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Session list */}
         <div className="flex-1 overflow-y-auto px-1.5 pb-3">
           {sessions.length === 0 ? (
-            <div className="px-3 py-6 text-center">
-              <p className="text-xxs text-slate-400">No conversations yet</p>
+            <div className={cn('py-6 text-center', expanded ? 'px-3' : 'px-1')}>
+              {expanded && <p className="text-xxs text-slate-400">No conversations yet</p>}
             </div>
           ) : (
             <div className="flex flex-col gap-0.5">
               {sessions.map((s) => {
                 const isActive = s.id === activeSessionId
                 const label = s.title || s.id.slice(0, 8)
-                const time = new Date(s.updatedAt)
-                const timeStr = time.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })
+                const showMenu = menuOpenId === s.id
                 return (
-                  <button
-                    key={s.id}
-                    onClick={() => onSelect(s.id)}
-                    className={cn(
-                      'w-full text-left px-3 py-2.5 rounded-lg transition-colors group',
-                      isActive
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04]'
+                  <div key={s.id} className="relative">
+                    <button
+                      onClick={() => onSelect(s.id)}
+                      className={cn(
+                        'w-full text-left rounded-lg transition-colors group',
+                        expanded ? 'px-3 py-2.5' : 'p-2 flex items-center justify-center',
+                        isActive
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04]'
+                      )}
+                      title={expanded ? undefined : label}
+                    >
+                      {expanded ? (
+                        <div className="flex items-center gap-2 min-w-0">
+                          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className="shrink-0 opacity-50">
+                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                          </svg>
+                          <span className="text-xs font-medium truncate flex-1">{label}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setMenuOpenId(showMenu ? null : s.id)
+                            }}
+                            className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/[.08] opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor">
+                              <circle cx="5" cy="12" r="2" />
+                              <circle cx="12" cy="12" r="2" />
+                              <circle cx="19" cy="12" r="2" />
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className="opacity-60">
+                          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                        </svg>
+                      )}
+                    </button>
+
+                    {/* Dropdown menu */}
+                    {showMenu && expanded && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setMenuOpenId(null)} />
+                        <div className="absolute right-1 top-full z-50 mt-0.5 w-32 bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.1] rounded-lg shadow-lg py-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setMenuOpenId(null)
+                              onDeleteSession(s.id)
+                            }}
+                            className="w-full text-left px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors flex items-center gap-2"
+                          >
+                            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                            </svg>
+                            Delete
+                          </button>
+                        </div>
+                      </>
                     )}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className="shrink-0 opacity-50">
-                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-                      </svg>
-                      <span className="text-xs font-medium truncate flex-1">{label}</span>
-                    </div>
-                    <div className="text-atom text-slate-400 mt-0.5 pl-[22px]">{timeStr}</div>
-                  </button>
+                  </div>
                 )
               })}
             </div>
@@ -393,8 +484,9 @@ export function Chat({ dealId }: { dealId?: string }) {
   const [focused, setFocused] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
 
-  // Sidebar state (mobile slide-in only)
+  // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarExpanded, setSidebarExpanded] = useState(true)
 
   // Attachment state
   const [pendingAttachment, setPendingAttachment] = useState<PendingAttachment | null>(null)
@@ -424,6 +516,11 @@ export function Chat({ dealId }: { dealId?: string }) {
   // Session management hooks
   const { data: chatSessions = [] } = useGetChatSessions(userId !== 'anonymous' ? userId : null)
   const createSession = useCreateChatSession({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.chatSessions.byUser(userId) })
+    },
+  })
+  const deleteSession = useDeleteChatSession({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.chatSessions.byUser(userId) })
     },
@@ -459,6 +556,15 @@ export function Chat({ dealId }: { dealId?: string }) {
     setPendingAttachment(null)
     setSidebarOpen(false)
   }, [])
+
+  const handleDeleteSession = useCallback((id: string) => {
+    deleteSession.mutate(id)
+    if (sessionId === id) {
+      setSessionId(undefined)
+      setMessages([])
+      setApiError(null)
+    }
+  }, [deleteSession, sessionId])
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 300)
@@ -1003,8 +1109,11 @@ export function Chat({ dealId }: { dealId?: string }) {
           activeSessionId={sessionId}
           onSelect={handleSelectSession}
           onNewChat={handleNewChat}
+          onDeleteSession={handleDeleteSession}
           isOpen={sidebarOpen}
           onToggle={() => setSidebarOpen(p => !p)}
+          expanded={sidebarExpanded}
+          onToggleExpand={() => setSidebarExpanded(p => !p)}
         />
         <div className="flex-1 min-w-0 flex flex-col">
         <div
@@ -1056,8 +1165,11 @@ export function Chat({ dealId }: { dealId?: string }) {
           activeSessionId={sessionId}
           onSelect={handleSelectSession}
           onNewChat={handleNewChat}
+          onDeleteSession={handleDeleteSession}
           isOpen={sidebarOpen}
           onToggle={() => setSidebarOpen(p => !p)}
+          expanded={sidebarExpanded}
+          onToggleExpand={() => setSidebarExpanded(p => !p)}
         />
         <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto">
@@ -1083,8 +1195,11 @@ export function Chat({ dealId }: { dealId?: string }) {
         activeSessionId={sessionId}
         onSelect={handleSelectSession}
         onNewChat={handleNewChat}
+        onDeleteSession={handleDeleteSession}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(p => !p)}
+        expanded={sidebarExpanded}
+        onToggleExpand={() => setSidebarExpanded(p => !p)}
       />
       <div ref={containerRef} className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto">

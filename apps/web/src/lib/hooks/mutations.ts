@@ -256,6 +256,15 @@ export function useUpdateMilestone(
   })
 }
 
+export function useDeleteBilling(
+  options?: UseMutationOptions<void, Error, string>,
+) {
+  return useMutation<void, Error, string>({
+    mutationFn: (dealId: string) => api.delete<void>(`/deals/${dealId}/billing`),
+    ...withToast('Billing deleted', options),
+  })
+}
+
 export function useDeleteMilestone(
   options?: UseMutationOptions<void, Error, { dealId: string; milestoneId: string }>,
 ) {
@@ -416,6 +425,15 @@ export function useCreateChatSession(
 ) {
   return useMutation<ApiChatSessionResult, Error, CreateChatSessionInput>({
     mutationFn: (input) => api.post<ApiChatSessionResult>('/chat/sessions', input),
+    ...options,
+  })
+}
+
+export function useDeleteChatSession(
+  options?: UseMutationOptions<void, Error, string>,
+) {
+  return useMutation<void, Error, string>({
+    mutationFn: (sessionId) => api.delete(`/chat/sessions/${sessionId}`),
     ...options,
   })
 }

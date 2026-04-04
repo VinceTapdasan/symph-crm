@@ -5,7 +5,7 @@ import { useGetAuditLogs, useGetUsers } from '@/lib/hooks/queries'
 import { type ColumnDef } from '@tanstack/react-table'
 import { DataTable, SortableHeader } from './ui/data-table'
 import { Avatar } from './Avatar'
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import {
   Select,
   SelectTrigger,
@@ -167,15 +167,23 @@ export function AuditLogs() {
 
         <div className="sm:ml-auto flex flex-wrap gap-2 items-center">
           {/* Search */}
-          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-white/[.03] border border-black/[.06] dark:border-white/[.08] rounded-lg px-2.5 py-[5px] flex-1 sm:flex-none sm:w-[200px] min-w-[140px]">
-            <Search size={13} className="text-slate-400 shrink-0" />
+          <div className="relative flex-1 sm:flex-none sm:w-[200px] min-w-[140px]">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search logs..."
-              className="flex-1 bg-transparent outline-none text-xs text-slate-900 dark:text-white placeholder:text-slate-400 min-w-0"
+              className="w-full bg-slate-50 dark:bg-white/[.03] border border-black/[.06] dark:border-white/[.08] rounded-lg pl-8 pr-7 py-[5px] text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none"
             />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+              >
+                <X size={12} />
+              </button>
+            )}
           </div>
 
           {/* Entity type filter */}

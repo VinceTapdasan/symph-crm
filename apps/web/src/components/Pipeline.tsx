@@ -652,7 +652,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   const [amFilter, setAmFilter] = useState<string | null>(null)
   const [amDropdownOpen, setAmDropdownOpen] = useState(false)
   const [deleteConfirmDealId, setDeleteConfirmDealId] = useState<string | null>(null)
-  const [moveConfirm, setMoveConfirm] = useState<{ dealId: string; targetStage: string; dealTitle: string } | null>(null)
+  const [moveConfirm, setMoveConfirm] = useState<{ dealId: string; currentStage: string; targetStage: string; dealTitle: string } | null>(null)
   const [advancingDealId, setAdvancingDealId] = useState<string | null>(null)
   const [showCreateDeal, setShowCreateDeal] = useState(false)
   const [showCreateBrand, setShowCreateBrand] = useState(false)
@@ -834,11 +834,11 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
     }
   }, [deals, patchStage, queryClient])
 
-  /** Move deal back to a previous stage — shows confirmation modal */
+  // Move deal back to a previous stage — shows confirmation modal
   const handleMoveTo = useCallback((dealId: string, targetStage: string) => {
     const deal = deals.find(d => d.id === dealId)
     if (!deal) return
-    setMoveConfirm({ dealId, targetStage, dealTitle: deal.title })
+    setMoveConfirm({ dealId, currentStage: deal.stage, targetStage, dealTitle: deal.title })
   }, [deals])
 
   const confirmMove = useCallback(() => {
@@ -921,9 +921,9 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
     if (currentCol?.id === over.id) return
     const currentOrder = STAGE_ORDER[deal.stage] ?? 0
     const targetOrder = STAGE_ORDER[targetStage] ?? 0
-    // Backward drag → show confirmation modal instead of direct move
+    // Backward drag — show confirmation modal instead of direct move
     if (targetOrder < currentOrder) {
-      setMoveConfirm({ dealId: deal.id, targetStage, dealTitle: deal.title })
+      setMoveConfirm({ dealId: deal.id, currentStage: deal.stage, targetStage, dealTitle: deal.title })
       return
     }
     const previousDeals = queryClient.getQueryData<ApiDeal[]>(queryKeys.deals.all)
@@ -1436,6 +1436,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
 
       {/* Move-back confirmation modal */}
       {moveConfirm && (() => {
+        const currentCol = KANBAN_STAGES.find(c => c.matches.includes(moveConfirm.currentStage))
         const targetCol = KANBAN_STAGES.find(c => c.matches.includes(moveConfirm.targetStage))
         return (
           <div
@@ -1446,12 +1447,22 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
               className="max-w-sm w-full rounded-xl border border-black/[.06] dark:border-white/[.08] bg-white dark:bg-[#1e1e21] shadow-2xl p-4 animate-in zoom-in-95 fade-in-0 duration-300"
               onClick={e => e.stopPropagation()}
             >
+              {/* Stage transition indicator */}
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: currentCol?.color ?? '#94a3b8' }} />
+                <span className="text-xs font-semibold" style={{ color: currentCol?.color ?? '#94a3b8' }}>{currentCol?.label ?? moveConfirm.currentStage}</span>
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="text-slate-300">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: targetCol?.color ?? '#94a3b8' }} />
+                <span className="text-xs font-semibold" style={{ color: targetCol?.color ?? '#94a3b8' }}>{targetCol?.label ?? moveConfirm.targetStage}</span>
+              </div>
               <p className="text-sm font-semibold text-slate-900 dark:text-white">Move deal back?</p>
               <p className="text-ssm text-slate-600 dark:text-slate-400 leading-relaxed mt-1">
-                Moving <span className="font-semibold text-slate-900 dark:text-white">{moveConfirm.dealTitle}</span> to{' '}
+                Move <span className="font-semibold text-slate-900 dark:text-white">{moveConfirm.dealTitle}</span> back to{' '}
                 <span className="font-semibold" style={{ color: targetCol?.color }}>
                   {targetCol?.label ?? moveConfirm.targetStage}
-                </span>?
+                </span>.
               </p>
               <div className="flex gap-2.5 mt-4">
                 <button

@@ -15,7 +15,7 @@ import { CreateBrandModal } from './CreateBrandModal'
 import { CreateDealModal } from './CreateDealModal'
 import { DealsGraph } from './DealsGraph'
 import { BrandSlideOver } from './BrandSlideOver'
-import { Paperclip, Pencil, Trash2 } from 'lucide-react'
+import { Paperclip, Pencil, Trash2, X } from 'lucide-react'
 import { useUpdateCompany, useDeleteCompany } from '@/lib/hooks/mutations'
 import { Combobox } from '@/components/ui/combobox'
 import { INDUSTRY_OPTIONS } from '@/lib/constants'
@@ -830,8 +830,8 @@ export function Deals({ initialView = 'table', onOpenDeal }: DealsProps) {
             </div>
 
             {/* Search */}
-            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-white/[.03] border border-black/[.06] dark:border-white/[.08] rounded-lg px-2.5 py-[5px] flex-1 sm:flex-none sm:w-[200px] min-w-[140px]">
-              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="text-slate-400 shrink-0" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round">
+            <div className="relative flex-1 sm:flex-none sm:w-[200px] min-w-[140px]">
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round">
                 <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
               <Input
@@ -840,8 +840,16 @@ export function Deals({ initialView = 'table', onOpenDeal }: DealsProps) {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search brands…"
-                className="border-none bg-transparent outline-none text-ssm text-slate-900 dark:text-white w-full placeholder:text-slate-400 focus:ring-0 focus-visible:ring-0 focus-visible:outline-none px-0 py-0 rounded-none h-auto shadow-none"
+                className="border border-black/[.06] dark:border-white/[.08] bg-slate-50 dark:bg-white/[.03] rounded-lg text-ssm text-slate-900 dark:text-white w-full placeholder:text-slate-400 focus:ring-0 focus-visible:ring-0 focus-visible:outline-none pl-8 pr-7 py-[5px] h-auto shadow-none"
               />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                >
+                  <X size={12} />
+                </button>
+              )}
             </div>
 
             {/* New Brand / New Deal */}
@@ -909,7 +917,7 @@ export function Deals({ initialView = 'table', onOpenDeal }: DealsProps) {
 
         {/* Graph view */}
         {!isLoading && (companies.length > 0 || deals.length > 0) && viewMode === 'graph' && (
-          <div className="flex-1 rounded-lg overflow-hidden border border-black/[.06] dark:border-white/[.08]">
+          <div className="-mx-4 md:mx-0 flex-1 rounded-lg overflow-hidden border border-black/[.06] dark:border-white/[.08]">
             <DealsGraph
               companies={companies}
               deals={deals}

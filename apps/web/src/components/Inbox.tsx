@@ -13,7 +13,7 @@ import { queryKeys } from '@/lib/query-keys'
 import { useUser } from '@/lib/hooks/use-user'
 import { Avatar } from './Avatar'
 import { ComposeWindow } from './ComposeWindow'
-import { MoreHorizontal, Archive, Trash2, Mail } from 'lucide-react'
+import { MoreHorizontal, Archive, Trash2, Mail, X } from 'lucide-react'
 import { useGetInbox, useGetGmailUser } from '@/lib/hooks/queries'
 import { useSendEmail, useArchiveEmailThread, useDeleteEmailThread } from '@/lib/hooks/mutations'
 
@@ -840,8 +840,16 @@ export function Inbox({ onOpenDeal: _onOpenDeal }: { onOpenDeal: (id: string) =>
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Search conversations…"
-                  className="w-full pl-8 pr-3 py-[7px] text-ssm bg-slate-50 dark:bg-white/[.04] border border-black/[.07] dark:border-white/[.07] rounded-lg text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-primary/40 transition-colors"
+                  className="w-full pl-8 pr-7 py-[7px] text-ssm bg-slate-50 dark:bg-white/[.04] border border-black/[.07] dark:border-white/[.07] rounded-lg text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-primary/40 transition-colors"
                 />
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
               </div>
               <div className="flex gap-1">
                 {(['all', 'unread'] as FilterTab[]).map(tab => (
