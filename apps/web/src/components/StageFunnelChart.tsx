@@ -127,23 +127,17 @@ export function StageFunnelChart({ data, isLoading }: StageFunnelChartProps) {
 
             </div>
 
-            {/* Terminal row: Won + Lost inline */}
-            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-black/[.06] dark:border-white/[.08]">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-                <span className="text-xxs font-semibold text-green-700 dark:text-green-400">Won</span>
+            {/* Terminal row: Won + Lost */}
+            <div className="flex gap-2 mt-3 pt-3 border-t border-black/[.06] dark:border-white/[.08]">
+              <div className="flex-1 flex items-center justify-between rounded-lg bg-green-900/20 dark:bg-green-900/30 px-3.5 py-2">
+                <span className="text-xs font-semibold text-green-700 dark:text-green-400">Won</span>
                 <span className="text-xs font-bold tabular-nums text-green-700 dark:text-green-400">{wonCount}</span>
-                {winRate !== null && (
-                  <span className="text-xxs text-green-600 dark:text-green-500 tabular-nums">{winRate}%</span>
-                )}
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
-                <span className="text-xxs font-semibold text-red-700 dark:text-red-400">Lost</span>
+              <div className="flex-1 flex items-center justify-between rounded-lg bg-red-900/20 dark:bg-red-900/30 px-3.5 py-2">
+                <span className="text-xs font-semibold text-red-700 dark:text-red-400">
+                  Lost{total > 0 && <span className="font-normal"> · {total} total</span>}
+                </span>
                 <span className="text-xs font-bold tabular-nums text-red-700 dark:text-red-400">{lostCount}</span>
-                {total > 0 && (
-                  <span className="text-xxs text-red-600 dark:text-red-500 tabular-nums">{total} closed</span>
-                )}
               </div>
             </div>
           </div>
