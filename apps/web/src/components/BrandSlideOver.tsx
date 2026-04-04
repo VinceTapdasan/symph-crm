@@ -401,43 +401,41 @@ export function BrandSlideOver({ brand, onClose, onOpenDeal }: BrandSlideOverPro
                         key={deal.id}
                         onClick={() => onOpenDeal?.(deal.id)}
                         className={cn(
-                          'flex items-start gap-3 px-3.5 py-3 rounded-lg transition-colors border border-black/[.06] dark:border-white/[.08]',
+                          'px-3.5 py-3 rounded-lg transition-colors border border-black/[.06] dark:border-white/[.08]',
                           onOpenDeal && 'cursor-pointer hover:border-black/[.12] dark:hover:border-white/[.15] hover:bg-slate-50 dark:hover:bg-white/[.02]',
                         )}
                       >
-                        <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
                           <div className="text-ssm font-semibold text-slate-900 dark:text-white truncate">
                             {formatDealTitle(deal.title)}
                           </div>
-                          <div className="flex items-center gap-1.5 mt-1 text-xxs text-slate-400">
-                            <span className="tabular-nums">{formatDealValue(deal.value)}</span>
-                            {deal.updatedAt && (
-                              <>
-                                <span>&#183;</span>
-                                <span>{new Date(deal.updatedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}</span>
-                              </>
-                            )}
-                            {deal.assignedTo && userMap.get(deal.assignedTo) && (
-                              <>
-                                <span>&#183;</span>
-                                <Avatar name={userMap.get(deal.assignedTo)!} src={userImageMap.get(deal.assignedTo!) ?? undefined} size={14} />
-                                <span className="truncate">{userMap.get(deal.assignedTo)}</span>
-                              </>
-                            )}
-                          </div>
-                          {isUnassigned && assignableCompanies.length > 0 && (
-                            <div className="mt-1.5" onClick={e => e.stopPropagation()}>
-                              <AssignBrandSelect
-                                dealId={deal.id}
-                                companies={assignableCompanies}
-                                onAssigned={() => {}}
-                              />
-                            </div>
-                          )}
-                        </div>
-                        <div className="shrink-0">
                           <StagePill stage={deal.stage ?? ''} />
                         </div>
+                        <div className="flex items-center gap-1.5 mt-1 text-xxs text-slate-400">
+                          {deal.assignedTo && userMap.get(deal.assignedTo) && (
+                            <>
+                              <Avatar name={userMap.get(deal.assignedTo)!} src={userImageMap.get(deal.assignedTo!) ?? undefined} size={14} />
+                              <span className="truncate">{userMap.get(deal.assignedTo)}</span>
+                              <span>&#183;</span>
+                            </>
+                          )}
+                          <span className="tabular-nums">{formatDealValue(deal.value)}</span>
+                          {deal.updatedAt && (
+                            <>
+                              <span>&#183;</span>
+                              <span>{new Date(deal.updatedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}</span>
+                            </>
+                          )}
+                        </div>
+                        {isUnassigned && assignableCompanies.length > 0 && (
+                          <div className="mt-1.5" onClick={e => e.stopPropagation()}>
+                            <AssignBrandSelect
+                              dealId={deal.id}
+                              companies={assignableCompanies}
+                              onAssigned={() => {}}
+                            />
+                          </div>
+                        )}
                       </div>
                     ))
                   )}
