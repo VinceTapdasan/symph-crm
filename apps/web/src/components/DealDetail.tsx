@@ -289,6 +289,7 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
   const [showEditDeal, setShowEditDeal] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [isDragging, setIsDragging] = useState(false)
   const [viewingDoc, setViewingDoc] = useState<ApiDocument | null>(null)
   const [deletingDoc, setDeletingDoc] = useState<ApiDocument | null>(null)
   const [notePasteChips, setNotePasteChips] = useState<string[]>([])
@@ -1073,34 +1074,36 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                   </Select>
                 )}
 
-                {/* Divider */}
-                <div className="w-px h-4 bg-black/[.06] dark:bg-white/[.08] mx-0.5" />
-
-                {/* List / Grid toggle */}
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={cn(
-                    'w-7 h-7 rounded-md flex items-center justify-center transition-colors',
-                    viewMode === 'list'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04]'
-                  )}
-                  title="List view"
-                >
-                  <ListIcon />
-                </button>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={cn(
-                    'w-7 h-7 rounded-md flex items-center justify-center transition-colors',
-                    viewMode === 'grid'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04]'
-                  )}
-                  title="Grid view"
-                >
-                  <GridIcon />
-                </button>
+                {/* Divider + List/Grid toggle (notes tab only) */}
+                {activeTab === 'notes' && (
+                  <>
+                    <div className="w-px h-4 bg-black/[.06] dark:bg-white/[.08] mx-0.5" />
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={cn(
+                        'w-7 h-7 rounded-md flex items-center justify-center transition-colors',
+                        viewMode === 'list'
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04]'
+                      )}
+                      title="List view"
+                    >
+                      <ListIcon />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={cn(
+                        'w-7 h-7 rounded-md flex items-center justify-center transition-colors',
+                        viewMode === 'grid'
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04]'
+                      )}
+                      title="Grid view"
+                    >
+                      <GridIcon />
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -1352,99 +1355,103 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
 
           {/* ── Resources tab ─────────────────────────────────────────────── */}
           {activeTab === 'resources' && (
-            <div className="p-4">
-              {/* Upload zone */}
-              <div className="mb-4">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={RESOURCE_ACCEPT}
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="resource-upload"
-                />
-                <label
-                  htmlFor="resource-upload"
-                  className={cn(
-                    'flex flex-col items-center gap-2 py-5 px-4 border-2 border-dashed rounded-lg cursor-pointer transition-colors',
-                    uploading
-                      ? 'border-primary/30 bg-primary/5'
-                      : 'border-slate-200 dark:border-white/[.1] hover:border-primary/40 hover:bg-primary/[.02]'
-                  )}
-                  onDragOver={e => { e.preventDefault(); e.stopPropagation() }}
-                  onDragEnter={e => { e.preventDefault(); e.stopPropagation() }}
-                  onDrop={e => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    const files = e.dataTransfer?.files
-                    if (!files?.length) return
-                    const accepted = Array.from(files).filter(f => RESOURCE_ACCEPT_LIST.includes(f.type))
-                    if (!accepted.length) return
-                    setPendingFiles(prev => [...prev, ...accepted])
-                  }}
+            <div
+              className={cn(
+                'p-4 transition-colors',
+                isDragging && 'bg-primary/[.03] ring-2 ring-inset ring-primary/20 rounded-lg'
+              )}
+              onDragOver={e => { e.preventDefault(); e.stopPropagation(); setIsDragging(true) }}
+              onDragEnter={e => { e.preventDefault(); e.stopPropagation(); setIsDragging(true) }}
+              onDragLeave={e => {
+                e.preventDefault()
+                e.stopPropagation()
+                const rect = e.currentTarget.getBoundingClientRect()
+                const { clientX: x, clientY: y } = e
+                if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+                  setIsDragging(false)
+                }
+              }}
+              onDrop={e => {
+                e.preventDefault()
+                e.stopPropagation()
+                setIsDragging(false)
+                const files = e.dataTransfer?.files
+                if (!files?.length) return
+                const accepted = Array.from(files).filter(f => RESOURCE_ACCEPT_LIST.includes(f.type))
+                if (!accepted.length) return
+                setPendingFiles(prev => [...prev, ...accepted])
+              }}
+            >
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={RESOURCE_ACCEPT}
+                multiple
+                onChange={handleFileUpload}
+                className="hidden"
+                id="resource-upload"
+              />
+
+              {/* Header with upload button */}
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-atom font-semibold text-slate-400 uppercase tracking-wider">Files</p>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-primary hover:bg-primary/[.06] border border-dashed border-primary/30 transition-colors disabled:opacity-50"
                 >
                   {uploading ? (
-                    <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                    <span className="w-3 h-3 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
                   ) : (
-                    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-400">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="17 8 12 3 7 8" />
-                      <line x1="12" y1="3" x2="12" y2="15" />
-                    </svg>
+                    <Plus size={13} />
                   )}
-                  <div className="text-center">
-                    <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                      {uploading ? 'Uploading\u2026' : 'Drop files here or click to upload'}
-                    </p>
-                    <p className="text-atom text-slate-400 mt-0.5">
-                      PDF, DOCX, PPTX, Images, Audio (m4a/mp3) — text files go to Notes
-                    </p>
-                  </div>
-                </label>
-                {/* Pending file chips + confirm upload */}
-                {pendingFiles.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2 items-start">
-                    {pendingFiles.map((file, i) => (
-                      <div key={i} className="relative group inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-white/[.06] border border-black/[.08] dark:border-white/[.10] max-w-[180px]">
-                        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-400 shrink-0">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
-                        </svg>
-                        <span className="text-xxs text-slate-600 dark:text-slate-300 truncate leading-tight">{file.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))}
-                          className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-white dark:bg-[#2a2c30] border border-black/[.12] dark:border-white/[.15] flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
-                        >
-                          <svg width={7} height={7} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      onClick={handleConfirmUpload}
-                      disabled={uploading}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs text-white disabled:opacity-60 transition-opacity"
-                      style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
-                    >
-                      {uploading ? (
-                        <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                      ) : (
-                        <>
-                          Upload {pendingFiles.length} file{pendingFiles.length !== 1 ? 's' : ''}
-                          <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="17 8 12 3 7 8" />
-                            <line x1="12" y1="3" x2="12" y2="15" />
-                          </svg>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
+                  Upload
+                </button>
               </div>
+
+              {/* Pending file chips + confirm upload */}
+              {pendingFiles.length > 0 && (
+                <div className="mb-4 flex flex-wrap gap-2 items-start">
+                  {pendingFiles.map((file, i) => (
+                    <div key={i} className="relative group inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-white/[.06] border border-black/[.08] dark:border-white/[.10] max-w-[180px]">
+                      <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-400 shrink-0">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                      </svg>
+                      <span className="text-xxs text-slate-600 dark:text-slate-300 truncate leading-tight">{file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))}
+                        className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-white dark:bg-[#2a2c30] border border-black/[.12] dark:border-white/[.15] flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                      >
+                        <svg width={7} height={7} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round">
+                          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={handleConfirmUpload}
+                    disabled={uploading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs text-white disabled:opacity-60 transition-opacity"
+                    style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
+                  >
+                    {uploading ? (
+                      <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    ) : (
+                      <>
+                        Upload {pendingFiles.length} file{pendingFiles.length !== 1 ? 's' : ''}
+                        <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="17 8 12 3 7 8" />
+                          <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
 
               {/* Uploaded resource files */}
               {loadingDocs ? (
@@ -1452,165 +1459,95 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                   <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                 </div>
               ) : filteredResources.length > 0 ? (
-                  viewMode === 'grid' ? (
-                    /* Resources grid view */
-                    <div className="mb-4">
-                      <p className="text-atom font-semibold text-slate-400 uppercase tracking-wider mb-2">Uploaded Files</p>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {filteredResources.map(doc => {
-                          const extRaw = doc.tags?.find(t => !['resources', 'notes'].includes(t) && !t.startsWith('deal_stage:'))
-                          const ext = getMimeLabel(extRaw, doc.title)
-                          const displayName = doc.title
-                          const isImg = isImage(extRaw)
-                          const docStage = parseDocStage(doc.tags)
-                          const authorUser = doc.authorId ? users.find(u => u.id === doc.authorId) : null
-                          const authorName = doc.authorId ? (userNameMap.get(doc.authorId) ?? null) : null
-                          return (
-                            <div
-                              key={doc.id}
-                              className="group rounded-lg border border-black/[.06] dark:border-white/[.08] p-3 cursor-pointer hover:border-primary/30 hover:bg-primary/[.02] transition-all flex flex-col gap-2"
-                              onClick={() => setViewingDoc(doc)}
-                            >
-                              {/* File icon + actions */}
-                              <div className="flex items-center justify-between">
-                                <div className={cn(
-                                  'w-10 h-10 rounded-lg flex items-center justify-center text-atom font-bold',
-                                  isImg
-                                    ? 'bg-purple-50 dark:bg-purple-500/[.12] text-purple-600 dark:text-purple-400'
-                                    : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
-                                )}>
-                                  {ext}
-                                </div>
+                <div className="mb-4">
+                  <div className="divide-y divide-black/[.04] dark:divide-white/[.05]">
+                    {filteredResources.map(doc => {
+                      const extRaw = doc.tags?.find(t => !['resources', 'notes'].includes(t) && !t.startsWith('deal_stage:'))
+                      const ext = getMimeLabel(extRaw, doc.title)
+                      const displayName = doc.title
+                      const docStage = parseDocStage(doc.tags)
+                      const authorUser = doc.authorId ? users.find(u => u.id === doc.authorId) : null
+                      const authorName = doc.authorId ? (userNameMap.get(doc.authorId) ?? null) : null
+                      return (
+                        <div
+                          key={doc.id}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-white/[.02] transition-colors group cursor-pointer"
+                          onClick={() => setViewingDoc(doc)}
+                        >
+                          {/* File type badge */}
+                          <div className={cn(
+                            'w-9 h-9 rounded-lg flex items-center justify-center text-atom font-bold uppercase shrink-0',
+                            ext === 'PDF' ? 'bg-red-50 dark:bg-red-500/[.12] text-red-600 dark:text-red-400'
+                            : ext === 'DOCX' || ext === 'DOC' ? 'bg-blue-50 dark:bg-blue-500/[.12] text-blue-600 dark:text-blue-400'
+                            : ext === 'PPTX' || ext === 'PPT' ? 'bg-orange-50 dark:bg-orange-500/[.12] text-orange-600 dark:text-orange-400'
+                            : ext === 'JPG' || ext === 'PNG' || ext === 'IMG' ? 'bg-purple-50 dark:bg-purple-500/[.12] text-purple-600 dark:text-purple-400'
+                            : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
+                          )}>
+                            {ext}
+                          </div>
+                          {/* File info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-ssm font-medium text-slate-800 dark:text-white truncate group-hover:text-primary transition-colors" title={displayName}>
+                              {displayName}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {authorUser && (
                                 <div className="flex items-center gap-1">
-                                  {docStage && <StagePill stage={docStage} />}
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); handleDownloadDoc(doc) }}
-                                    className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"
-                                    title="Download"
-                                  >
-                                    <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                      <polyline points="7 10 12 15 17 10" />
-                                      <line x1="12" y1="15" x2="12" y2="3" />
-                                    </svg>
-                                  </button>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc) }}
-                                    className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:text-red-400 dark:hover:bg-red-500/15 transition-colors opacity-0 group-hover:opacity-100"
-                                    title="Delete"
-                                  >
-                                    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                                      <polyline points="3 6 5 6 21 6" />
-                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                    </svg>
-                                  </button>
+                                  <Avatar name={authorUser.name || authorUser.email} email={authorUser.email ?? undefined} src={authorUser.image ?? undefined} size={12} />
+                                  <span className="text-atom text-slate-400">{authorName?.split(' ')[0] ?? 'AM'}</span>
                                 </div>
-                              </div>
-                              {/* Filename */}
-                              <p className="text-xs font-medium text-slate-800 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors" title={displayName}>
-                                {displayName}
-                              </p>
-                              {/* Footer: author + date */}
-                              <div className="flex items-center gap-1.5 mt-auto">
-                                {authorUser && (
-                                  <>
-                                    <Avatar name={authorUser.name || authorUser.email} email={authorUser.email ?? undefined} src={authorUser.image ?? undefined} size={12} />
-                                    <span className="text-atom text-slate-400 truncate">{authorName?.split(' ')[0]}</span>
-                                  </>
-                                )}
-                                <span className="text-atom text-slate-400 ml-auto shrink-0">
-                                  {new Date(doc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
-                                </span>
-                              </div>
+                              )}
+                              {docStage && <StagePill stage={docStage} />}
+                              <span className="text-atom text-slate-400">
+                                {new Date(doc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
                             </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  ) : (
-                    /* Resources list view */
-                    <div className="mb-4">
-                      <p className="text-atom font-semibold text-slate-400 uppercase tracking-wider mb-2">Uploaded Files</p>
-                      <div className="divide-y divide-black/[.04] dark:divide-white/[.05] border border-black/[.06] dark:border-white/[.08] rounded-lg overflow-hidden">
-                        {filteredResources.map(doc => {
-                          const extRaw = doc.tags?.find(t => !['resources', 'notes'].includes(t) && !t.startsWith('deal_stage:'))
-                          const ext = getMimeLabel(extRaw, doc.title)
-                          const displayName = doc.title
-                          const isImg = isImage(extRaw)
-                          const showWordCount = supportsWordCount(extRaw) && doc.wordCount
-                          const docStage = parseDocStage(doc.tags)
-                          const authorUser = doc.authorId ? users.find(u => u.id === doc.authorId) : null
-                          const authorName = doc.authorId ? (userNameMap.get(doc.authorId) ?? null) : null
-                          return (
-                            <div
-                              key={doc.id}
-                              className="flex items-center gap-3 px-3.5 py-2.5 w-full min-w-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-white/[.02] transition-colors group cursor-pointer"
-                              onClick={() => setViewingDoc(doc)}
+                          </div>
+                          {/* Actions */}
+                          <div className="shrink-0 flex items-center gap-1">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setViewingDoc(doc) }}
+                              className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                              title="View"
                             >
-                              {/* File type indicator */}
-                              <div className={cn(
-                                'w-8 h-8 rounded-md flex items-center justify-center shrink-0 text-atom font-bold',
-                                isImg
-                                  ? 'bg-purple-50 dark:bg-purple-500/[.12] text-purple-600 dark:text-purple-400'
-                                  : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
-                              )}>
-                                {ext}
-                              </div>
-                              <div className="flex-1 min-w-0 overflow-hidden">
-                                <p className="text-xs font-medium text-slate-800 dark:text-white truncate group-hover:text-primary transition-colors" title={displayName}>
-                                  {displayName}
-                                </p>
-                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                  {authorUser && (
-                                    <div className="flex items-center gap-1 shrink-0">
-                                      <Avatar name={authorUser.name || authorUser.email} email={authorUser.email ?? undefined} src={authorUser.image ?? undefined} size={12} />
-                                      <span className="text-atom text-slate-400">{authorName?.split(' ')[0] ?? 'AM'}</span>
-                                    </div>
-                                  )}
-                                  {docStage && <StagePill stage={docStage} />}
-                                  <span className="text-atom text-slate-400">
-                                    {new Date(doc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                    {showWordCount ? ` · ${doc.wordCount} words` : ''}
-                                  </span>
-                                </div>
-                              </div>
-                              {/* Actions */}
-                              <div className="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleDownloadDoc(doc) }}
-                                  className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
-                                  title="Download"
-                                >
-                                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                    <polyline points="7 10 12 15 17 10" />
-                                    <line x1="12" y1="15" x2="12" y2="3" />
-                                  </svg>
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc) }}
-                                  className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-100 dark:hover:text-red-400 dark:hover:bg-red-500/15 transition-colors"
-                                  title="Delete"
-                                >
-                                  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                                    <polyline points="3 6 5 6 21 6" />
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                  </svg>
-                                </button>
-                                <span className="text-atom font-medium text-primary flex items-center gap-0.5">
-                                  View
-                                  <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                                    <polyline points="9 18 15 12 9 6" />
-                                  </svg>
-                                </span>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )
-                ) : null}
+                              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDownloadDoc(doc) }}
+                              className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                              title="Download"
+                            >
+                              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc) }}
+                              className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-100 dark:hover:text-red-400 dark:hover:bg-red-500/15 transition-colors"
+                              title="Delete"
+                            >
+                              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : !loadingDocs && pendingFiles.length === 0 ? (
+                <div className="py-8 text-center">
+                  <p className="text-ssm text-slate-400">No files uploaded yet</p>
+                  <p className="text-xxs text-slate-300 dark:text-slate-600 mt-1">Drop files here or click Upload to add resources</p>
+                </div>
+              ) : null}
 
               {/* Quick links from deal fields */}
               {(deal.proposalLink || deal.demoLink) && (
@@ -1638,15 +1575,6 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                       Demo Recording
                     </a>
                   )}
-                </div>
-              )}
-
-              {/* Empty state */}
-              {!deal.proposalLink && !deal.demoLink && filteredResources.length === 0 && !loadingDocs && (
-                <div className="py-4 text-center">
-                  <p className="text-xxs text-slate-300 dark:text-slate-600">
-                    {resourceExtFilter !== 'all' ? 'No files match this filter' : 'Uploaded files and links will appear here'}
-                  </p>
                 </div>
               )}
             </div>
