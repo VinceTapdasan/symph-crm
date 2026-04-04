@@ -39,9 +39,10 @@ function useStageData(deals: ApiDeal[]) {
 interface PipelineProgressProps {
   deals: ApiDeal[]
   isLoading: boolean
+  onStageClick?: (stageId: string) => void
 }
 
-export function StageFunnelChart({ deals, isLoading }: PipelineProgressProps) {
+export function StageFunnelChart({ deals, isLoading, onStageClick }: PipelineProgressProps) {
   const [selectedStage, setSelectedStage] = useState<string | null>(null)
   const { stages, wonCount, lostCount } = useStageData(deals)
   const total = wonCount + lostCount
@@ -54,8 +55,19 @@ export function StageFunnelChart({ deals, isLoading }: PipelineProgressProps) {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-[80px]">
-          <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+        <div>
+          <div className="grid grid-cols-5 gap-1.5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="rounded-lg border border-black/[.06] dark:border-white/[.08] px-2.5 py-2 space-y-1.5">
+                <div className="h-2 w-16 bg-slate-100 dark:bg-white/[.06] rounded animate-pulse" />
+                <div className="h-5 w-8 bg-slate-100 dark:bg-white/[.06] rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-1.5 mt-2">
+            <div className="h-9 rounded-lg bg-slate-100 dark:bg-white/[.06] animate-pulse" />
+            <div className="h-9 rounded-lg bg-slate-100 dark:bg-white/[.06] animate-pulse" />
+          </div>
         </div>
       ) : !hasData ? (
         <p className="text-xs text-slate-400 py-4 text-center">No deals yet</p>
@@ -67,7 +79,7 @@ export function StageFunnelChart({ deals, isLoading }: PipelineProgressProps) {
               <button
                 key={stage.id}
                 type="button"
-                onClick={() => setSelectedStage(prev => prev === stage.id ? null : stage.id)}
+                onClick={() => onStageClick ? onStageClick(stage.id) : setSelectedStage(prev => prev === stage.id ? null : stage.id)}
                 className={cn(
                   'rounded-lg border px-2.5 py-2 text-left transition-colors duration-150',
                   selectedStage === stage.id

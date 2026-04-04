@@ -31,6 +31,7 @@ import { useUser } from '@/lib/hooks/use-user'
 import {
   MoreHorizontal, Search, X, Trash2, ExternalLink,
   ChevronDown, ChevronRight, User as UserIcon, Paperclip,
+  Pencil, ArrowRight, ArrowLeft,
 } from 'lucide-react'
 
 function stageToast(fromStage: string, toStage: string, dealTitle: string) {
@@ -460,6 +461,174 @@ function DroppableColumn({ col, children }: { col: (typeof KANBAN_STAGES)[number
   )
 }
 
+// --- MobileActionSheet ---
+function MobileActionSheet({
+  deal,
+  brandName,
+  onClose,
+  onDelete,
+  onAdvanceTo,
+  onMoveTo,
+  onAssign,
+  onEdit,
+  isSales,
+  users,
+  showAdvance,
+  setShowAdvance,
+  showMoveBack,
+  setShowMoveBack,
+  showAssign,
+  setShowAssign,
+}: {
+  deal: ApiDeal
+  brandName: string
+  onClose: () => void
+  onDelete: () => void
+  onAdvanceTo: (stage: string) => void
+  onMoveTo: (stage: string) => void
+  onAssign: (id: string, name: string) => void
+  onEdit: () => void
+  isSales: boolean
+  users: ApiUser[]
+  showAdvance: boolean
+  setShowAdvance: (v: boolean) => void
+  showMoveBack: boolean
+  setShowMoveBack: (v: boolean) => void
+  showAssign: boolean
+  setShowAssign: (v: boolean) => void
+}) {
+  const isTerminal = deal.stage === 'closed_won' || deal.stage === 'closed_lost'
+  const advanceTargets = getAdvanceTargets(deal.stage)
+  const moveBackTargets = getMoveBackTargets(deal.stage)
+
+  return (
+    <div className="fixed inset-0 z-50 md:hidden" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50" />
+      <div
+        className="absolute bottom-0 left-0 right-0 bg-white dark:bg-[#1e1e21] rounded-t-xl max-h-[70vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Context label */}
+        <div className="px-4 pt-4 pb-3 border-b border-black/[.06] dark:border-white/[.08]">
+          <p className="text-xxs font-semibold text-slate-400 uppercase tracking-wide">{brandName}</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5">{toPascalCase(deal.title)}</p>
+        </div>
+
+        {/* Actions */}
+        <div>
+          {/* Assign */}
+          {!isTerminal && (
+            <>
+              <button
+                onClick={() => { setShowAssign(!showAssign); setShowAdvance(false); setShowMoveBack(false) }}
+                className="flex items-center justify-between w-full py-3.5 px-4 text-sm text-slate-700 dark:text-slate-300 border-b border-black/[.04] dark:border-white/[.06] active:bg-slate-50 dark:active:bg-white/[.04]"
+              >
+                <span className="flex items-center gap-3"><UserIcon size={16} /> Assign</span>
+                <ChevronRight size={14} className={cn('text-slate-400 transition-transform duration-150', showAssign && 'rotate-90')} />
+              </button>
+              {showAssign && (
+                <div className="border-b border-black/[.04] dark:border-white/[.06] bg-slate-50/50 dark:bg-white/[.02]">
+                  {users.length === 0 ? (
+                    <div className="px-4 py-3 text-xs text-slate-400">No team members</div>
+                  ) : (
+                    users.map(u => (
+                      <button
+                        key={u.id}
+                        onClick={() => { onAssign(u.id, u.name || u.email); onClose() }}
+                        className="flex items-center gap-3 w-full py-2.5 px-6 text-sm text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-white/[.04]"
+                      >
+                        <Avatar name={u.name || u.email} src={u.image ?? undefined} size={22} />
+                        {u.name || u.email}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Advance to... */}
+          {advanceTargets.length > 0 && (
+            <>
+              <button
+                onClick={() => { setShowAdvance(!showAdvance); setShowMoveBack(false); setShowAssign(false) }}
+                className="flex items-center justify-between w-full py-3.5 px-4 text-sm text-slate-700 dark:text-slate-300 border-b border-black/[.04] dark:border-white/[.06] active:bg-slate-50 dark:active:bg-white/[.04]"
+              >
+                <span className="flex items-center gap-3"><ArrowRight size={16} /> Advance to...</span>
+                <ChevronDown size={14} className={cn('text-slate-400 transition-transform duration-150', showAdvance && 'rotate-180')} />
+              </button>
+              {showAdvance && (
+                <div className="border-b border-black/[.04] dark:border-white/[.06] bg-slate-50/50 dark:bg-white/[.02]">
+                  {advanceTargets.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => { onAdvanceTo(t.dbStage); onClose() }}
+                      className="flex items-center gap-3 w-full py-2.5 px-6 text-sm text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-white/[.04]"
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Move back... */}
+          {moveBackTargets.length > 0 && (
+            <>
+              <button
+                onClick={() => { setShowMoveBack(!showMoveBack); setShowAdvance(false); setShowAssign(false) }}
+                className="flex items-center justify-between w-full py-3.5 px-4 text-sm text-slate-700 dark:text-slate-300 border-b border-black/[.04] dark:border-white/[.06] active:bg-slate-50 dark:active:bg-white/[.04]"
+              >
+                <span className="flex items-center gap-3"><ArrowLeft size={16} /> Move back...</span>
+                <ChevronDown size={14} className={cn('text-slate-400 transition-transform duration-150', showMoveBack && 'rotate-180')} />
+              </button>
+              {showMoveBack && (
+                <div className="border-b border-black/[.04] dark:border-white/[.06] bg-slate-50/50 dark:bg-white/[.02]">
+                  {moveBackTargets.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => { onMoveTo(t.dbStage); onClose() }}
+                      className="flex items-center gap-3 w-full py-2.5 px-6 text-sm text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-white/[.04]"
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Edit deal */}
+          {isSales && (
+            <button
+              onClick={() => { onEdit(); onClose() }}
+              className="flex items-center gap-3 w-full py-3.5 px-4 text-sm text-slate-700 dark:text-slate-300 border-b border-black/[.04] dark:border-white/[.06] active:bg-slate-50 dark:active:bg-white/[.04]"
+            >
+              <Pencil size={16} /> Edit deal
+            </button>
+          )}
+
+          {/* Delete */}
+          {isSales && (
+            <button
+              onClick={() => { onDelete(); onClose() }}
+              className="flex items-center gap-3 w-full py-3.5 px-4 text-sm text-red-600 border-b border-black/[.04] dark:border-white/[.06] active:bg-red-50 dark:active:bg-red-500/10"
+            >
+              <Trash2 size={16} /> Delete
+            </button>
+          )}
+        </div>
+
+        {/* Bottom safe area */}
+        <div className="h-6" />
+      </div>
+    </div>
+  )
+}
+
 // --- Pipeline ---
 export function Pipeline({ onOpenDeal }: PipelineProps) {
   const [activeDealId, setActiveDealId] = useState<string | null>(null)
@@ -472,6 +641,11 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   const [advancingDealId, setAdvancingDealId] = useState<string | null>(null)
   const [showCreateDeal, setShowCreateDeal] = useState(false)
   const [showCreateBrand, setShowCreateBrand] = useState(false)
+  const [mobileStageFilter, setMobileStageFilter] = useState<string | null>(null)
+  const [mobileActionDeal, setMobileActionDeal] = useState<ApiDeal | null>(null)
+  const [mobileShowAdvance, setMobileShowAdvance] = useState(false)
+  const [mobileShowMoveBack, setMobileShowMoveBack] = useState(false)
+  const [mobileShowAssign, setMobileShowAssign] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const amDropdownRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
@@ -556,6 +730,14 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
     }
     return result
   }, [deals, search, amFilter, amOptions, companyMap])
+
+  // Mobile: further filter by stage when a pill is selected
+  const mobileFilteredDeals = useMemo(() => {
+    if (!mobileStageFilter) return filteredDeals
+    const col = KANBAN_STAGES.find(c => c.id === mobileStageFilter)
+    if (!col) return filteredDeals
+    return filteredDeals.filter(d => col.matches.includes(d.stage))
+  }, [filteredDeals, mobileStageFilter])
 
   const handleDeleteDeal = useCallback((dealId: string) => {
     setDeleteConfirmDealId(dealId)
@@ -763,8 +945,8 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
         />
       )}
 
-      {/* Stats + actions */}
-      <div className="flex items-center justify-between gap-2 px-4 py-2.5 shrink-0">
+      {/* ── Desktop stats + actions (hidden on mobile) ── */}
+      <div className="hidden md:flex items-center justify-between gap-2 px-4 py-2.5 shrink-0">
         {isLoading ? (
           <div className="h-4 w-40 bg-slate-100 dark:bg-white/[.06] rounded animate-pulse" />
         ) : (
@@ -870,8 +1052,8 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
         </div>
       </div>
 
-      {/* Board */}
-      <div className="flex-1 overflow-auto">
+      {/* ── Desktop board (hidden on mobile) ── */}
+      <div className="hidden md:block flex-1 overflow-auto">
         {isLoading ? (
           <div className="flex gap-2.5 px-4 pb-4" style={{ minWidth: 'max-content' }}>
             {KANBAN_STAGES.map(col => (
@@ -979,6 +1161,229 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
           </DndContext>
         )}
       </div>
+
+      {/* ── Mobile pipeline view (hidden on desktop) ── */}
+      <div className="flex flex-col flex-1 overflow-hidden md:hidden">
+        {/* Mobile header */}
+        <div className="px-4 pt-3 pb-2.5 shrink-0">
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-bold text-slate-900 dark:text-white">Deals</h1>
+              {!isLoading && (
+                <span className="bg-slate-100 dark:bg-white/[.06] text-slate-500 text-xxs font-semibold tabular-nums px-2 py-0.5 rounded-full">
+                  {filteredDeals.length}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {searchOpen ? (
+                <div className="flex items-center gap-1.5 bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.08] rounded-lg px-2.5 py-[5px] w-[160px]">
+                  <Search size={13} className="text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Search..."
+                    autoFocus
+                    className="flex-1 bg-transparent text-xs text-slate-900 dark:text-white placeholder:text-slate-400 min-w-0 outline-none focus:outline-none"
+                  />
+                  <button onClick={() => { setSearchOpen(false); setSearch('') }} className="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                    <X size={13} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setSearchOpen(true)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 border border-black/[.08] dark:border-white/[.08] bg-white dark:bg-[#1e1e21]"
+                >
+                  <Search size={14} />
+                </button>
+              )}
+              {isSales && (
+                <>
+                  <button
+                    onClick={() => setShowCreateBrand(true)}
+                    className="h-8 rounded-lg px-2.5 text-xs font-medium text-slate-700 dark:text-slate-300 border border-black/[.08] dark:border-white/[.08] bg-white dark:bg-[#1e1e21]"
+                  >
+                    + Brand
+                  </button>
+                  <button
+                    onClick={() => setShowCreateDeal(true)}
+                    className="h-8 rounded-lg px-2.5 text-xs font-medium text-white"
+                    style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
+                  >
+                    + Deal
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Stage filter pills */}
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
+            <button
+              onClick={() => setMobileStageFilter(null)}
+              className={cn(
+                'rounded-full text-xxs font-semibold px-3 py-1 whitespace-nowrap shrink-0 transition-colors duration-150',
+                mobileStageFilter === null
+                  ? 'bg-[#6c63ff] text-white'
+                  : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
+              )}
+            >
+              All stages
+            </button>
+            {KANBAN_STAGES.map(col => {
+              const count = filteredDeals.filter(d => col.matches.includes(d.stage)).length
+              return (
+                <button
+                  key={col.id}
+                  onClick={() => setMobileStageFilter(col.id)}
+                  className={cn(
+                    'rounded-full text-xxs font-semibold px-3 py-1 whitespace-nowrap shrink-0 transition-colors duration-150 flex items-center gap-1.5',
+                    mobileStageFilter === col.id
+                      ? 'bg-[#6c63ff] text-white'
+                      : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
+                  )}
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: col.color }} />
+                  {col.label}
+                  {count > 0 && <span className="tabular-nums">{count}</span>}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Mobile deal cards list */}
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          {isLoading ? (
+            <div className="flex flex-col gap-2.5">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="rounded-lg p-3.5 bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] animate-pulse">
+                  <div className="h-2.5 w-20 bg-slate-100 dark:bg-white/[.06] rounded mb-2" />
+                  <div className="h-4 w-full bg-slate-100 dark:bg-white/[.06] rounded mb-3" />
+                  <div className="h-3 w-16 bg-slate-100 dark:bg-white/[.06] rounded-full mb-3" />
+                  <div className="border-t border-black/[.04] dark:border-white/[.06] pt-2.5 flex items-center justify-between">
+                    <div className="h-4 w-16 bg-slate-100 dark:bg-white/[.06] rounded" />
+                    <div className="h-5 w-5 bg-slate-100 dark:bg-white/[.06] rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : mobileFilteredDeals.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-400 dark:text-white/20">
+              No deals found
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {mobileFilteredDeals.map(d => {
+                const brandName = companyMap.get(d.companyId) ?? 'No Brand'
+                const stageCol = KANBAN_STAGES.find(c => c.matches.includes(d.stage))
+                const stageColor = stageCol?.color ?? '#94a3b8'
+                const stageLabel = STAGE_LABELS[d.stage] ?? d.stage
+                const outreach = d.outreachCategory || 'outbound'
+                const services = d.servicesTags || []
+                const resolvedAm = users.find(u => u.id === d.assignedTo)
+                const amShortName = resolvedAm
+                  ? (resolvedAm.nickname ?? resolvedAm.firstName ?? resolvedAm.name?.split(' ')[0] ?? resolvedAm.email?.split('@')[0] ?? '?')
+                  : (d.assignedTo ? '?' : '-')
+                const amName = resolvedAm?.name ?? resolvedAm?.email ?? d.assignedTo ?? 'Unassigned'
+
+                return (
+                  <div
+                    key={d.id}
+                    onClick={() => setMobileActionDeal(d)}
+                    className="rounded-lg p-3 bg-white dark:bg-[#222225] border border-black/[.08] dark:border-white/[.1] active:bg-slate-50 dark:active:bg-white/[.04] transition-colors cursor-pointer"
+                  >
+                    {/* Top: stage dot + brand + outreach pill + stage pill */}
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: stageColor }} />
+                        <span className="text-xxs font-semibold uppercase tracking-wide text-slate-400 truncate">
+                          {brandName}
+                        </span>
+                        <span className={cn(
+                          'text-atom font-semibold px-1.5 py-px rounded-full leading-tight shrink-0',
+                          outreach === 'inbound'
+                            ? 'bg-[rgba(22,163,74,0.1)] text-[#16a34a]'
+                            : 'bg-slate-100 dark:bg-white/[.06] text-slate-500'
+                        )}>
+                          {outreach === 'inbound' ? 'Inbound' : 'Outbound'}
+                        </span>
+                      </div>
+                      <span
+                        className="text-atom font-semibold px-2 py-0.5 rounded-full shrink-0"
+                        style={{
+                          background: `color-mix(in srgb, ${stageColor} 12%, transparent)`,
+                          color: stageColor,
+                        }}
+                      >
+                        {stageLabel}
+                      </span>
+                    </div>
+
+                    {/* Deal title */}
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white leading-snug mb-1.5">
+                      {d.title.length <= 5 ? d.title.toUpperCase() : toPascalCase(d.title)}
+                    </p>
+
+                    {/* Service tag */}
+                    {services.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2.5">
+                        {services.slice(0, 2).map(s => (
+                          <span
+                            key={s}
+                            className="text-atom font-medium px-2 py-0.5 rounded-full dark:brightness-150"
+                            style={{ background: `${stageColor}18`, color: stageColor }}
+                          >
+                            {formatServiceType(s)}
+                          </span>
+                        ))}
+                        {services.length > 2 && (
+                          <span className="text-atom text-slate-400">+{services.length - 2}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Divider + bottom row */}
+                    <div className="flex items-center justify-between pt-2 border-t border-black/[.05] dark:border-white/[.08]">
+                      <span className="text-sm font-bold tabular-nums" style={{ color: stageColor }}>
+                        {formatPeso(parseFloat(d.value || '0') || 0)}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <Avatar name={amName} email={resolvedAm?.email ?? undefined} src={resolvedAm?.image ?? undefined} size={20} />
+                        <span className="text-xxs font-medium text-slate-600 dark:text-slate-400">{amShortName}</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile action sheet */}
+      {mobileActionDeal && (
+        <MobileActionSheet
+          deal={mobileActionDeal}
+          brandName={companyMap.get(mobileActionDeal.companyId) ?? 'No Brand'}
+          onClose={() => { setMobileActionDeal(null); setMobileShowAdvance(false); setMobileShowMoveBack(false); setMobileShowAssign(false) }}
+          onDelete={() => handleDeleteDeal(mobileActionDeal.id)}
+          onAdvanceTo={(stage) => handleAdvanceTo(mobileActionDeal.id, stage)}
+          onMoveTo={(stage) => handleMoveTo(mobileActionDeal.id, stage)}
+          onAssign={(id, name) => handleAssignDeal(mobileActionDeal.id, id, name)}
+          onEdit={() => onOpenDeal(mobileActionDeal.id)}
+          isSales={isSales}
+          users={users}
+          showAdvance={mobileShowAdvance}
+          setShowAdvance={setMobileShowAdvance}
+          showMoveBack={mobileShowMoveBack}
+          setShowMoveBack={setMobileShowMoveBack}
+          showAssign={mobileShowAssign}
+          setShowAssign={setMobileShowAssign}
+        />
+      )}
 
       {/* Delete confirmation modal */}
       {deleteConfirmDealId && (

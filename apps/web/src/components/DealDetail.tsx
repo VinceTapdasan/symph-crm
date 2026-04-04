@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { queryKeys } from '@/lib/query-keys'
-import { usePatchDealStage, useCreateDocument, useUploadDocumentFile, useUpdateDeal, useDeleteDocument, useCreateContact } from '@/lib/hooks/mutations'
+import { usePatchDealStage, useCreateDocument, useUploadDocumentFile, useUpdateDeal, useDeleteDocument, useCreateContact, useDeleteDeal } from '@/lib/hooks/mutations'
 import { useGetDeal, useGetCompany, useGetActivitiesByDeal, useGetDocumentsByDeal, useGetUsers, useGetContactsByCompany } from '@/lib/hooks/queries'
 import { useUser } from '@/lib/hooks/use-user'
 import { EmptyState } from './EmptyState'
@@ -28,7 +28,7 @@ import {
   STAGE_LABELS, STAGE_COLORS, STAGE_ADVANCE_MAP,
   PROGRESS_STAGES, ACTIVITY_LABELS, DOC_TYPE_LABELS, ACCEPTED_FILE_TYPES,
 } from '@/lib/constants'
-import { Copy, Check, Plus } from 'lucide-react'
+import { Copy, Check, Plus, Trash2 } from 'lucide-react'
 import { Input } from './ui/input'
 import { DocumentViewerModal } from './DocumentViewerModal'
 import { PasteChip, PastePreviewModal } from './PasteChip'
@@ -298,6 +298,7 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
   const [showAssignDropdown, setShowAssignDropdown] = useState(false)
   const [showAddPerson, setShowAddPerson] = useState(false)
   const [personForm, setPersonForm] = useState({ name: '', phone: '', email: '', title: '', role: '' })
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const assignRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const noteTextareaRef = useRef<HTMLTextAreaElement>(null)
@@ -307,6 +308,12 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
   const { userId, isSales } = useUser()
   const patchStage = usePatchDealStage()
   const updateDeal = useUpdateDeal()
+  const deleteDeal = useDeleteDeal({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.deals.all })
+      onBack()
+    },
+  })
 
   // ── Queries ──────────────────────────────────────────────────────────────
 
@@ -655,6 +662,40 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
         <EditDealModal deal={deal} onClose={() => setShowEditDeal(false)} />
       )}
 
+      {/* Delete deal confirmation */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div
+            className="max-w-sm w-full rounded-xl border border-black/[.06] dark:border-white/[.08] bg-white dark:bg-[#1e1e21] shadow-2xl p-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">Delete deal?</p>
+            <p className="text-ssm text-slate-600 dark:text-slate-400 leading-relaxed mt-1">
+              This action cannot be undone. The deal will be permanently removed from your pipeline.
+            </p>
+            <div className="flex gap-2.5 mt-4">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 h-8 rounded-lg text-xs font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteDeal.mutate(dealId)}
+                disabled={deleteDeal.isPending}
+                className="flex-1 h-8 flex items-center justify-center gap-1.5 rounded-lg text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 transition-colors"
+              >
+                {deleteDeal.isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {viewingDoc && (
         <DocumentViewerModal
           doc={viewingDoc}
@@ -842,6 +883,15 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
           </button>
+          {isSales && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors shrink-0"
+              title="Delete deal"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
         </div>
 
         {/* Stage dot + deal value */}
@@ -933,6 +983,15 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                   </svg>
                 </button>
+                {isSales && (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors shrink-0"
+                    title="Delete deal"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
                 {[company?.name, company?.industry].filter(Boolean).join(' \u00B7 ') || 'No brand assigned'}

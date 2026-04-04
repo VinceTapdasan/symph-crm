@@ -229,7 +229,7 @@ export function Dashboard() {
       {/* 2-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 items-start">
         <div className="flex flex-col gap-4">
-          <StageFunnelChart deals={deals} isLoading={loadingDeals} />
+          <StageFunnelChart deals={deals} isLoading={loadingDeals} onStageClick={(stageId) => router.push(`/pipeline?stage=${stageId}`)} />
           <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg px-5 py-[18px] shadow-[var(--shadow-card)]">
             <div className="text-ssm font-semibold text-slate-900 dark:text-white mb-3.5">Top Deals</div>
             {isLoading ? <TopDealsSkeleton /> : isError ? <p className="text-xs text-slate-400 py-2">No data available</p> : <TopDeals deals={topDeals} />}

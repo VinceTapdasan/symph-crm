@@ -157,6 +157,10 @@
 *::-webkit-scrollbar-thumb { background: rgb(148 163 184 / 0.5); border-radius: 3px; }
 .dark *::-webkit-scrollbar-thumb { background: rgb(100 116 139 / 0.6); }
 
+/* Hide scrollbar for horizontal pill rows */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 @layer base {
   * {
     -webkit-font-smoothing: antialiased;
