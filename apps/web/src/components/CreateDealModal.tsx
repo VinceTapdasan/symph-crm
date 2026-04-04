@@ -52,9 +52,9 @@ function DealNameInput({ value, onChange }: { value: string; onChange: (v: strin
     const words = value.trim().split(/\s+/)
     const lastWord = words[words.length - 1]?.toUpperCase() ?? ''
     if (s.acronym.startsWith(lastWord)) {
-      words[words.length - 1] = s.acronym
+      words[words.length - 1] = s.fullName
     } else {
-      words.push(s.acronym)
+      words.push(s.fullName)
     }
     onChange(words.join(' '))
   }
