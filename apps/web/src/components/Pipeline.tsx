@@ -19,7 +19,7 @@ import { cn, formatPeso, formatServiceType, getAdvanceTargets, getMoveBackTarget
 import type { ApiDeal, ApiCompany, ApiUser } from '@/lib/types'
 import {
   KANBAN_STAGES, COLUMN_TO_STAGE, STAGE_ORDER,
-  STAGE_ADVANCE_MAP, CLOSED_STAGE_IDS, STAGE_LABELS,
+  STAGE_ADVANCE_MAP, CLOSED_STAGE_IDS, STAGE_LABELS, STAGE_COLORS,
 } from '@/lib/constants'
 import { toast } from 'sonner'
 import { Avatar } from './Avatar'
@@ -32,6 +32,23 @@ import {
   MoreHorizontal, Search, X, Trash2, ExternalLink,
   ChevronDown, ChevronRight, User as UserIcon, Paperclip,
 } from 'lucide-react'
+
+function stageToast(fromStage: string, toStage: string, dealTitle: string) {
+  const fromColor = STAGE_COLORS[fromStage] ?? '#94a3b8'
+  const toColor = STAGE_COLORS[toStage] ?? '#94a3b8'
+  const fromLabel = STAGE_LABELS[fromStage] ?? fromStage
+  const toLabel = STAGE_LABELS[toStage] ?? toStage
+  toast.success(
+    <span className="flex items-center gap-1.5">
+      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: fromColor }} />
+      {fromLabel}
+      <span className="text-slate-400">→</span>
+      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: toColor }} />
+      {toLabel}
+    </span>,
+    { description: `${dealTitle} updated` },
+  )
+}
 
 type PipelineProps = {
   onOpenDeal: (id: string) => void
@@ -564,10 +581,8 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
       old?.map(d => d.id === dealId ? { ...d, stage: nextStage } : d) ?? []
     )
     const dealTitle = deals.find(d => d.id === dealId)?.title ?? 'Deal'
-    const fromLabel = STAGE_LABELS[currentStage] ?? currentStage
-    const toLabel = STAGE_LABELS[nextStage] ?? nextStage
     patchStage.mutate({ id: dealId, stage: nextStage }, {
-      onSuccess: () => toast.success(`${fromLabel} → ${toLabel}`, { description: `${dealTitle} updated` }),
+      onSuccess: () => stageToast(currentStage, nextStage, dealTitle),
       onError: () => queryClient.setQueryData(queryKeys.deals.all, previousDeals),
       onSettled: () => {
         setAdvancingDealId(null)
@@ -602,8 +617,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
     queryClient.setQueryData<ApiDeal[]>(queryKeys.deals.all, old =>
       old?.map(d => d.id === dealId ? { ...d, stage: targetStage } : d) ?? []
     )
-    const fromLabel = STAGE_LABELS[deal.stage] ?? deal.stage
-    const toLabel = STAGE_LABELS[targetStage] ?? targetStage
+    const origStage = deal.stage
     try {
       for (const stage of stages) {
         await new Promise<void>((resolve, reject) => {
@@ -613,7 +627,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
           })
         })
       }
-      toast.success(`${fromLabel} → ${toLabel}`, { description: `${deal.title} updated` })
+      stageToast(origStage, targetStage, deal.title)
     } catch {
       queryClient.setQueryData(queryKeys.deals.all, previousDeals)
     } finally {
@@ -633,14 +647,13 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
     if (!moveConfirm) return
     const { dealId, targetStage, dealTitle } = moveConfirm
     const deal = deals.find(d => d.id === dealId)
-    const fromLabel = deal ? (STAGE_LABELS[deal.stage] ?? deal.stage) : 'Unknown'
-    const toLabel = STAGE_LABELS[targetStage] ?? targetStage
+    const fromStage = deal?.stage ?? 'lead'
     const previousDeals = queryClient.getQueryData<ApiDeal[]>(queryKeys.deals.all)
     queryClient.setQueryData<ApiDeal[]>(queryKeys.deals.all, old =>
       old?.map(d => d.id === dealId ? { ...d, stage: targetStage } : d) ?? []
     )
     patchStage.mutate({ id: dealId, stage: targetStage }, {
-      onSuccess: () => toast.success(`${fromLabel} → ${toLabel}`, { description: `${dealTitle} updated` }),
+      onSuccess: () => stageToast(fromStage, targetStage, dealTitle),
       onError: () => queryClient.setQueryData(queryKeys.deals.all, previousDeals),
       onSettled: () => {
         setMoveConfirm(null)
@@ -715,14 +728,13 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
       setMoveConfirm({ dealId: deal.id, targetStage, dealTitle: deal.title })
       return
     }
-    const fromLabel = STAGE_LABELS[deal.stage] ?? deal.stage
-    const toLabel = STAGE_LABELS[targetStage] ?? targetStage
     const previousDeals = queryClient.getQueryData<ApiDeal[]>(queryKeys.deals.all)
+    const origStage = deal.stage
     queryClient.setQueryData<ApiDeal[]>(queryKeys.deals.all, old =>
       old?.map(d => d.id === deal.id ? { ...d, stage: targetStage } : d) ?? []
     )
     patchStage.mutate({ id: deal.id, stage: targetStage }, {
-      onSuccess: () => toast.success(`${fromLabel} → ${toLabel}`, { description: `${deal.title} updated` }),
+      onSuccess: () => stageToast(origStage, targetStage, deal.title),
       onError: () => queryClient.setQueryData(queryKeys.deals.all, previousDeals),
       onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.deals.all }),
     })

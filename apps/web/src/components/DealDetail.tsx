@@ -35,6 +35,23 @@ import { PasteChip, PastePreviewModal } from './PasteChip'
 import { BillingSection } from './BillingSection'
 import { EditDealModal } from './EditDealModal'
 
+function stageToast(fromStage: string, toStage: string, dealTitle: string) {
+  const fromColor = STAGE_COLORS[fromStage] ?? '#94a3b8'
+  const toColor = STAGE_COLORS[toStage] ?? '#94a3b8'
+  const fromLabel = STAGE_LABELS[fromStage] ?? fromStage
+  const toLabel = STAGE_LABELS[toStage] ?? toStage
+  toast.success(
+    <span className="flex items-center gap-1.5">
+      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: fromColor }} />
+      {fromLabel}
+      <span className="text-slate-400">→</span>
+      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: toColor }} />
+      {toLabel}
+    </span>,
+    { description: `${dealTitle} updated` },
+  )
+}
+
 // ── Sub-components ───────────────────────────────────────────────────────────
 
 // Maps PROGRESS_STAGES ids → CSS variable names for dot colors
@@ -376,11 +393,9 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
 
   const handleAdvance = useCallback(() => {
     if (!deal || !nextStage) return
-    const fromLabel = STAGE_LABELS[deal.stage] ?? deal.stage
-    const toLabel = STAGE_LABELS[nextStage] ?? nextStage
     const prev = queryClient.getQueryData(queryKeys.deals.detail(dealId))
     patchStage.mutate({ id: dealId, stage: nextStage }, {
-      onSuccess: () => toast.success(`${fromLabel} → ${toLabel}`, { description: `${deal.title} updated` }),
+      onSuccess: () => stageToast(deal.stage, nextStage, deal.title),
       onError: () => queryClient.setQueryData(queryKeys.deals.detail(dealId), prev),
       onSettled: () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.deals.detail(dealId) })
@@ -399,9 +414,8 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
 
   const confirmMarkWon = useCallback(() => {
     setShowWonConfirm(false)
-    const fromLabel = deal ? (STAGE_LABELS[deal.stage] ?? deal.stage) : 'Unknown'
     patchStage.mutate({ id: dealId, stage: 'closed_won' }, {
-      onSuccess: () => toast.success(`${fromLabel} → Won`, { description: `${deal?.title} updated` }),
+      onSuccess: () => stageToast(deal?.stage ?? 'lead', 'closed_won', deal?.title ?? 'Deal'),
       onSettled: () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.deals.detail(dealId) })
         queryClient.invalidateQueries({ queryKey: queryKeys.deals.all })
@@ -411,9 +425,8 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
 
   const confirmMarkLost = useCallback(() => {
     setShowLostConfirm(false)
-    const fromLabel = deal ? (STAGE_LABELS[deal.stage] ?? deal.stage) : 'Unknown'
     patchStage.mutate({ id: dealId, stage: 'closed_lost' }, {
-      onSuccess: () => toast.success(`${fromLabel} → Lost`, { description: `${deal?.title} updated` }),
+      onSuccess: () => stageToast(deal?.stage ?? 'lead', 'closed_lost', deal?.title ?? 'Deal'),
       onSettled: () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.deals.detail(dealId) })
         queryClient.invalidateQueries({ queryKey: queryKeys.deals.all })
