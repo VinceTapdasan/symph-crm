@@ -25,6 +25,7 @@ import { toast } from 'sonner'
 import { Avatar } from './Avatar'
 import { CreateDealModal } from './CreateDealModal'
 import { CreateBrandModal } from './CreateBrandModal'
+import { EditDealModal } from './EditDealModal'
 import { queryKeys } from '@/lib/query-keys'
 import { usePatchDealStage, useDeleteDeal, useUpdateDeal } from '@/lib/hooks/mutations'
 import { useUser } from '@/lib/hooks/use-user'
@@ -69,24 +70,24 @@ function Spinner({ size = 14 }: { size?: number }) {
 function CardActionsMenu({
   deal,
   currentStage,
-  onOpen,
   onDelete,
   onAdvance,
   onAdvanceTo,
   onMoveTo,
   onAssign,
+  onEdit,
   isSales,
   users,
   isAdvancing,
 }: {
   deal: ApiDeal
   currentStage: string
-  onOpen: () => void
   onDelete: () => void
   onAdvance: () => void
   onAdvanceTo: (stage: string) => void
   onMoveTo: (stage: string) => void
   onAssign: (id: string, name: string) => void
+  onEdit: () => void
   isSales: boolean
   users: ApiUser[]
   isAdvancing: boolean
@@ -235,12 +236,12 @@ function CardActionsMenu({
             </>
           )}
 
-          {/* Open deal */}
+          {/* Edit deal */}
           <button
-            onClick={(e) => { e.stopPropagation(); setOpen(false); onOpen() }}
+            onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit() }}
             className="flex items-center gap-2 w-full px-3 py-1.5 text-ssm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
           >
-            <ExternalLink size={14} /> Open deal
+            <Pencil size={14} /> Edit deal
           </button>
 
           {/* Delete */}
@@ -269,6 +270,7 @@ function DealCard({
   onAdvanceTo,
   onMoveTo,
   onAssign,
+  onEdit,
   isSales,
   users,
   isAdvancing,
@@ -282,6 +284,7 @@ function DealCard({
   onAdvanceTo?: (stage: string) => void
   onMoveTo?: (stage: string) => void
   onAssign?: (id: string, name: string) => void
+  onEdit?: () => void
   isSales?: boolean
   users?: ApiUser[]
   isAdvancing?: boolean
@@ -318,16 +321,16 @@ function DealCard({
           {brandName}
         </span>
         <div className="flex items-center gap-1">
-          {onDelete !== undefined && onAdvance !== undefined && onAssign !== undefined && onAdvanceTo !== undefined && onMoveTo !== undefined && (
+          {onDelete !== undefined && onAdvance !== undefined && onAssign !== undefined && onAdvanceTo !== undefined && onMoveTo !== undefined && onEdit !== undefined && (
             <CardActionsMenu
               deal={deal}
               currentStage={deal.stage}
-              onOpen={onClick}
               onDelete={onDelete}
               onAdvance={onAdvance}
               onAdvanceTo={onAdvanceTo}
               onMoveTo={onMoveTo}
               onAssign={onAssign}
+              onEdit={onEdit}
               isSales={isSales ?? false}
               users={users ?? []}
               isAdvancing={isAdvancing ?? false}
@@ -396,7 +399,7 @@ function DealCard({
 
 // --- DraggableDealCard —wraps DealCard without touching it ---
 function DraggableDealCard({
-  deal, colColor, brandName, onClick, onDelete, onAdvance, onAdvanceTo, onMoveTo, onAssign, isSales, users, isAdvancing,
+  deal, colColor, brandName, onClick, onDelete, onAdvance, onAdvanceTo, onMoveTo, onAssign, onEdit, isSales, users, isAdvancing,
 }: {
   deal: ApiDeal
   colColor: string
@@ -407,6 +410,7 @@ function DraggableDealCard({
   onAdvanceTo?: (stage: string) => void
   onMoveTo?: (stage: string) => void
   onAssign?: (id: string, name: string) => void
+  onEdit?: () => void
   isSales?: boolean
   users?: ApiUser[]
   isAdvancing?: boolean
@@ -434,6 +438,7 @@ function DraggableDealCard({
         onAdvanceTo={onAdvanceTo}
         onMoveTo={onMoveTo}
         onAssign={onAssign}
+        onEdit={onEdit}
         isSales={isSales}
         users={users}
         isAdvancing={isAdvancing}
@@ -471,6 +476,7 @@ function MobileActionSheet({
   onMoveTo,
   onAssign,
   onEdit,
+  onViewDeal,
   isSales,
   users,
   showAdvance,
@@ -488,6 +494,7 @@ function MobileActionSheet({
   onMoveTo: (stage: string) => void
   onAssign: (id: string, name: string) => void
   onEdit: () => void
+  onViewDeal: () => void
   isSales: boolean
   users: ApiUser[]
   showAdvance: boolean
@@ -503,9 +510,9 @@ function MobileActionSheet({
 
   return (
     <div className="fixed inset-0 z-50 md:hidden" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/50 animate-in fade-in-0 duration-200" />
       <div
-        className="absolute bottom-0 left-0 right-0 bg-white dark:bg-[#1e1e21] rounded-t-xl max-h-[70vh] overflow-y-auto"
+        className="absolute bottom-0 left-0 right-0 bg-white dark:bg-[#1e1e21] rounded-t-xl max-h-[70vh] overflow-y-auto animate-in slide-in-from-bottom duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Context label */}
@@ -601,6 +608,14 @@ function MobileActionSheet({
             </>
           )}
 
+          {/* View deal */}
+          <button
+            onClick={() => { onViewDeal(); onClose() }}
+            className="flex items-center gap-3 w-full py-3.5 px-4 text-sm text-slate-700 dark:text-slate-300 border-b border-black/[.04] dark:border-white/[.06] active:bg-slate-50 dark:active:bg-white/[.04]"
+          >
+            <ExternalLink size={16} /> View deal
+          </button>
+
           {/* Edit deal */}
           {isSales && (
             <button
@@ -641,6 +656,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   const [advancingDealId, setAdvancingDealId] = useState<string | null>(null)
   const [showCreateDeal, setShowCreateDeal] = useState(false)
   const [showCreateBrand, setShowCreateBrand] = useState(false)
+  const [editingDeal, setEditingDeal] = useState<ApiDeal | null>(null)
   const [mobileStageFilter, setMobileStageFilter] = useState<string | null>(null)
   const [mobileActionDeal, setMobileActionDeal] = useState<ApiDeal | null>(null)
   const [mobileShowAdvance, setMobileShowAdvance] = useState(false)
@@ -1135,6 +1151,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                           onAdvanceTo={(stage) => handleAdvanceTo(d.id, stage)}
                           onMoveTo={(stage) => handleMoveTo(d.id, stage)}
                           onAssign={(id, name) => handleAssignDeal(d.id, id, name)}
+                          onEdit={() => setEditingDeal(d)}
                           isSales={isSales}
                           isAdvancing={advancingDealId === d.id}
                         />
@@ -1226,7 +1243,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
               className={cn(
                 'rounded-full text-xxs font-semibold px-3 py-1 whitespace-nowrap shrink-0 transition-colors duration-150',
                 mobileStageFilter === null
-                  ? 'bg-[#6c63ff] text-white'
+                  ? 'bg-primary text-white'
                   : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
               )}
             >
@@ -1241,7 +1258,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                   className={cn(
                     'rounded-full text-xxs font-semibold px-3 py-1 whitespace-nowrap shrink-0 transition-colors duration-150 flex items-center gap-1.5',
                     mobileStageFilter === col.id
-                      ? 'bg-[#6c63ff] text-white'
+                      ? 'bg-primary text-white'
                       : 'bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400'
                   )}
                 >
@@ -1373,7 +1390,8 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
           onAdvanceTo={(stage) => handleAdvanceTo(mobileActionDeal.id, stage)}
           onMoveTo={(stage) => handleMoveTo(mobileActionDeal.id, stage)}
           onAssign={(id, name) => handleAssignDeal(mobileActionDeal.id, id, name)}
-          onEdit={() => onOpenDeal(mobileActionDeal.id)}
+          onEdit={() => setEditingDeal(mobileActionDeal)}
+          onViewDeal={() => onOpenDeal(mobileActionDeal.id)}
           isSales={isSales}
           users={users}
           showAdvance={mobileShowAdvance}
@@ -1454,6 +1472,14 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
           </div>
         )
       })()}
+
+      {/* Edit Deal Modal */}
+      {editingDeal && (
+        <EditDealModal
+          deal={editingDeal as import('@/lib/types').ApiDealDetail}
+          onClose={() => setEditingDeal(null)}
+        />
+      )}
     </div>
   )
 }
