@@ -15,7 +15,11 @@ import { CreateBrandModal } from './CreateBrandModal'
 import { CreateDealModal } from './CreateDealModal'
 import { DealsGraph } from './DealsGraph'
 import { BrandSlideOver } from './BrandSlideOver'
-import { Paperclip } from 'lucide-react'
+import { Paperclip, Pencil, Trash2 } from 'lucide-react'
+import { useUpdateCompany, useDeleteCompany } from '@/lib/hooks/mutations'
+import { Combobox } from '@/components/ui/combobox'
+import { INDUSTRY_OPTIONS } from '@/lib/constants'
+import { queryKeys } from '@/lib/query-keys'
 import { useUser } from '@/lib/hooks/use-user'
 import { useEscapeKey } from '@/lib/hooks/use-escape-key'
 
@@ -208,11 +212,15 @@ function BrandsDataTable({
   onRowClick,
   search,
   selectedBrandId,
+  onEditBrand,
+  onDeleteBrand,
 }: {
   rows: BrandTableRow[]
   onRowClick: (row: BrandTableRow) => void
   search: string
   selectedBrandId?: string | null
+  onEditBrand?: (brand: ApiCompanyDetail) => void
+  onDeleteBrand?: (brand: ApiCompanyDetail) => void
 }) {
   const columns: ColumnDef<BrandTableRow>[] = [
     // 1. Brand
@@ -347,6 +355,35 @@ function BrandsDataTable({
       },
       size: 160,
     },
+    // 7. Actions
+    {
+      id: 'actions',
+      header: () => null,
+      cell: ({ row }) => {
+        const r = row.original
+        if (r.company.id === '__unassigned__') return null
+        return (
+          <div className="flex items-center justify-end gap-1">
+            <button
+              onClick={e => { e.stopPropagation(); onEditBrand?.(r.company) }}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors"
+              title="Edit brand"
+            >
+              <Pencil size={13} />
+            </button>
+            <button
+              onClick={e => { e.stopPropagation(); onDeleteBrand?.(r.company) }}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+              title="Delete brand"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        )
+      },
+      enableSorting: false,
+      size: 80,
+    },
   ]
 
   return (
@@ -383,6 +420,9 @@ export function Deals({ onOpenDeal }: DealsProps) {
   const [showCreateDeal, setShowCreateDeal] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [selectedBrand, setSelectedBrand] = useState<ApiCompanyDetail | null>(null)
+  const [editingBrand, setEditingBrand] = useState<ApiCompanyDetail | null>(null)
+  const [deletingBrand, setDeletingBrand] = useState<ApiCompanyDetail | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', industry: '', domain: '', website: '', hqLocation: '' })
   const { isSales } = useUser()
 
   // Ctrl+F / Cmd+F focuses search bar (matches Pipeline behavior)
@@ -402,6 +442,34 @@ export function Deals({ onOpenDeal }: DealsProps) {
   const { data: companies = [], isLoading: loadingCompanies } = useGetCompanies()
   const { data: deals = [], isLoading: loadingDeals } = useGetDeals()
   const { data: users = [] } = useGetUsers()
+
+  // Edit/delete mutations
+  const updateCompany = useUpdateCompany({
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.companies.all })
+      setEditingBrand(null)
+    },
+  })
+  const deleteCompany = useDeleteCompany({
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.companies.all })
+      qc.invalidateQueries({ queryKey: queryKeys.deals.all })
+      setDeletingBrand(null)
+    },
+  })
+
+  // Populate edit form when editingBrand changes
+  useEffect(() => {
+    if (editingBrand) {
+      setEditForm({
+        name: editingBrand.name ?? '',
+        industry: editingBrand.industry ?? '',
+        domain: editingBrand.domain ?? '',
+        website: editingBrand.website ?? '',
+        hqLocation: editingBrand.hqLocation ?? '',
+      })
+    }
+  }, [editingBrand?.id])
 
   const isLoading = loadingCompanies || loadingDeals
 
@@ -550,6 +618,166 @@ export function Deals({ onOpenDeal }: DealsProps) {
         />
       )}
 
+      {/* Edit Brand Modal */}
+      {editingBrand && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-[2px]"
+          onClick={() => setEditingBrand(null)}
+        >
+          <div
+            className="bg-white dark:bg-[#1e1e21] rounded-lg shadow-[0_8px_40px_rgba(0,0,0,0.18)] border border-black/[.06] dark:border-white/[.08] w-full max-w-[400px] mx-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="px-4 py-3 border-b border-black/[.06] dark:border-white/[.08] flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-white">Edit Brand</div>
+                <div className="text-xs text-slate-400 mt-0.5">Update brand details</div>
+              </div>
+              <button
+                onClick={() => setEditingBrand(null)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors"
+              >
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form
+              onSubmit={e => {
+                e.preventDefault()
+                if (!editForm.name.trim()) return
+                updateCompany.mutate({
+                  id: editingBrand.id,
+                  data: {
+                    name: editForm.name.trim(),
+                    industry: editForm.industry.trim() || null,
+                    website: editForm.website.trim() || null,
+                    hqLocation: editForm.hqLocation.trim() || null,
+                    domain: editForm.domain.trim() || null,
+                  },
+                })
+              }}
+              className="p-4 flex flex-col gap-4"
+            >
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">
+                  Brand Name <span className="text-red-400">*</span>
+                </label>
+                <Input
+                  autoFocus
+                  value={editForm.name}
+                  onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="e.g. Jollibee, BPI, SM Group"
+                  className="h-9 text-ssm"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">Industry</label>
+                  <Combobox
+                    options={INDUSTRY_OPTIONS.map(i => ({ value: i, label: i }))}
+                    value={editForm.industry}
+                    onValueChange={v => setEditForm(f => ({ ...f, industry: v }))}
+                    placeholder="Search industry..."
+                    allowCustom
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">Domain</label>
+                  <Input
+                    value={editForm.domain}
+                    onChange={e => setEditForm(f => ({ ...f, domain: e.target.value }))}
+                    placeholder="e.g. jollibee.com.ph"
+                    className="h-9 text-ssm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">Website</label>
+                  <Input
+                    value={editForm.website}
+                    onChange={e => setEditForm(f => ({ ...f, website: e.target.value }))}
+                    placeholder="https://..."
+                    className="h-9 text-ssm"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">HQ Location</label>
+                  <Input
+                    value={editForm.hqLocation}
+                    onChange={e => setEditForm(f => ({ ...f, hqLocation: e.target.value }))}
+                    placeholder="e.g. Manila, PH"
+                    className="h-9 text-ssm"
+                  />
+                </div>
+              </div>
+
+              {updateCompany.error && (
+                <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                  {updateCompany.error.message}
+                </p>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setEditingBrand(null)}
+                  className="flex-1 h-9 rounded-lg border border-black/[.08] dark:border-white/[.08] text-ssm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[.04] dark:bg-white/[.03] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateCompany.isPending || !editForm.name.trim()}
+                  className="flex-1 h-9 flex items-center justify-center gap-1.5 rounded-lg text-ssm font-medium text-white transition-colors disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
+                >
+                  <>{updateCompany.isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Save Changes</>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Brand Confirmation Modal */}
+      {deletingBrand && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm px-4 flex items-center justify-center"
+          onClick={() => setDeletingBrand(null)}
+        >
+          <div
+            className="max-w-sm w-full rounded-xl border border-black/[.06] dark:border-white/[.08] bg-white dark:bg-[#1e1e21] shadow-2xl p-4 animate-in zoom-in-95 fade-in-0 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">Delete brand?</p>
+            <p className="text-ssm text-slate-600 dark:text-slate-400 leading-relaxed mt-1">
+              This will permanently delete <strong>{deletingBrand.name}</strong>. Associated deals will become unassigned.
+            </p>
+            <div className="flex gap-2.5 mt-4">
+              <button
+                onClick={() => setDeletingBrand(null)}
+                className="flex-1 h-8 rounded-lg text-xs font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteCompany.mutate(deletingBrand.id)}
+                disabled={deleteCompany.isPending}
+                className="flex-1 h-8 flex items-center justify-center gap-1.5 rounded-lg text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 transition-colors"
+              >
+                <>{deleteCompany.isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Delete</>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="p-4 md:p-6 h-full flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 shrink-0">
@@ -659,6 +887,8 @@ export function Deals({ onOpenDeal }: DealsProps) {
               onRowClick={(row) => setSelectedBrand(row.company)}
               search={search}
               selectedBrandId={selectedBrand?.id}
+              onEditBrand={setEditingBrand}
+              onDeleteBrand={setDeletingBrand}
             />
           </div>
         )}

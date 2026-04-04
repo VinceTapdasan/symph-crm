@@ -58,7 +58,10 @@ export function BillingSection({ dealId }: BillingSectionProps) {
       setBillingType(billing.billingType)
       setContractStart(billing.contractStart ?? '')
       setContractEnd(billing.contractEnd ?? '')
-      setAmount(billing.amount ?? '')
+      const raw = billing.amount ?? ''
+      const parts = raw.split('.')
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+      setAmount(parts.join('.'))
     }
   }, [billing, dirty])
 
@@ -78,7 +81,7 @@ export function BillingSection({ dealId }: BillingSectionProps) {
         billingType,
         contractStart: contractStart || null,
         contractEnd: contractEnd || null,
-        amount: amount || null,
+        amount: amount.replace(/,/g, '') || null,
       },
     })
   }, [dealId, billingType, contractStart, contractEnd, amount, upsertBilling])
@@ -89,7 +92,7 @@ export function BillingSection({ dealId }: BillingSectionProps) {
       dealId,
       data: {
         name: newMilestoneName.trim(),
-        amount: newMilestoneAmount.trim(),
+        amount: newMilestoneAmount.replace(/,/g, '').trim(),
         sortOrder: (billing?.milestones?.length ?? 0),
       },
     })
@@ -268,17 +271,22 @@ export function BillingSection({ dealId }: BillingSectionProps) {
                 {billingType === 'annual' ? 'Annual Total' : 'Monthly Amount'}
               </label>
               <input
-                type="number"
-                step="0.01"
-                min="0"
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={amount}
-                onChange={e => { setAmount(e.target.value); setDirty(true) }}
+                onChange={e => {
+                  const raw = e.target.value.replace(/[^0-9.]/g, '')
+                  const parts = raw.split('.')
+                  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                  setAmount(parts.join('.'))
+                  setDirty(true)
+                }}
                 className="w-full h-8 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-xs text-slate-800 dark:text-white tabular-nums outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
               />
               {billingType === 'annual' && amount && (
                 <p className="text-atom text-slate-400 mt-1 tabular-nums">
-                  Monthly Rate: {formatPeso(parseFloat(amount) / 12)}/mo
+                  Monthly Rate: {formatPeso(parseFloat(amount.replace(/,/g, '')) / 12)}/mo
                 </p>
               )}
               {billingType === 'monthly' && monthlyDerived && (
@@ -361,12 +369,16 @@ export function BillingSection({ dealId }: BillingSectionProps) {
                   className="flex-1 h-7 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-xxs text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
                 />
                 <input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   placeholder="Amount"
                   value={newMilestoneAmount}
-                  onChange={e => setNewMilestoneAmount(e.target.value)}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/[^0-9.]/g, '')
+                    const parts = raw.split('.')
+                    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                    setNewMilestoneAmount(parts.join('.'))
+                  }}
                   className="w-[80px] h-7 rounded-md border border-black/[.08] dark:border-white/[.1] bg-transparent px-2 text-xxs text-slate-800 dark:text-white tabular-nums placeholder:text-slate-400 outline-none focus:ring-1 focus:ring-inset focus:ring-primary/30"
                 />
                 <button

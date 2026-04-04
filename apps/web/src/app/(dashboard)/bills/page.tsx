@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGetDeals, useGetBillingByDeal, useGetCompanies } from '@/lib/hooks/queries'
-import { cn, formatDealTitle } from '@/lib/utils'
+import { cn, formatDealTitle, getInitials, getBrandColor, toPascalCase } from '@/lib/utils'
 import type { ApiDeal, ApiBilling } from '@/lib/types'
 
 const BILLING_TYPE_LABELS: Record<string, string> = {
@@ -52,8 +52,24 @@ function BillRow({ deal, companyMap, onClick }: { deal: ApiDeal; companyMap: Map
       <td className="px-4 py-3 text-xs font-medium text-slate-800 dark:text-white">
         {formatDealTitle(deal.title)}
       </td>
-      <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400">
-        {deal.companyId ? (companyMap.get(deal.companyId) ?? deal.companyId.slice(0, 8)) : '--'}
+      <td className="px-4 py-3">
+        {deal.companyId && companyMap.get(deal.companyId) ? (() => {
+          const name = companyMap.get(deal.companyId)!
+          const color = getBrandColor(name)
+          return (
+            <div className="flex items-center gap-2">
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-atom font-bold shrink-0"
+                style={{ background: `${color}18`, color }}
+              >
+                {getInitials(name)}
+              </div>
+              <span className="text-xs text-slate-700 dark:text-slate-300 truncate">{toPascalCase(name)}</span>
+            </div>
+          )
+        })() : (
+          <span className="text-xs text-slate-400">--</span>
+        )}
       </td>
       <td className="px-4 py-3">
         <span className="text-atom font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
