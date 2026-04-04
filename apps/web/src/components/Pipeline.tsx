@@ -109,13 +109,13 @@ function CardActionsMenu({
           {/* Assign — locked for won/lost deals */}
           {isTerminal ? (
             <div
-              className="flex items-center justify-between w-full px-3 py-1.5 text-xs text-slate-400 dark:text-slate-600 cursor-not-allowed select-none"
+              className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-400 dark:text-slate-600 cursor-not-allowed select-none"
               title="Cannot reassign AM — deal is won/lost"
             >
               <span className="flex items-center gap-2">
-                <UserIcon size={12} /> Assign
+                <UserIcon size={14} /> Assign
               </span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 dark:text-slate-600">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 dark:text-slate-600">
                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
@@ -124,23 +124,23 @@ function CardActionsMenu({
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowAssign(v => !v); setShowAdvanceTo(false); setShowMoveTo(false) }}
-                className="flex items-center justify-between w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
               >
-                <span className="flex items-center gap-2"><UserIcon size={12} /> Assign</span>
-                <ChevronRight size={11} className={cn('text-slate-400 transition-transform duration-150', showAssign && 'rotate-90')} />
+                <span className="flex items-center gap-2"><UserIcon size={14} /> Assign</span>
+                <ChevronRight size={12} className={cn('text-slate-400 transition-transform duration-150', showAssign && 'rotate-90')} />
               </button>
               {showAssign && (
                 <div className="border-t border-black/[.04] dark:border-white/[.06] max-h-[144px] overflow-y-auto">
                   {users.length === 0 ? (
-                    <div className="px-3 py-2 text-xxs text-slate-400 italic">No team members</div>
+                    <div className="px-3 py-2 text-xs text-slate-400 italic">No team members</div>
                   ) : (
                     users.map(u => (
                       <button
                         key={u.id}
                         onClick={(e) => { e.stopPropagation(); setOpen(false); setShowAssign(false); onAssign(u.id, u.name || u.email) }}
-                        className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
                       >
-                        <Avatar name={u.name || u.email} src={u.image ?? undefined} size={16} />
+                        <Avatar name={u.name || u.email} src={u.image ?? undefined} size={18} />
                         {u.name || u.email}
                       </button>
                     ))
@@ -155,9 +155,9 @@ function CardActionsMenu({
             <button
               onClick={(e) => { e.stopPropagation(); onAdvance() }}
               disabled={isAdvancing}
-              className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors disabled:opacity-50"
             >
-              {isAdvancing ? <Spinner size={12} /> : <ChevronRight size={12} />}
+              {isAdvancing ? <Spinner size={14} /> : <ChevronRight size={14} />}
               {isAdvancing ? 'Advancing…' : 'Advance'}
             </button>
           )}
@@ -167,10 +167,10 @@ function CardActionsMenu({
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowAdvanceTo(v => !v); setShowAssign(false); setShowMoveTo(false) }}
-                className="flex items-center justify-between w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
               >
-                <span className="flex items-center gap-2"><ChevronRight size={12} /> Advance to…</span>
-                <ChevronDown size={11} className={cn('text-slate-400 transition-transform duration-150', showAdvanceTo && 'rotate-180')} />
+                <span className="flex items-center gap-2"><ChevronRight size={14} /> Advance to…</span>
+                <ChevronDown size={12} className={cn('text-slate-400 transition-transform duration-150', showAdvanceTo && 'rotate-180')} />
               </button>
               {showAdvanceTo && (
                 <div className="border-t border-black/[.04] dark:border-white/[.06] max-h-[200px] overflow-y-auto">
@@ -178,7 +178,7 @@ function CardActionsMenu({
                     <button
                       key={t.id}
                       onClick={(e) => { e.stopPropagation(); setOpen(false); onAdvanceTo(t.dbStage) }}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
                     >
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />
                       {t.label}
@@ -194,10 +194,10 @@ function CardActionsMenu({
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowMoveTo(v => !v); setShowAssign(false); setShowAdvanceTo(false) }}
-                className="flex items-center justify-between w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
               >
-                <span className="flex items-center gap-2"><ChevronDown size={12} className="rotate-90" /> Move back…</span>
-                <ChevronDown size={11} className={cn('text-slate-400 transition-transform duration-150', showMoveTo && 'rotate-180')} />
+                <span className="flex items-center gap-2"><ChevronDown size={14} className="rotate-90" /> Move back…</span>
+                <ChevronDown size={12} className={cn('text-slate-400 transition-transform duration-150', showMoveTo && 'rotate-180')} />
               </button>
               {showMoveTo && (
                 <div className="border-t border-black/[.04] dark:border-white/[.06] max-h-[200px] overflow-y-auto">
@@ -205,7 +205,7 @@ function CardActionsMenu({
                     <button
                       key={t.id}
                       onClick={(e) => { e.stopPropagation(); setOpen(false); onMoveTo(t.dbStage) }}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
                     >
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />
                       {t.label}
@@ -219,18 +219,18 @@ function CardActionsMenu({
           {/* Open deal */}
           <button
             onClick={(e) => { e.stopPropagation(); setOpen(false); onOpen() }}
-            className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06] transition-colors"
           >
-            <ExternalLink size={12} /> Open deal
+            <ExternalLink size={14} /> Open deal
           </button>
 
           {/* Delete */}
           {isSales && (
             <button
               onClick={(e) => { e.stopPropagation(); setOpen(false); onDelete() }}
-              className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
             >
-              <Trash2 size={12} /> Delete
+              <Trash2 size={14} /> Delete
             </button>
           )}
         </div>
