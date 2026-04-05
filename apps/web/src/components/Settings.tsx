@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Avatar } from './Avatar'
 import { api } from '@/lib/api'
 import { API_BASE } from '@/lib/constants'
-import { queryKeys } from '@/lib/hooks/queries'
+import { queryKeys } from '@/lib/query-keys'
 import { useGetCalendarStatus } from '@/lib/hooks/queries'
 import { cn } from '@/lib/utils'
 import {
