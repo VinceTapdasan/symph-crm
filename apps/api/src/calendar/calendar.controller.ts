@@ -92,7 +92,12 @@ export class CalendarController {
   @Get('auth/google-calendar/status')
   async status(@Req() req: Request) {
     const userId = req.headers['x-user-id'] as string
+    if (!userId) {
+      this.logger.warn('[calendar/status] Missing x-user-id header')
+      return { connected: false }
+    }
     const conn = await this.connections.getConnection(userId)
+    this.logger.debug(`[calendar/status] userId=${userId}, found=${!!conn}`)
     return conn
       ? { connected: true, googleEmail: conn.googleEmail, lastSyncedAt: conn.lastSyncedAt }
       : { connected: false }

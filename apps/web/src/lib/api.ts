@@ -17,12 +17,19 @@ export async function resolveUserId(): Promise<string | null> {
   if (_cachedUserId && Date.now() < _cacheExpiry) return _cachedUserId
   try {
     const res = await fetch('/api/auth/session')
-    if (!res.ok) return null
+    if (!res.ok) {
+      console.warn(`[api] /api/auth/session returned ${res.status}`)
+      return null
+    }
     const session = await res.json()
     _cachedUserId = session?.user?.id ?? null
+    if (!_cachedUserId) {
+      console.warn('[api] session.user.id not found:', session)
+    }
     _cacheExpiry = Date.now() + 60_000 // 1 minute
     return _cachedUserId
-  } catch {
+  } catch (err) {
+    console.error('[api] resolveUserId failed:', err)
     return null
   }
 }
