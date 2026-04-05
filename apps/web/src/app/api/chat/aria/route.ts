@@ -258,16 +258,22 @@ export async function POST(req: NextRequest) {
 
               if (currentEventType === 'done' && sessionId && userId) {
                 const fullAssistantText = assembledTextParts.join('')
-                // Fire-and-forget: persist user + assistant message pair
+                // Fire-and-forget: persist user + assistant message pair.
+                // x-user-id is required by the global RolesGuard for all POST mutations.
                 fetch(`${NESTJS_API_BASE}/chat/sessions/${sessionId}/messages`, {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-id': userId,
+                  },
                   body: JSON.stringify({
                     userId,
                     userMessage: messageContent,
                     assistantMessage: fullAssistantText,
                   }),
-                }).catch(() => { /* best-effort — don't fail the stream */ })
+                }).catch((err) => {
+                  console.error('[chat/aria] saveMessages failed:', err)
+                })
               }
 
               currentEventType = ''
