@@ -168,15 +168,12 @@ function ConversationRow({
           <ChannelBadge channel={channel} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2 mb-0.5">
+          <div className="flex items-center gap-2 mb-0.5 pr-8">
             <span className={cn(
               'text-sm truncate',
               thread.unread ? 'font-semibold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-slate-300',
             )}>
               {thread.contactName || thread.from}
-            </span>
-            <span className="text-xxs text-slate-400 shrink-0 tabular-nums">
-              {formatRelativeDate(thread.latestDate)}
             </span>
           </div>
           <div className={cn(
@@ -185,8 +182,9 @@ function ConversationRow({
           )}>
             {thread.subject}
           </div>
-          <div className="text-xs text-slate-400 dark:text-slate-500 truncate leading-relaxed">
-            {thread.snippet}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-slate-400 dark:text-slate-500 truncate leading-relaxed flex-1">{thread.snippet}</span>
+            <span className="text-xxs text-slate-400 shrink-0 tabular-nums">{formatRelativeDate(thread.latestDate)}</span>
           </div>
         </div>
       </button>
