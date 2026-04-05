@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import imageCompression from 'browser-image-compression'
 import {
@@ -12,6 +11,7 @@ import {
   DEFAULT_WORKSPACE_ID, ACCEPTED_FILE_TYPES, SUGGESTED_PROMPTS, TOOL_LABELS,
 } from '@/lib/constants'
 import { PasteChip, PastePreviewModal } from './PasteChip'
+import { Popover, PopoverTrigger, PopoverContent } from './ui/popover'
 import { useGetChatSessions, useGetChatHistory } from '@/lib/hooks/queries'
 import { useCreateChatSession, useDeleteChatSession } from '@/lib/hooks/mutations'
 import { useQueryClient } from '@tanstack/react-query'
@@ -297,10 +297,7 @@ function SessionSidebar({
   expanded: boolean
   onToggleExpand: () => void
 }) {
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
-  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
   return (
     <>
@@ -402,7 +399,7 @@ function SessionSidebar({
               {sessions.map((s) => {
                 const isActive = s.id === activeSessionId
                 const label = s.title || s.id.slice(0, 8)
-                const showMenu = menuOpenId === s.id
+                const isMenuOpen = openMenuId === s.id
                 return (
                   <div key={s.id} className="relative">
                     <div
@@ -425,26 +422,35 @@ function SessionSidebar({
                             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
                           </svg>
                           <span className="text-xs font-medium truncate flex-1">{label}</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              if (showMenu) {
-                                setMenuOpenId(null)
-                                setMenuPos(null)
-                              } else {
-                                const rect = e.currentTarget.getBoundingClientRect()
-                                setMenuPos({ x: rect.right, y: rect.bottom + 4 })
-                                setMenuOpenId(s.id)
-                              }
-                            }}
-                            className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/[.08] opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor">
-                              <circle cx="5" cy="12" r="2" />
-                              <circle cx="12" cy="12" r="2" />
-                              <circle cx="19" cy="12" r="2" />
-                            </svg>
-                          </button>
+                          <Popover open={isMenuOpen} onOpenChange={(open) => setOpenMenuId(open ? s.id : null)}>
+                            <PopoverTrigger asChild>
+                              <button
+                                onClick={(e) => e.stopPropagation()}
+                                className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/[.08] opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor">
+                                  <circle cx="5" cy="12" r="2" />
+                                  <circle cx="12" cy="12" r="2" />
+                                  <circle cx="19" cy="12" r="2" />
+                                </svg>
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-32 p-1" align="end">
+                              <button
+                                onClick={() => {
+                                  setOpenMenuId(null)
+                                  onDeleteSession(s.id)
+                                }}
+                                className="w-full text-left px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors flex items-center gap-2 rounded"
+                              >
+                                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                </svg>
+                                Delete
+                              </button>
+                            </PopoverContent>
+                          </Popover>
                         </div>
                       ) : (
                         <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className="opacity-60">
@@ -452,37 +458,6 @@ function SessionSidebar({
                         </svg>
                       )}
                     </div>
-
-                    {/* Portal dropdown — renders at document.body so overflow-y-auto doesn't clip it */}
-                    {showMenu && expanded && menuPos && mounted && createPortal(
-                      <>
-                        <div
-                          className="fixed inset-0 z-[9990]"
-                          onClick={() => { setMenuOpenId(null); setMenuPos(null) }}
-                        />
-                        <div
-                          className="fixed z-[9991] w-32 bg-white dark:bg-[#1e1e21] border border-black/[.08] dark:border-white/[.1] rounded-lg shadow-xl py-1 animate-in fade-in-0 zoom-in-95 duration-100"
-                          style={{ left: menuPos.x - 128, top: menuPos.y }}
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setMenuOpenId(null)
-                              setMenuPos(null)
-                              onDeleteSession(s.id)
-                            }}
-                            className="w-full text-left px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors flex items-center gap-2"
-                          >
-                            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                            </svg>
-                            Delete
-                          </button>
-                        </div>
-                      </>,
-                      document.body
-                    )}
                   </div>
                 )
               })}
