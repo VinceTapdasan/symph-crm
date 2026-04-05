@@ -19,6 +19,7 @@ import {
   FileText,
   ClipboardList,
   Receipt,
+  Settings,
   Sun,
   Moon,
 } from 'lucide-react'
@@ -74,6 +75,7 @@ function getNavSections(dormantCount: number): NavSection[] {
         { path: '/proposals', label: 'Proposals', icon: FileText },
         { path: '/bills', label: 'Bills', icon: Receipt },
         { path: '/audit-logs', label: 'Audit Log', icon: ClipboardList },
+        { path: '/settings', label: 'Settings', icon: Settings },
       ],
     },
   ]
