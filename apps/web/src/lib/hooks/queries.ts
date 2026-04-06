@@ -222,6 +222,20 @@ export function useGetDocumentContent(
   })
 }
 
+export function useGetDocumentPreview(
+  id: string | null,
+  options?: Partial<UseQueryOptions<{ url: string; mimeType: string }>>,
+) {
+  return useQuery<{ url: string; mimeType: string }>({
+    queryKey: queryKeys.documents.preview(id ?? ''),
+    queryFn: () => api.get<{ url: string; mimeType: string }>(`/documents/${id}/preview`),
+    enabled: !!id,
+    // URL expires in 60 min — re-fetch after 50 min
+    staleTime: 50 * 60 * 1000,
+    ...options,
+  })
+}
+
 // ─── Audit Logs ───────────────────────────────────────────────────────────────
 
 export type AuditFilterParams = {

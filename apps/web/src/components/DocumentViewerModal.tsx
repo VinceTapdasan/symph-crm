@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
-import { useGetDocumentContent } from '@/lib/hooks/queries'
+import { useGetDocumentContent, useGetDocumentPreview } from '@/lib/hooks/queries'
 import { useEscapeKey } from '@/lib/hooks/use-escape-key'
 import type { ApiDocument } from '@/lib/types'
 
@@ -56,8 +56,13 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
   const [viewMode, setViewMode] = useState<ViewMode>('rendered')
   const contentRef = useRef<HTMLDivElement>(null)
 
-  // Fetch content for all non-image documents (text, extracted PDF text, etc.)
+  // Fetch content for all non-image, non-audio documents (text, extracted PDF text, etc.)
   const { data, isLoading } = useGetDocumentContent(!isImage && !isAudio ? doc.id : null)
+
+  // Fetch signed preview URL for images and audio (stored as binaries in ATTACHMENTS_BUCKET)
+  const { data: preview, isLoading: previewLoading } = useGetDocumentPreview(
+    isImage || isAudio ? doc.id : null,
+  )
 
   useEscapeKey(useCallback(onClose, [onClose]))
 
@@ -202,31 +207,62 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
               <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
             </div>
           ) : isAudio ? (
-            /* Audio playback — requires signed URL from Supabase Storage */
-            <div className="flex flex-col items-center justify-center h-48 gap-3 text-slate-400 px-6">
-              <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1} strokeLinecap="round" className="opacity-30">
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
-              <p className="text-xs text-center">Audio playback requires Supabase Storage</p>
-              <p className="text-atom text-slate-300 dark:text-slate-600 text-center">
-                Add SUPABASE_SERVICE_ROLE_KEY to enable audio playback
-              </p>
-            </div>
+            /* Audio playback via signed URL from ATTACHMENTS_BUCKET */
+            previewLoading ? (
+              <div className="flex items-center justify-center h-48">
+                <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+              </div>
+            ) : preview?.url ? (
+              <div className="flex flex-col items-center justify-center gap-4 p-8 min-h-[200px]">
+                <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1} strokeLinecap="round" className="text-slate-300 dark:text-slate-600">
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
+                <audio
+                  controls
+                  src={preview.url}
+                  className="w-full max-w-md"
+                  style={{ colorScheme: 'light dark' }}
+                >
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-48 gap-3 text-slate-400 px-6">
+                <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1} strokeLinecap="round" className="opacity-30">
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
+                <p className="text-xs">Audio not available</p>
+              </div>
+            )
           ) : isImage ? (
-            /* Images require signed URL — not available without Supabase configured */
-            <div className="flex flex-col items-center justify-center h-48 gap-3 text-slate-400 px-6">
-              <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1} strokeLinecap="round" className="opacity-30">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-              </svg>
-              <p className="text-xs text-center">Image preview requires Supabase Storage</p>
-              <p className="text-atom text-slate-300 dark:text-slate-600 text-center">
-                Add SUPABASE_SERVICE_ROLE_KEY to enable inline previews
-              </p>
-            </div>
+            /* Image preview via signed URL from ATTACHMENTS_BUCKET */
+            previewLoading ? (
+              <div className="flex items-center justify-center h-48">
+                <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+              </div>
+            ) : preview?.url ? (
+              <div className="flex items-center justify-center p-6 min-h-[200px] bg-[repeating-conic-gradient(#f0f0f0_0%_25%,transparent_0%_50%)] dark:bg-[repeating-conic-gradient(#2a2a2a_0%_25%,transparent_0%_50%)] bg-[length:16px_16px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={preview.url}
+                  alt={doc.title}
+                  className="max-w-full max-h-[65vh] rounded-lg object-contain shadow-md"
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-48 gap-3 text-slate-400 px-6">
+                <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1} strokeLinecap="round" className="opacity-30">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                <p className="text-xs">Image not available</p>
+              </div>
+            )
           ) : !content ? (
             /* No content — storage may not be configured */
             <div className="flex flex-col items-center justify-center h-48 gap-3 text-slate-400 px-6">

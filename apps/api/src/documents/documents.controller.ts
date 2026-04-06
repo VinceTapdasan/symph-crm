@@ -7,6 +7,7 @@ import { FileInterceptor } from '@nestjs/platform-express'
 import { memoryStorage } from 'multer'
 import { DocumentsService } from './documents.service'
 import { FileParserService } from '../file-parser/file-parser.service'
+import { StorageService, ATTACHMENTS_BUCKET } from '../storage/storage.service'
 import { documents } from '@symph-crm/database'
 
 @Controller('documents')
@@ -16,6 +17,7 @@ export class DocumentsController {
   constructor(
     private readonly documentsService: DocumentsService,
     private readonly fileParser: FileParserService,
+    private readonly storage: StorageService,
   ) {}
 
   @Get()
@@ -43,6 +45,11 @@ export class DocumentsController {
   @Get(':id/download')
   downloadUrl(@Param('id') id: string) {
     return this.documentsService.getDownloadUrl(id)
+  }
+
+  @Get(':id/preview')
+  previewUrl(@Param('id') id: string) {
+    return this.documentsService.getPreviewUrl(id)
   }
 
   @Post()
@@ -97,10 +104,10 @@ export class DocumentsController {
       const parsed = await this.fileParser.parse(buffer, baseMime, originalname)
       content = parsed.text
     } else if (baseMime.startsWith('image/')) {
-      // Images are stored as attachment stubs — no text to extract
+      // Images: store text stub for content, binary uploaded separately below
       content = `[Image attachment: ${originalname}]`
     } else if (baseMime.startsWith('audio/')) {
-      // Audio files stored as stubs — no text to extract
+      // Audio: store text stub for content, binary uploaded separately below
       content = `[Audio attachment: ${originalname}]`
     } else {
       throw new BadRequestException(`Unsupported file type: ${mimetype}`)
@@ -112,12 +119,20 @@ export class DocumentsController {
       'text/markdown', 'text/plain', 'text/csv', 'application/csv',
     ])
     const isTextNote = TEXT_MIMES.has(baseMime)
+    const isBinary = baseMime.startsWith('image/') || baseMime.startsWith('audio/')
     const bucket = isTextNote ? 'notes' : 'resources'
     const ext = originalname.includes('.') ? originalname.split('.').pop()!.toLowerCase() : 'bin'
 
     const timestamp = Date.now()
     const safeName = titleBase.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60)
     const storagePath = `deals/${dealId}/${bucket}/${timestamp}-${safeName}.${isTextNote ? 'md' : ext}`
+
+    // For binary files (images, audio): store the actual file in ATTACHMENTS_BUCKET
+    // so it can be retrieved for preview/playback via the /preview endpoint.
+    if (isBinary) {
+      await this.storage.uploadAttachment(storagePath, buffer, baseMime)
+      this.logger.log(`Binary attachment stored: ${storagePath} (${buffer.length} bytes)`)
+    }
 
     const tags = [bucket, baseMime.split('/')[1] ?? ext]
     if (dealStage) tags.push(`deal_stage:${dealStage}`)

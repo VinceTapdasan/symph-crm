@@ -81,6 +81,7 @@ export const queryKeys = {
     byType: (type: string) => ['documents', type] as const,
     proposals: ['documents', 'proposals'] as const,
     content: (id: string) => ['document-content', id] as const,
+    preview: (id: string) => ['document-preview', id] as const,
   },
   notifications: {
     all: ['notifications'] as const,
