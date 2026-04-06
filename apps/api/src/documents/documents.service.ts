@@ -156,12 +156,8 @@ export class DocumentsService {
     const doc = await this.findOne(id)
     if (!doc) throw new NotFoundException(`Document ${id} not found`)
 
-    // Delete from storage (best-effort — don't block DB cleanup)
-    try {
-      await this.storage.delete(CONTENT_BUCKET, doc.storagePath)
-    } catch (e) {
-      // Storage delete is best-effort — log and continue
-    }
+    // Delete from NFS (best-effort — don't block DB cleanup)
+    await this.storage.deleteMarkdown(doc.storagePath)
 
     // Hard delete from DB
     await this.db.delete(documents).where(eq(documents.id, id))
