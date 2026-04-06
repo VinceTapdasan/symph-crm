@@ -4,13 +4,13 @@ import { useState, useMemo, useCallback, useEffect, useRef, type CSSProperties }
 import { useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'next/navigation'
 import { cn, toDateKey, formatTime, getWeekStart, monthRange, weekRange } from '@/lib/utils'
-import type { ApiCalendarEvent, CalendarStatus, CreateEventForm, CalendarView } from '@/lib/types'
+import type { ApiCalendarEvent, ApiTeamDemoEvent, CalendarStatus, CreateEventForm, CalendarView } from '@/lib/types'
 import {
   API_BASE, MONTHS, MONTHS_SHORT, DAYS,
   EVENT_TYPE_COLORS, EVENT_TYPE_BADGE, EVENT_TYPE_HEX, TIME_SLOTS, HOURS, HOUR_PX,
 } from '@/lib/constants'
 import { queryKeys } from '@/lib/query-keys'
-import { useGetCalendarStatus, useGetCalendarEvents } from '@/lib/hooks/queries'
+import { useGetCalendarStatus, useGetCalendarEvents, useGetTeamDemos } from '@/lib/hooks/queries'
 import { useCreateCalendarEvent } from '@/lib/hooks/mutations'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,6 +25,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { X, ChevronLeft, ChevronRight, Clock, MapPin, Users } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import { EventPopover, type CalendarEventDraft } from './EventPopover'
 
 // ─── Event style helpers ───────────────────────────────────────────────────────
@@ -534,6 +536,145 @@ function WeekView({
 
 // ─── Main Calendar ────────────────────────────────────────────────────────────
 
+// ─── Team Demos Panel ──────────────────────────────────────────────────────────
+
+function groupDemosByDay(demos: ApiTeamDemoEvent[]): { label: string; demos: ApiTeamDemoEvent[] }[] {
+  const now = new Date()
+  const todayStr = toDateKey(now.toISOString())
+  const tomorrow = new Date(now)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const tomorrowStr = toDateKey(tomorrow.toISOString())
+
+  // End of the current week (Sunday)
+  const endOfWeek = new Date(now)
+  endOfWeek.setDate(endOfWeek.getDate() + (7 - endOfWeek.getDay()))
+  const endOfWeekStr = toDateKey(endOfWeek.toISOString())
+
+  const groups: Record<string, ApiTeamDemoEvent[]> = {
+    Today: [],
+    Tomorrow: [],
+    'This Week': [],
+    Later: [],
+  }
+
+  for (const d of demos) {
+    const dateStr = toDateKey(d.startAt)
+    if (dateStr === todayStr) groups['Today'].push(d)
+    else if (dateStr === tomorrowStr) groups['Tomorrow'].push(d)
+    else if (dateStr <= endOfWeekStr) groups['This Week'].push(d)
+    else groups['Later'].push(d)
+  }
+
+  return Object.entries(groups)
+    .filter(([, arr]) => arr.length > 0)
+    .map(([label, arr]) => ({ label, demos: arr }))
+}
+
+function getInitialsColor(name: string | null): string {
+  const colors = [
+    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+    '#ec4899', '#06b6d4', '#f97316', '#14b8a6', '#6366f1',
+  ]
+  if (!name) return colors[0]
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return colors[Math.abs(hash) % colors.length]
+}
+
+function TeamDemosPanel({
+  demos,
+  loading,
+  onOpenDeal,
+}: {
+  demos: ApiTeamDemoEvent[]
+  loading: boolean
+  onOpenDeal?: (id: string) => void
+}) {
+  const grouped = useMemo(() => groupDemosByDay(demos), [demos])
+
+  return (
+    <div className="border border-black/[.06] dark:border-white/[.08] rounded-lg bg-white dark:bg-[#1e1e21] overflow-hidden flex flex-col">
+      <div className="px-4 py-3 border-b border-black/[.06] dark:border-white/[.08] shrink-0 flex items-center justify-between">
+        <p className="text-ssm font-semibold text-slate-900 dark:text-white">Team Demos</p>
+        <Badge variant="muted" className="text-xxs font-medium">
+          {demos.length}
+        </Badge>
+      </div>
+      <div className="p-3 flex-1 overflow-y-auto max-h-[360px]">
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="flex items-start gap-2.5 p-2">
+                <Skeleton className="w-7 h-7 rounded-full shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-3 w-3/4 rounded" />
+                  <Skeleton className="h-2.5 w-1/2 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : demos.length === 0 ? (
+          <EmptyState
+            icon="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+            title="No upcoming demos"
+            description="Demos from all team members will appear here"
+            compact
+          />
+        ) : (
+          <div className="space-y-3">
+            {grouped.map(group => (
+              <div key={group.label}>
+                <p className="text-atom font-semibold text-slate-400 uppercase tracking-wider mb-1.5 px-2">{group.label}</p>
+                <div className="space-y-0.5">
+                  {group.demos.map(demo => {
+                    const initials = demo.userName
+                      ? demo.userName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+                      : '??'
+                    const bgColor = getInitialsColor(demo.userName)
+                    return (
+                      <button
+                        key={demo.id}
+                        onClick={() => demo.dealId && onOpenDeal?.(demo.dealId)}
+                        disabled={!demo.dealId}
+                        className={cn(
+                          'w-full flex items-start gap-2.5 p-2 rounded-lg text-left transition-colors',
+                          demo.dealId
+                            ? 'hover:bg-slate-50 dark:hover:bg-white/[.04] cursor-pointer'
+                            : 'cursor-default'
+                        )}
+                      >
+                        {/* AM initials avatar */}
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xxs font-bold shrink-0"
+                          style={{ background: bgColor }}
+                          title={demo.userName || 'Unknown'}
+                        >
+                          {initials}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{demo.title}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-xxs text-slate-500 dark:text-slate-400">
+                              {new Date(demo.startAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })} · {formatTime(demo.startAt)}
+                            </span>
+                          </div>
+                          {demo.userName && (
+                            <p className="text-xxs text-slate-400 dark:text-slate-500 mt-0.5 truncate">{demo.userName}</p>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 type CalendarProps = {
   onOpenDeal?: (id: string) => void
 }
@@ -585,6 +726,13 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
   const { data: events = [] } = useGetCalendarEvents(
     { from, to },
     { enabled: !!status?.connected },
+  )
+
+  // Team demos query — always-on, shows all demos across the entire team
+  const teamDemosFrom = new Date().toISOString()
+  const teamDemosTo = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+  const { data: teamDemos = [], isLoading: teamDemosLoading } = useGetTeamDemos(
+    { from: teamDemosFrom, to: teamDemosTo },
   )
 
   const eventsByDate = useMemo(() => {
@@ -898,8 +1046,11 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
           )}
         </div>
 
-        {/* ── Upcoming sidebar ──────────────────────────────────────────── */}
-        <div className="border border-black/[.06] dark:border-white/[.08] rounded-lg bg-white dark:bg-[#1e1e21] overflow-hidden flex flex-col lg:max-h-full">
+        {/* ── Right sidebar ────────────────────────────────────────────── */}
+        <div className="flex flex-col gap-4 min-h-0 overflow-y-auto">
+
+        {/* Upcoming */}
+        <div className="border border-black/[.06] dark:border-white/[.08] rounded-lg bg-white dark:bg-[#1e1e21] overflow-hidden flex flex-col">
           <div className="px-4 py-3 border-b border-black/[.06] dark:border-white/[.08] shrink-0">
             <p className="text-ssm font-semibold text-slate-900 dark:text-white">Upcoming</p>
           </div>
@@ -951,6 +1102,11 @@ export function Calendar({ onOpenDeal }: CalendarProps = {}) {
               </div>
             )}
           </div>
+        </div>
+
+        {/* ── Team Demos ──────────────────────────────────────────────── */}
+        <TeamDemosPanel demos={teamDemos} loading={teamDemosLoading} onOpenDeal={onOpenDeal} />
+
         </div>
       </div>
 

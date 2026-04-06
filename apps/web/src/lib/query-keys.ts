@@ -59,6 +59,8 @@ export const queryKeys = {
     status: ['calendar', 'status'] as const,
     events: (params: { from?: string; to?: string; dealId?: string }) =>
       ['calendar', 'events', params] as const,
+    teamDemos: (params: { from?: string; to?: string }) =>
+      ['calendar', 'team-demos', params] as const,
   },
   gmail: {
     inbox: ['gmail', 'inbox'] as const,

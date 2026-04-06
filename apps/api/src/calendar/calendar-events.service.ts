@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
-import { eq, and, gte, lte, desc } from 'drizzle-orm'
+import { eq, and, gte, lte, desc, asc } from 'drizzle-orm'
 import { google } from 'googleapis'
-import { calendarEvents, userCalendarConnections } from '@symph-crm/database'
+import { calendarEvents, userCalendarConnections, users } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
 import { CalendarCryptoService } from './calendar-crypto.service'
@@ -96,6 +96,60 @@ export class CalendarEventsService {
     } catch (err) {
       if (err instanceof BadRequestException) throw err
       this.logger.error(`Calendar findAll error: ${(err as Error).message}`)
+      throw err
+    }
+  }
+
+  /**
+   * Find all demo events across the team (no userId filter).
+   * Joins with users table to include the AM's display name.
+   */
+  async findTeamDemos(params: { from?: string; to?: string } = {}) {
+    try {
+      let fromDate: Date | undefined
+      let toDate: Date | undefined
+
+      if (params.from) {
+        fromDate = new Date(params.from)
+        if (isNaN(fromDate.getTime())) {
+          throw new BadRequestException(`Invalid 'from' date: ${params.from}`)
+        }
+      }
+
+      if (params.to) {
+        toDate = new Date(params.to)
+        if (isNaN(toDate.getTime())) {
+          throw new BadRequestException(`Invalid 'to' date: ${params.to}`)
+        }
+      }
+
+      const conditions = [eq(calendarEvents.eventType, 'demo')]
+      if (fromDate) conditions.push(gte(calendarEvents.startAt, fromDate))
+      if (toDate) conditions.push(lte(calendarEvents.startAt, toDate))
+
+      const rows = await this.db
+        .select({
+          id: calendarEvents.id,
+          googleEventId: calendarEvents.googleEventId,
+          title: calendarEvents.title,
+          startAt: calendarEvents.startAt,
+          endAt: calendarEvents.endAt,
+          location: calendarEvents.location,
+          attendeeEmails: calendarEvents.attendeeEmails,
+          dealId: calendarEvents.dealId,
+          userId: calendarEvents.userId,
+          userName: users.name,
+          eventType: calendarEvents.eventType,
+        })
+        .from(calendarEvents)
+        .leftJoin(users, eq(calendarEvents.userId, users.id))
+        .where(and(...conditions))
+        .orderBy(asc(calendarEvents.startAt))
+
+      return rows
+    } catch (err) {
+      if (err instanceof BadRequestException) throw err
+      this.logger.error(`Calendar findTeamDemos error: ${(err as Error).message}`)
       throw err
     }
   }

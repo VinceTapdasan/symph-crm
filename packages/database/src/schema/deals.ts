@@ -35,6 +35,8 @@ export const deals = pgTable('deals', {
   outreachCategory: text('outreach_category', { enum: ['inbound', 'outbound'] }),
   dateCaptured: timestamp('date_captured', { withTimezone: true }).defaultNow(),
   demoLink: text('demo_link'),
+  proposalLink: text('proposal_link'),
+  clientBrandColor: text('client_brand_color'),
   servicesTags: text('services_tags').array().default([]),
   lastActivityAt: timestamp('last_activity_at', { withTimezone: true }).defaultNow(),
   isFlagged: boolean('is_flagged').default(false),

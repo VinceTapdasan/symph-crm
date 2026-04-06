@@ -30,6 +30,7 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 type Props = {
   documentId: string
   dealId: string
+  clientBrandColor?: string | null
   initialContent?: string   // HTML from previous save
   onVersionSaved?: () => void
 }
@@ -69,7 +70,7 @@ function ToolbarBtn({
 
 // ─── Main Editor ──────────────────────────────────────────────────────────────
 
-export default function ProposalEditor({ documentId, dealId, initialContent, onVersionSaved }: Props) {
+export default function ProposalEditor({ documentId, dealId, clientBrandColor, initialContent, onVersionSaved }: Props) {
   const { userId } = useUser()
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [wordCount, setWordCount] = useState(0)
@@ -230,7 +231,10 @@ export default function ProposalEditor({ documentId, dealId, initialContent, onV
       </div>
 
       {/* Editor body */}
-      <div className="flex-1 overflow-y-auto bg-white dark:bg-[#1e1e21]">
+      <div
+        className="flex-1 overflow-y-auto bg-white dark:bg-[#1e1e21]"
+        style={{ '--proposal-accent': clientBrandColor || '#000000' } as React.CSSProperties}
+      >
         <EditorContent editor={editor} />
       </div>
     </div>

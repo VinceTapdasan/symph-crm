@@ -118,6 +118,20 @@ export class CalendarController {
   // ─── Calendar Events ─────────────────────────────────────────────────────
 
   /**
+   * GET /api/calendar/team-demos
+   * Returns all demo events across the entire team.
+   * No userId restriction — open to all authenticated users.
+   * ?from=2026-03-01&to=2026-03-31
+   */
+  @Get('calendar/team-demos')
+  findTeamDemos(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.events.findTeamDemos({ from, to })
+  }
+
+  /**
    * GET /api/calendar/events
    * Returns events for the current user.
    * ?from=2026-03-01&to=2026-03-31&dealId=<uuid>

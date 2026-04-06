@@ -38,6 +38,7 @@ export type ApiDealDetail = ApiDeal & {
   flagReason: string | null
   proposalLink: string | null
   demoLink: string | null
+  clientBrandColor: string | null
   company: ApiCompanyDetail | null
   activities: Activity[]
 }
@@ -180,6 +181,20 @@ export type CalendarStatus = {
   connected: boolean
   googleEmail?: string
   lastSyncedAt?: string
+}
+
+export type ApiTeamDemoEvent = {
+  id: string
+  googleEventId: string
+  title: string
+  startAt: string
+  endAt: string
+  location: string | null
+  attendeeEmails: string[]
+  dealId: string | null
+  userId: string
+  userName: string | null
+  eventType: string
 }
 
 export type CalendarView = 'month' | 'week'

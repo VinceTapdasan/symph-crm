@@ -318,6 +318,12 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
   const [editingContact, setEditingContact] = useState<ApiContact | null>(null)
   const [deletingContact, setDeletingContact] = useState<ApiContact | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [editingBrandColor, setEditingBrandColor] = useState(false)
+  const [brandColorDraft, setBrandColorDraft] = useState('')
+  const [editingProposalLink, setEditingProposalLink] = useState(false)
+  const [proposalLinkDraft, setProposalLinkDraft] = useState('')
+  const [editingDemoLink, setEditingDemoLink] = useState(false)
+  const [demoLinkDraft, setDemoLinkDraft] = useState('')
   const assignRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const noteTextareaRef = useRef<HTMLTextAreaElement>(null)
@@ -1673,34 +1679,136 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                 </div>
               ) : null}
 
-              {/* Quick links from deal fields */}
-              {(deal.proposalLink || deal.demoLink) && (
-                <div className="flex flex-col gap-2 mb-3">
-                  <p className="text-atom font-semibold text-slate-400 uppercase tracking-wider">Links</p>
-                  {deal.proposalLink && (
-                    <a
-                      href={deal.proposalLink.startsWith('http') ? deal.proposalLink : `https://${deal.proposalLink}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-ssm text-primary hover:underline font-medium"
+              {/* Editable links */}
+              <div className="flex flex-col gap-2 mb-3">
+                <p className="text-atom font-semibold text-slate-400 uppercase tracking-wider">Links</p>
+
+                {/* Proposal Link */}
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-400 shrink-0"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  {editingProposalLink ? (
+                    <Input
+                      autoFocus
+                      type="text"
+                      value={proposalLinkDraft}
+                      onChange={(e) => setProposalLinkDraft(e.target.value)}
+                      placeholder="https://..."
+                      className="text-ssm flex-1 h-7"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.currentTarget.blur()
+                        if (e.key === 'Escape') { setEditingProposalLink(false); return }
+                      }}
+                      onBlur={() => {
+                        setEditingProposalLink(false)
+                        let url = proposalLinkDraft.trim() || null
+                        if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+                          url = 'https://' + url
+                        }
+                        if (url === deal.proposalLink) return
+                        const prev = queryClient.getQueryData(queryKeys.deals.detail(dealId))
+                        queryClient.setQueryData(queryKeys.deals.detail(dealId), (old: any) =>
+                          old ? { ...old, proposalLink: url } : old
+                        )
+                        updateDeal.mutate({ id: dealId, data: { proposalLink: url } as any }, {
+                          onError: () => queryClient.setQueryData(queryKeys.deals.detail(dealId), prev),
+                          onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.deals.detail(dealId) }),
+                        })
+                      }}
+                    />
+                  ) : deal.proposalLink ? (
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <a
+                        href={deal.proposalLink.startsWith('http') ? deal.proposalLink : `https://${deal.proposalLink}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-ssm text-primary hover:underline font-medium truncate"
+                      >
+                        View Proposal
+                      </a>
+                      <button
+                        onClick={() => { setProposalLinkDraft(deal.proposalLink || ''); setEditingProposalLink(true) }}
+                        className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors shrink-0"
+                        title="Edit link"
+                      >
+                        <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setProposalLinkDraft(''); setEditingProposalLink(true) }}
+                      className="text-ssm text-slate-400 hover:text-primary transition-colors"
                     >
-                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      View Proposal
-                    </a>
-                  )}
-                  {deal.demoLink && (
-                    <a
-                      href={deal.demoLink.startsWith('http') ? deal.demoLink : `https://${deal.demoLink}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-ssm text-primary hover:underline font-medium"
-                    >
-                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" /></svg>
-                      Demo Recording
-                    </a>
+                      Add proposal link
+                    </button>
                   )}
                 </div>
-              )}
+
+                {/* Demo Link */}
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-400 shrink-0"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" /></svg>
+                  {editingDemoLink ? (
+                    <Input
+                      autoFocus
+                      type="text"
+                      value={demoLinkDraft}
+                      onChange={(e) => setDemoLinkDraft(e.target.value)}
+                      placeholder="https://..."
+                      className="text-ssm flex-1 h-7"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.currentTarget.blur()
+                        if (e.key === 'Escape') { setEditingDemoLink(false); return }
+                      }}
+                      onBlur={() => {
+                        setEditingDemoLink(false)
+                        let url = demoLinkDraft.trim() || null
+                        if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+                          url = 'https://' + url
+                        }
+                        if (url === deal.demoLink) return
+                        const prev = queryClient.getQueryData(queryKeys.deals.detail(dealId))
+                        queryClient.setQueryData(queryKeys.deals.detail(dealId), (old: any) =>
+                          old ? { ...old, demoLink: url } : old
+                        )
+                        updateDeal.mutate({ id: dealId, data: { demoLink: url } as any }, {
+                          onError: () => queryClient.setQueryData(queryKeys.deals.detail(dealId), prev),
+                          onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.deals.detail(dealId) }),
+                        })
+                      }}
+                    />
+                  ) : deal.demoLink ? (
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <a
+                        href={deal.demoLink.startsWith('http') ? deal.demoLink : `https://${deal.demoLink}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-ssm text-primary hover:underline font-medium truncate"
+                      >
+                        Demo Recording
+                      </a>
+                      <button
+                        onClick={() => { setDemoLinkDraft(deal.demoLink || ''); setEditingDemoLink(true) }}
+                        className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors shrink-0"
+                        title="Edit link"
+                      >
+                        <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setDemoLinkDraft(''); setEditingDemoLink(true) }}
+                      className="text-ssm text-slate-400 hover:text-primary transition-colors"
+                    >
+                      Add demo link
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -2107,6 +2215,87 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                     </div>
                   )}
                 </>
+              )}
+            </div>
+          </SidebarSection>
+
+          {/* Client Brand Color */}
+          <SidebarSection title="Client Brand Color">
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => {
+                  setBrandColorDraft(deal.clientBrandColor || '#000000')
+                  setEditingBrandColor(true)
+                }}
+                className="w-7 h-7 rounded-full border border-black/[.08] dark:border-white/[.12] shrink-0 cursor-pointer transition-shadow hover:ring-2 hover:ring-primary/30"
+                style={{ background: deal.clientBrandColor || '#e2e8f0' }}
+                title={deal.clientBrandColor || 'Not set'}
+              />
+              {editingBrandColor ? (
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <Input
+                    type="color"
+                    value={brandColorDraft}
+                    onChange={(e) => setBrandColorDraft(e.target.value)}
+                    className="w-8 h-8 p-0.5 border-none cursor-pointer"
+                  />
+                  <Input
+                    type="text"
+                    value={brandColorDraft}
+                    onChange={(e) => setBrandColorDraft(e.target.value)}
+                    placeholder="#000000"
+                    className="text-ssm flex-1 h-8 font-mono"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.currentTarget.blur()
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const color = brandColorDraft.trim() || null
+                      setEditingBrandColor(false)
+                      const prev = queryClient.getQueryData(queryKeys.deals.detail(dealId))
+                      queryClient.setQueryData(queryKeys.deals.detail(dealId), (old: any) =>
+                        old ? { ...old, clientBrandColor: color } : old
+                      )
+                      updateDeal.mutate({ id: dealId, data: { clientBrandColor: color } as any }, {
+                        onError: () => queryClient.setQueryData(queryKeys.deals.detail(dealId), prev),
+                        onSettled: () => {
+                          queryClient.invalidateQueries({ queryKey: queryKeys.deals.detail(dealId) })
+                        },
+                      })
+                    }}
+                    className="text-xs font-medium text-primary hover:underline shrink-0"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditingBrandColor(false)}
+                    className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 shrink-0"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-ssm text-slate-600 dark:text-slate-400 font-mono truncate">
+                    {deal.clientBrandColor || 'Not set'}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setBrandColorDraft(deal.clientBrandColor || '#000000')
+                      setEditingBrandColor(true)
+                    }}
+                    className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors shrink-0"
+                    title="Edit color"
+                  >
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                </div>
               )}
             </div>
           </SidebarSection>

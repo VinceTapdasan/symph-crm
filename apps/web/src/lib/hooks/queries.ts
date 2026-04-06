@@ -24,6 +24,7 @@ import type {
   FunnelResponse,
   AuditLogsResponse,
   ApiCalendarEvent,
+  ApiTeamDemoEvent,
   CalendarStatus,
   InboxResponse,
   ApiNotification,
@@ -276,6 +277,17 @@ export function useGetCalendarEvents(
   return useQuery<ApiCalendarEvent[]>({
     queryKey: queryKeys.calendar.events(params),
     queryFn: () => api.get<ApiCalendarEvent[]>('/calendar/events', params),
+    ...options,
+  })
+}
+
+export function useGetTeamDemos(
+  params: { from?: string; to?: string },
+  options?: Partial<UseQueryOptions<ApiTeamDemoEvent[]>>,
+) {
+  return useQuery<ApiTeamDemoEvent[]>({
+    queryKey: queryKeys.calendar.teamDemos(params),
+    queryFn: () => api.get<ApiTeamDemoEvent[]>('/calendar/team-demos', params),
     ...options,
   })
 }

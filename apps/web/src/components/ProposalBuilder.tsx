@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { ApiDocument } from '@/lib/types'
-import { useGetDeals, useGetProposals, useGetDocumentContent } from '@/lib/hooks/queries'
+import { useGetDeals, useGetDeal, useGetProposals, useGetDocumentContent } from '@/lib/hooks/queries'
 import { useCreateDocument } from '@/lib/hooks/mutations'
 import { queryKeys } from '@/lib/query-keys'
 
@@ -155,6 +155,7 @@ export function ProposalBuilder() {
   const { data: contentData } = useGetDocumentContent(selectedId)
 
   const selected = proposals.find(p => p.id === selectedId)
+  const { data: selectedDeal } = useGetDeal(selected?.dealId ?? '', { enabled: !!selected?.dealId })
 
   return (
     <div className="h-full flex overflow-hidden">
@@ -271,6 +272,7 @@ export function ProposalBuilder() {
                 key={selectedId}
                 documentId={selectedId}
                 dealId={selected?.dealId ?? ''}
+                clientBrandColor={selectedDeal?.clientBrandColor ?? null}
                 initialContent={contentData?.content ?? ''}
                 onVersionSaved={() => {
                   qc.invalidateQueries({ queryKey: queryKeys.documents.proposals })
