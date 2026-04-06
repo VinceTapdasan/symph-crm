@@ -61,6 +61,7 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
   const [viewMode, setViewMode] = useState<ViewMode>('rendered')
   const [isEditing, setIsEditing] = useState(false)
   const [editedContent, setEditedContent] = useState('')
+  const [copied, setCopied] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const isEditingRef = useRef(false)
@@ -121,6 +122,14 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
   function handleSave() {
     if (!editedContent.trim()) return
     updateDocument.mutate({ id: doc.id, content: editedContent })
+  }
+
+  function handleCopy() {
+    if (!content) return
+    navigator.clipboard.writeText(content).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
   }
 
   return (
@@ -247,6 +256,47 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
                     Raw
                   </button>
                 </div>
+              )}
+
+              {/* Copy */}
+              {content && (
+                <button
+                  onClick={handleCopy}
+                  className="h-7 px-2.5 rounded-lg flex items-center gap-1.5 text-xxs font-semibold text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors shrink-0"
+                  title="Copy content"
+                >
+                  {copied ? (
+                    <>
+                      <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="text-green-500">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      <span className="text-green-500">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                      </svg>
+                      Copy
+                    </>
+                  )}
+                </button>
+              )}
+
+              {/* Edit */}
+              {canEdit && content && (
+                <button
+                  onClick={handleEnterEdit}
+                  className="h-7 px-2.5 rounded-lg flex items-center gap-1.5 text-xxs font-semibold text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors shrink-0"
+                  title="Edit"
+                >
+                  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  Edit
+                </button>
               )}
 
               {/* Download */}
@@ -410,7 +460,7 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
                * Click anywhere to edit.
                */
               <div
-                className={`px-8 py-7 max-w-none overflow-x-auto${canEdit ? ' cursor-text' : ''}
+                className={`px-8 py-7 max-w-none overflow-x-auto
                   prose dark:prose-invert
                   prose-headings:font-bold prose-headings:tracking-tight
                   prose-h1:text-[1.9rem] prose-h1:leading-tight prose-h1:mb-3 prose-h1:mt-0
@@ -436,20 +486,14 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
                   prose-table:text-sm
                   prose-th:font-semibold prose-th:border-b prose-th:border-black/10 dark:prose-th:border-white/10
                   prose-td:border-b prose-td:border-black/[.05] dark:prose-td:border-white/[.05]`}
-                onClick={canEdit ? handleEnterEdit : undefined}
-                title={canEdit ? 'Click to edit' : undefined}
               >
                 <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                   {content}
                 </ReactMarkdown>
               </div>
             ) : (
-              /* Raw / plain text — mono font, whitespace preserved. Click to edit. */
-              <pre
-                className={`px-8 py-7 text-ssm font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed overflow-x-auto${canEdit ? ' cursor-text' : ''}`}
-                onClick={canEdit ? handleEnterEdit : undefined}
-                title={canEdit ? 'Click to edit' : undefined}
-              >
+              /* Raw / plain text — mono font, whitespace preserved */
+              <pre className="px-8 py-7 text-ssm font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed overflow-x-auto">
                 {content}
               </pre>
             )}
