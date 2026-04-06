@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { queryKeys } from '@/lib/query-keys'
 import { usePatchDealStage, useCreateDocument, useUploadDocumentFile, useUpdateDeal, useDeleteDocument, useCreateContact, useDeleteDeal } from '@/lib/hooks/mutations'
 import { useGetDeal, useGetCompany, useGetActivitiesByDeal, useGetDocumentsByDeal, useGetUsers, useGetContactsByCompany } from '@/lib/hooks/queries'
@@ -273,8 +273,24 @@ type DealDetailProps = {
 
 // ── Main component ───────────────────────────────────────────────────────────
 
+type TabId = 'notes' | 'resources' | 'timeline' | 'people' | 'billing'
+const VALID_TABS = new Set<TabId>(['notes', 'resources', 'timeline', 'people', 'billing'])
+
 export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: DealDetailProps) {
-  const [activeTab, setActiveTab] = useState<'notes' | 'resources' | 'timeline' | 'people' | 'billing'>('notes')
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  // Derive activeTab from URL — fall back to 'notes' for unknown values
+  const rawTab = searchParams.get('tab') ?? ''
+  const activeTab: TabId = VALID_TABS.has(rawTab as TabId) ? (rawTab as TabId) : 'notes'
+
+  // Sync tab to URL without adding a browser history entry
+  const setActiveTab = useCallback((tab: TabId) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('tab', tab)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }, [router, pathname, searchParams])
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [noteTypeFilter, setNoteTypeFilter] = useState<string>('all')
   const [resourceExtFilter, setResourceExtFilter] = useState<string>('all')
@@ -303,7 +319,6 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
   const noteTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   const queryClient = useQueryClient()
-  const router = useRouter()
   const { userId, isSales } = useUser()
   const patchStage = usePatchDealStage()
   const updateDeal = useUpdateDeal()

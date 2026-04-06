@@ -180,7 +180,14 @@ export class DocumentsService {
   async getDownloadUrl(id: string): Promise<{ url: string; filename: string }> {
     const doc = await this.findOne(id)
     if (!doc) throw new NotFoundException(`Document ${id} not found`)
-    const url = await this.storage.signedUrl(CONTENT_BUCKET, doc.storagePath, 3600)
+    // Binary files (images, audio) live in ATTACHMENTS_BUCKET; text docs in CONTENT_BUCKET
+    const IMAGE_TAGS = ['jpeg', 'jpg', 'png', 'webp', 'gif']
+    const AUDIO_TAGS = ['mp3', 'm4a', 'mpeg', 'mp4', 'x-m4a']
+    const isBinary =
+      doc.tags?.some(t => IMAGE_TAGS.includes(t)) ||
+      doc.tags?.some(t => AUDIO_TAGS.includes(t))
+    const bucket = isBinary ? ATTACHMENTS_BUCKET : CONTENT_BUCKET
+    const url = await this.storage.signedUrl(bucket, doc.storagePath, 3600)
     // Extract filename from storagePath (last segment)
     const filename = doc.storagePath.split('/').pop() ?? doc.title
     return { url, filename }
