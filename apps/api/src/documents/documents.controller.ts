@@ -1,9 +1,8 @@
 import {
   Controller, Get, Post, Put, Delete,
   Param, Body, Query, Headers,
-  UseInterceptors, UploadedFile, BadRequestException, HttpCode, Logger, NotFoundException, Res,
+  UseInterceptors, UploadedFile, BadRequestException, HttpCode, Logger, NotFoundException, Res, StreamableFile,
 } from '@nestjs/common'
-import { Response } from 'express'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { memoryStorage } from 'multer'
 import { DocumentsService } from './documents.service'
@@ -59,7 +58,7 @@ export class DocumentsController {
    * Returns the actual file content with appropriate Content-Type and Content-Disposition headers.
    */
   @Get(':id/file')
-  async serveFile(@Param('id') id: string, @Res() res: Response) {
+  async serveFile(@Param('id') id: string, @Res({ passthrough: true }) res: any) {
     const doc = await this.documentsService.findOne(id)
     if (!doc) throw new NotFoundException(`Document ${id} not found`)
 
@@ -74,12 +73,12 @@ export class DocumentsController {
     const buffer = await this.storage.readFile(doc.storagePath)
     if (!buffer) throw new NotFoundException(`File not found on NFS: ${doc.storagePath}`)
 
-    // Set response headers
+    // Set response headers via NestJS
     const filename = doc.storagePath.split('/').pop() ?? doc.title
     const mimeType = this.guessMimeType(doc.storagePath, doc.tags ?? [])
     res.setHeader('Content-Type', mimeType)
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
-    res.send(buffer)
+    return new StreamableFile(buffer)
   }
 
   /** Guess MIME type from file extension and tags */
