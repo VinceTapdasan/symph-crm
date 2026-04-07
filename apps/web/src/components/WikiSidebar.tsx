@@ -3,10 +3,9 @@
 import { useState, useMemo } from 'react'
 import { cn, getBrandColor, getInitials, formatDealValue } from '@/lib/utils'
 import { STAGE_COLORS, STAGE_LABELS } from '@/lib/constants'
-import { DealsGraph } from './DealsGraph'
 import type { ApiCompanyDetail, ApiDeal } from '@/lib/types'
 
-type WikiView = 'list' | 'graph'
+export type WikiView = 'list' | 'graph'
 
 type WikiSelection =
   | { kind: 'none' }
@@ -19,6 +18,8 @@ type WikiSidebarProps = {
   selection: WikiSelection
   onSelect: (sel: WikiSelection) => void
   isLoading?: boolean
+  view: WikiView
+  onViewChange: (v: WikiView) => void
 }
 
 export function WikiSidebar({
@@ -27,16 +28,11 @@ export function WikiSidebar({
   selection,
   onSelect,
   isLoading = false,
+  view,
+  onViewChange,
 }: WikiSidebarProps) {
-  const [view, setView] = useState<WikiView>('list')
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-
-  const companyMap = useMemo(() => {
-    const m = new Map<string, ApiCompanyDetail>()
-    for (const c of companies) m.set(c.id, c)
-    return m
-  }, [companies])
 
   // Group deals by company, sorted alpha
   const groups = useMemo(() => {
@@ -112,7 +108,7 @@ export function WikiSidebar({
           </span>
           <div className="flex items-center bg-slate-100 dark:bg-white/[.06] rounded-md p-0.5 gap-0.5">
             <button
-              onClick={() => setView('list')}
+              onClick={() => onViewChange('list')}
               title="List view"
               className={cn(
                 'h-6 w-6 rounded flex items-center justify-center transition-all',
@@ -130,7 +126,7 @@ export function WikiSidebar({
               </svg>
             </button>
             <button
-              onClick={() => setView('graph')}
+              onClick={() => onViewChange('graph')}
               title="Graph view"
               className={cn(
                 'h-6 w-6 rounded flex items-center justify-center transition-all',
@@ -170,25 +166,9 @@ export function WikiSidebar({
         )}
       </div>
 
-      {/* Body */}
+      {/* Body — list view only; graph is rendered full-width by the parent page */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {view === 'graph' ? (
-          /* ── Graph view ───────────────────────────────────────────────── */
-          <DealsGraph
-            companies={companies}
-            deals={deals}
-            onOpenDeal={(id) => {
-              const deal = deals.find(d => d.id === id)
-              if (deal) onSelect({ kind: 'deal', deal, company: companyMap.get(deal.companyId ?? '') ?? null })
-            }}
-            onOpenBrand={(companyId) => {
-              const company = companyMap.get(companyId)
-              if (company) onSelect({ kind: 'brand', company })
-            }}
-          />
-        ) : (
-          /* ── List view ────────────────────────────────────────────────── */
-          <div className="overflow-y-auto h-full py-1">
+        <div className="overflow-y-auto h-full py-1">
             {isLoading ? (
               <div className="flex items-center justify-center h-24">
                 <div className="w-4 h-4 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
@@ -302,7 +282,6 @@ export function WikiSidebar({
               })
             )}
           </div>
-        )}
       </div>
     </div>
   )
