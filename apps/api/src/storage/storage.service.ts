@@ -172,6 +172,13 @@ export class StorageService implements OnModuleInit {
     return data.signedUrl
   }
 
+  /** Read a voice recording from Supabase Storage as a buffer. */
+  async readVoiceRecording(storagePath: string): Promise<Buffer> {
+    const { data, error } = await this.supabaseClient.storage.from(ATTACHMENTS_BUCKET).download(storagePath)
+    if (error) throw new Error(`Voice recording read failed [${storagePath}]: ${error.message}`)
+    return Buffer.from(await data.arrayBuffer())
+  }
+
   /** Delete a voice recording from Supabase Storage. */
   async deleteVoiceRecording(storagePath: string): Promise<void> {
     const { error } = await this.supabaseClient.storage.from(ATTACHMENTS_BUCKET).remove([storagePath])
@@ -183,6 +190,11 @@ export class StorageService implements OnModuleInit {
   /** @deprecated Use uploadVoiceRecording() for voice, writeFile() for other binaries */
   async uploadAttachment(storagePath: string, buffer: Buffer, mimeType: string): Promise<string> {
     return this.uploadVoiceRecording(storagePath, buffer, mimeType)
+  }
+
+  /** @deprecated Use readVoiceRecording() */
+  async readAttachment(storagePath: string): Promise<Buffer> {
+    return this.readVoiceRecording(storagePath)
   }
 
   /** @deprecated Use voiceRecordingSignedUrl() */

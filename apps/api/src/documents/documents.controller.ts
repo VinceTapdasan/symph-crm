@@ -1,8 +1,9 @@
 import {
   Controller, Get, Post, Put, Delete,
   Param, Body, Query, Headers,
-  UseInterceptors, UploadedFile, BadRequestException, HttpCode, Logger,
+  UseInterceptors, UploadedFile, BadRequestException, HttpCode, Logger, NotFoundException, Res,
 } from '@nestjs/common'
+import { Response } from 'express'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { memoryStorage } from 'multer'
 import { DocumentsService } from './documents.service'
@@ -50,6 +51,56 @@ export class DocumentsController {
   @Get(':id/preview')
   previewUrl(@Param('id') id: string) {
     return this.documentsService.getPreviewUrl(id)
+  }
+
+  /**
+   * Serve a file from NFS.
+   * GET /api/documents/{id}/file
+   * Returns the actual file content with appropriate Content-Type and Content-Disposition headers.
+   */
+  @Get(':id/file')
+  async serveFile(@Param('id') id: string, @Res() res: Response) {
+    const doc = await this.documentsService.findOne(id)
+    if (!doc) throw new NotFoundException(`Document ${id} not found`)
+
+    // Only serve NFS files, not voice recordings
+    const AUDIO_TAGS = ['mp3', 'm4a', 'mpeg', 'mp4', 'x-m4a']
+    const isVoice = doc.tags?.some(t => AUDIO_TAGS.includes(t))
+    if (isVoice) {
+      throw new BadRequestException('Voice recordings are served from Supabase Storage')
+    }
+
+    // Read from NFS
+    const buffer = await this.storage.readFile(doc.storagePath)
+    if (!buffer) throw new NotFoundException(`File not found on NFS: ${doc.storagePath}`)
+
+    // Set response headers
+    const filename = doc.storagePath.split('/').pop() ?? doc.title
+    const mimeType = this.guessMimeType(doc.storagePath, doc.tags ?? [])
+    res.setHeader('Content-Type', mimeType)
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    res.send(buffer)
+  }
+
+  /** Guess MIME type from file extension and tags */
+  private guessMimeType(storagePath: string, tags: string[]): string {
+    const ext = storagePath.split('.').pop()?.toLowerCase()
+    const mimeMap: Record<string, string> = {
+      md: 'text/markdown',
+      txt: 'text/plain',
+      pdf: 'application/pdf',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+    }
+    if (ext && ext in mimeMap) return mimeMap[ext]
+    if (tags[0]?.includes('image')) return 'image/octet-stream'
+    return 'application/octet-stream'
   }
 
   @Post()

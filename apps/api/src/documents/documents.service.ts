@@ -3,7 +3,7 @@ import { eq, desc, and, isNull } from 'drizzle-orm'
 import { documents } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
-import { StorageService, CONTENT_BUCKET, ATTACHMENTS_BUCKET } from '../storage/storage.service'
+import { StorageService, ATTACHMENTS_BUCKET } from '../storage/storage.service'
 import { AuditLogsService } from '../audit-logs/audit-logs.service'
 
 export type DocumentType = typeof documents.$inferInsert['type']
@@ -172,40 +172,51 @@ export class DocumentsService {
     }).catch(() => {})
   }
 
-  /** Generate a signed download URL for a document */
+  /** Generate a download URL for a document */
   async getDownloadUrl(id: string): Promise<{ url: string; filename: string }> {
     const doc = await this.findOne(id)
     if (!doc) throw new NotFoundException(`Document ${id} not found`)
-    // Binary files (images, audio) live in ATTACHMENTS_BUCKET; text docs in CONTENT_BUCKET
-    const IMAGE_TAGS = ['jpeg', 'jpg', 'png', 'webp', 'gif']
+    // NFS files: return API endpoint path
+    // Voice recordings (AUDIO_TAGS): return Supabase signed URL
     const AUDIO_TAGS = ['mp3', 'm4a', 'mpeg', 'mp4', 'x-m4a']
-    const isBinary =
-      doc.tags?.some(t => IMAGE_TAGS.includes(t)) ||
-      doc.tags?.some(t => AUDIO_TAGS.includes(t))
-    const bucket = isBinary ? ATTACHMENTS_BUCKET : CONTENT_BUCKET
-    const url = await this.storage.signedUrl(bucket, doc.storagePath, 3600)
+    const isVoice = doc.tags?.some(t => AUDIO_TAGS.includes(t))
+
+    let url: string
+    if (isVoice) {
+      // Voice recordings in Supabase Storage — get signed URL
+      url = await this.storage.voiceRecordingSignedUrl(doc.storagePath, 3600)
+    } else {
+      // All other files (markdown, images, PDFs, docs) on NFS — return API endpoint
+      url = `/api/documents/${doc.id}/download`
+    }
     // Extract filename from storagePath (last segment)
     const filename = doc.storagePath.split('/').pop() ?? doc.title
     return { url, filename }
   }
 
   /**
-   * Generate a signed preview URL for a document.
-   * Images and audio are stored as binaries in ATTACHMENTS_BUCKET.
-   * Text documents are in CONTENT_BUCKET.
+   * Generate a preview URL for a document.
+   * Voice recordings (AUDIO_TAGS) in Supabase Storage get signed URLs.
+   * All other files (images, PDFs, markdown, docs) on NFS get API endpoint paths.
    */
   async getPreviewUrl(id: string): Promise<{ url: string; mimeType: string }> {
     const doc = await this.findOne(id)
     if (!doc) throw new NotFoundException(`Document ${id} not found`)
     const IMAGE_TAGS = ['jpeg', 'jpg', 'png', 'webp', 'gif']
     const AUDIO_TAGS = ['mp3', 'm4a', 'mpeg', 'mp4', 'x-m4a']
-    const isBinary =
-      doc.tags?.some(t => IMAGE_TAGS.includes(t)) ||
-      doc.tags?.some(t => AUDIO_TAGS.includes(t))
-    const bucket = isBinary ? ATTACHMENTS_BUCKET : CONTENT_BUCKET
-    const url = await this.storage.signedUrl(bucket, doc.storagePath, 3600)
+    const isVoice = doc.tags?.some(t => AUDIO_TAGS.includes(t))
+
+    let url: string
+    if (isVoice) {
+      // Voice recordings in Supabase Storage — get signed URL
+      url = await this.storage.voiceRecordingSignedUrl(doc.storagePath, 3600)
+    } else {
+      // All other files on NFS — return API endpoint
+      url = `/api/documents/${doc.id}/preview`
+    }
+
     const ext = doc.tags?.find(t => [...IMAGE_TAGS, ...AUDIO_TAGS].includes(t)) ?? 'bin'
-    const mimeType = `${doc.tags?.some(t => AUDIO_TAGS.includes(t)) ? 'audio' : 'image'}/${ext}`
+    const mimeType = `${isVoice ? 'audio' : 'image'}/${ext}`
     return { url, mimeType }
   }
 
