@@ -2,9 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'
+import { completeOnboardingAction } from './actions'
 
 const TEAM_OPTIONS = [
   { value: 'Agents',    label: 'Agents' },
@@ -15,8 +13,7 @@ const TEAM_OPTIONS = [
 ]
 
 export default function OnboardingPage() {
-  const { data: session, update } = useSession()
-  const router = useRouter()
+  const { data: session } = useSession()
   const [isPending, startTransition] = useTransition()
 
   const [currentTeam, setCurrentTeam] = useState('')
@@ -31,27 +28,17 @@ export default function OnboardingPage() {
     setError(null)
 
     startTransition(async () => {
-      try {
-        const res = await fetch(`${API_URL}/users/onboarding`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: userId, currentTeam }),
-        })
-
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}))
-          setError(body?.message ?? 'Something went wrong. Please try again.')
-          return
-        }
-
-        await update({ refreshUser: true })
-        // Hard navigation — ensures the browser picks up the refreshed JWT cookie.
-        // router.replace() uses the cached session; the middleware may redirect
-        // back to /onboarding before isOnboarded=true propagates to the cookie.
-        window.location.href = '/'
-      } catch {
-        setError('Network error. Please check your connection and try again.')
+      // completeOnboardingAction is a Server Action — it patches the DB,
+      // then calls update() server-side to reliably flush isOnboarded=true
+      // into the JWT cookie before redirecting.  This avoids the previous
+      // client-side race where the cookie could still carry isOnboarded=false
+      // when window.location.href fired, causing the middleware to bounce the
+      // user back to /onboarding.
+      const result = await completeOnboardingAction(userId, currentTeam)
+      if (result?.error) {
+        setError(result.error)
       }
+      // On success the server action calls redirect('/') — no client nav needed.
     })
   }
 
