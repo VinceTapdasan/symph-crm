@@ -3,8 +3,9 @@
 import { useRouter } from 'next/navigation'
 import { cn, getBrandColor, getInitials, formatDealValue, totalNumericValue } from '@/lib/utils'
 import { STAGE_COLORS, STAGE_LABELS } from '@/lib/constants'
-import type { ApiCompanyDetail, ApiDeal } from '@/lib/types'
+import type { ApiCompanyDetail, ApiDeal, DealNoteFile } from '@/lib/types'
 import type { WikiSelection } from './WikiSidebar'
+import { useGetDealNotes } from '@/lib/hooks/queries'
 
 type WikiContentProps = {
   selection: WikiSelection
@@ -358,7 +359,194 @@ function WikiDeal({
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </button>
+
+        {/* ── NFS Notes ──────────────────────────────────────────────── */}
+        <DealNotes dealId={deal.id} />
       </div>
+    </div>
+  )
+}
+
+// ─── Simple markdown renderer (no external deps) ─────────────────────────────
+
+function renderSimpleMarkdown(content: string): React.ReactNode[] {
+  const lines = content.split('\n')
+  const nodes: React.ReactNode[] = []
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    // ## headings
+    if (line.startsWith('## ')) {
+      nodes.push(
+        <p key={i} className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-3 mb-1">
+          {line.slice(3)}
+        </p>,
+      )
+      continue
+    }
+
+    // # headings
+    if (line.startsWith('# ')) {
+      nodes.push(
+        <p key={i} className="text-xs font-bold text-slate-900 dark:text-white mt-3 mb-1">
+          {line.slice(2)}
+        </p>,
+      )
+      continue
+    }
+
+    // ### headings
+    if (line.startsWith('### ')) {
+      nodes.push(
+        <p key={i} className="text-xxs font-semibold text-slate-700 dark:text-slate-300 mt-2 mb-0.5">
+          {line.slice(4)}
+        </p>,
+      )
+      continue
+    }
+
+    // Bullet points
+    if (line.startsWith('- ') || line.startsWith('* ')) {
+      nodes.push(
+        <div key={i} className="flex gap-1.5 text-xxs text-slate-600 dark:text-slate-400 leading-relaxed">
+          <span className="shrink-0 mt-1 w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-500" />
+          <span>{inlineBold(line.slice(2))}</span>
+        </div>,
+      )
+      continue
+    }
+
+    // Empty lines → spacing
+    if (line.trim() === '') {
+      nodes.push(<div key={i} className="h-1.5" />)
+      continue
+    }
+
+    // Plain paragraph
+    nodes.push(
+      <p key={i} className="text-xxs text-slate-600 dark:text-slate-400 leading-relaxed">
+        {inlineBold(line)}
+      </p>,
+    )
+  }
+
+  return nodes
+}
+
+/** Handle **bold** inline */
+function inlineBold(text: string): React.ReactNode {
+  const parts = text.split(/\*\*(.+?)\*\*/g)
+  if (parts.length === 1) return text
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 === 1
+          ? <span key={i} className="font-semibold text-slate-800 dark:text-slate-200">{part}</span>
+          : <span key={i}>{part}</span>,
+      )}
+    </>
+  )
+}
+
+// ─── Notes section ───────────────────────────────────────────────────────────
+
+const CATEGORY_CONFIG = [
+  { key: 'meeting' as const, label: 'MEETING NOTES' },
+  { key: 'general' as const, label: 'GENERAL' },
+  { key: 'notes' as const, label: 'NOTES' },
+]
+
+function formatNoteDate(ts: number): string {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  return `${(bytes / 1024).toFixed(1)} KB`
+}
+
+function DealNotes({ dealId }: { dealId: string }) {
+  const { data, isLoading } = useGetDealNotes(dealId)
+
+  if (isLoading) {
+    return (
+      <div className="mt-6 border-t border-black/[.06] dark:border-white/[.06] pt-4 space-y-3">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="animate-pulse">
+            <div className="h-2 w-20 bg-slate-200 dark:bg-white/[.06] rounded mb-2" />
+            <div className="h-2 w-full bg-slate-100 dark:bg-white/[.04] rounded mb-1" />
+            <div className="h-2 w-3/4 bg-slate-100 dark:bg-white/[.04] rounded" />
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (!data) return null
+
+  const hasNotes = CATEGORY_CONFIG.some(c => data.categories[c.key].length > 0)
+  const hasResources = data.resources.length > 0
+
+  if (!hasNotes && !hasResources) {
+    return (
+      <div className="mt-6 border-t border-black/[.06] dark:border-white/[.06] pt-4">
+        <p className="text-xxs text-slate-400 text-center py-3">No notes yet</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-6 border-t border-black/[.06] dark:border-white/[.06] pt-4 space-y-5">
+      {/* Note categories */}
+      {CATEGORY_CONFIG.map(({ key, label }) => {
+        const notes = data.categories[key]
+        if (notes.length === 0) return null
+        return (
+          <div key={key}>
+            <p className="text-xxs text-slate-400 font-medium tracking-wider mb-2">{label}</p>
+            <div className="space-y-3">
+              {notes.map((note: DealNoteFile) => (
+                <div
+                  key={note.filename}
+                  className="rounded-lg border border-black/[.06] dark:border-white/[.06] bg-white dark:bg-[#1e1e21] px-3 py-2.5"
+                >
+                  <p className="text-atom text-slate-400 mb-1.5">{formatNoteDate(note.createdAt)}</p>
+                  <div className="max-h-48 overflow-y-auto">
+                    {renderSimpleMarkdown(note.content)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+
+      {/* Resources */}
+      {hasResources && (
+        <div>
+          <p className="text-xxs text-slate-400 font-medium tracking-wider mb-2">RESOURCES</p>
+          <div className="space-y-1">
+            {data.resources.map((res) => (
+              <div
+                key={res.filename}
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-slate-50 dark:bg-white/[.03]"
+              >
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" className="shrink-0 text-slate-400">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+                </svg>
+                <span className="text-xxs text-slate-600 dark:text-slate-300 truncate flex-1" title={res.filename}>
+                  {res.filename}
+                </span>
+                <span className="text-atom text-slate-400 shrink-0">{formatFileSize(res.size)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

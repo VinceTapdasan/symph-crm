@@ -28,6 +28,7 @@ import type {
   CalendarStatus,
   InboxResponse,
   ApiNotification,
+  DealNotesResponse,
 } from '@/lib/types'
 
 // ─── Companies ────────────────────────────────────────────────────────────────
@@ -101,6 +102,18 @@ export function useGetDeal(
     queryKey: queryKeys.deals.detail(id),
     queryFn: () => api.get<ApiDealDetail>(`/deals/${id}`),
     retry: false,
+    ...options,
+  })
+}
+
+export function useGetDealNotes(
+  dealId: string | null,
+  options?: Partial<UseQueryOptions<DealNotesResponse>>,
+) {
+  return useQuery<DealNotesResponse>({
+    queryKey: queryKeys.deals.notes(dealId ?? ''),
+    queryFn: () => api.get<DealNotesResponse>(`/deals/${dealId}/notes`),
+    enabled: !!dealId,
     ...options,
   })
 }

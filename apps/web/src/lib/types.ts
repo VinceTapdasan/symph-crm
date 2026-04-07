@@ -267,6 +267,23 @@ export type FilterTab = 'all' | 'unread'
 
 export type InboxChannel = 'all' | 'email' | 'messenger' | 'instagram' | 'whatsapp' | 'viber'
 
+// ── Deal Notes (NFS) ────────────────────────────────────────────────────────
+
+export type DealNoteFile = {
+  filename: string
+  content: string
+  createdAt: number
+}
+
+export type DealNotesResponse = {
+  categories: {
+    general: DealNoteFile[]
+    meeting: DealNoteFile[]
+    notes: DealNoteFile[]
+  }
+  resources: Array<{ filename: string; size: number; ext: string }>
+}
+
 // ── Billing ─────────────────────────────────────────────────────────────────
 
 export type ApiBillingMilestone = {
