@@ -13,7 +13,6 @@ import { Avatar } from './Avatar'
 import { EmptyState } from './EmptyState'
 import { CreateBrandModal } from './CreateBrandModal'
 import { CreateDealModal } from './CreateDealModal'
-import { DealsGraph } from './DealsGraph'
 import { BrandSlideOver } from './BrandSlideOver'
 import { Paperclip, Pencil, Trash2, X } from 'lucide-react'
 import { useUpdateCompany, useDeleteCompany } from '@/lib/hooks/mutations'
@@ -22,10 +21,6 @@ import { INDUSTRY_OPTIONS } from '@/lib/constants'
 import { queryKeys } from '@/lib/query-keys'
 import { useUser } from '@/lib/hooks/use-user'
 import { useEscapeKey } from '@/lib/hooks/use-escape-key'
-import { useRouter, useSearchParams } from 'next/navigation'
-
-type ViewMode = 'table' | 'graph'
-
 // ── DataTable brand row type ──────────────────────────────────────────────────
 
 type BrandTableRow = {
@@ -411,18 +406,14 @@ export type { ApiDeal } from '@/lib/types'
 // --- Main component ---
 
 type DealsProps = {
-  initialView?: ViewMode
   onOpenDeal: (id: string) => void
 }
 
-export function Deals({ initialView = 'table', onOpenDeal }: DealsProps) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+export function Deals({ onOpenDeal }: DealsProps) {
   const searchInputRef = useRef<HTMLInputElement>(null)
   const [search, setSearch] = useState('')
   const [showCreateBrand, setShowCreateBrand] = useState(false)
   const [showCreateDeal, setShowCreateDeal] = useState(false)
-  const [viewMode, setViewMode] = useState<ViewMode>(initialView)
   const [selectedBrand, setSelectedBrand] = useState<ApiCompanyDetail | null>(null)
   const [editingBrand, setEditingBrand] = useState<ApiCompanyDetail | null>(null)
   const [deletingBrand, setDeletingBrand] = useState<ApiCompanyDetail | null>(null)
@@ -796,39 +787,6 @@ export function Deals({ initialView = 'table', onOpenDeal }: DealsProps) {
           </div>
 
           <div className="sm:ml-auto flex flex-wrap gap-2 items-center">
-            {/* View toggle */}
-            <div className="flex items-center bg-slate-100 dark:bg-white/[.06] rounded-lg p-0.5 gap-0.5">
-              <button
-                onClick={() => {
-                  setViewMode('table')
-                  const params = new URLSearchParams(searchParams.toString())
-                  params.set('view', 'table')
-                  router.replace(`/deals?${params.toString()}`, { scroll: false })
-                }}
-                className={`h-[26px] px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${viewMode === 'table' ? 'bg-white dark:bg-[#1e1e21] text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'}`}
-              >
-                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="3" y1="15" x2="21" y2="15" /><line x1="9" y1="9" x2="9" y2="21" />
-                </svg>
-                Table
-              </button>
-              <button
-                onClick={() => {
-                  setViewMode('graph')
-                  const params = new URLSearchParams(searchParams.toString())
-                  params.set('view', 'graph')
-                  router.replace(`/deals?${params.toString()}`, { scroll: false })
-                }}
-                className={`h-[26px] px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${viewMode === 'graph' ? 'bg-white dark:bg-[#1e1e21] text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'}`}
-              >
-                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
-                  <circle cx="5" cy="12" r="2" /><circle cx="19" cy="5" r="2" /><circle cx="19" cy="19" r="2" /><circle cx="12" cy="12" r="2" />
-                  <line x1="7" y1="12" x2="10" y2="12" /><line x1="13.4" y1="10.6" x2="17" y2="6.9" /><line x1="13.4" y1="13.4" x2="17" y2="17.1" />
-                </svg>
-                Graph
-              </button>
-            </div>
-
             {/* Search */}
             <div className="relative flex-1 sm:flex-none sm:w-[200px] min-w-[140px]">
               <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round">
@@ -902,7 +860,7 @@ export function Deals({ initialView = 'table', onOpenDeal }: DealsProps) {
         )}
 
         {/* Table view */}
-        {!isLoading && companies.length > 0 && viewMode === 'table' && (
+        {!isLoading && companies.length > 0 && (
           <div className="flex-1 overflow-y-auto bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
             <BrandsDataTable
               rows={filteredTableRows}
@@ -911,22 +869,6 @@ export function Deals({ initialView = 'table', onOpenDeal }: DealsProps) {
               selectedBrandId={selectedBrand?.id}
               onEditBrand={setEditingBrand}
               onDeleteBrand={setDeletingBrand}
-            />
-          </div>
-        )}
-
-        {/* Graph view */}
-        {!isLoading && (companies.length > 0 || deals.length > 0) && viewMode === 'graph' && (
-          <div className="-mx-4 md:mx-0 flex-1 rounded-lg overflow-hidden border border-black/[.06] dark:border-white/[.08]">
-            <DealsGraph
-              companies={companies}
-              deals={deals}
-              onOpenDeal={onOpenDeal}
-              onOpenBrand={(companyId) => {
-                const company = companyMap.get(companyId)
-                if (company) setSelectedBrand(company)
-              }}
-              searchQuery={search}
             />
           </div>
         )}

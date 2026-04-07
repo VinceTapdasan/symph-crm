@@ -22,6 +22,7 @@ import {
   Settings,
   Sun,
   Moon,
+  BookMarked,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -64,6 +65,7 @@ function getNavSections(dormantCount: number): NavSection[] {
         { path: '/', label: 'Dashboard', icon: LayoutGrid },
         { path: '/pipeline', label: 'Pipeline', icon: Columns3, ...(dormantCount > 0 ? { badge: dormantCount, badgeColor: '#f59e0b' } : {}) },
         { path: '/deals', label: 'Brands', icon: BookOpen },
+        { path: '/wiki', label: 'Wiki', icon: BookMarked },
         { path: '/inbox', label: 'Inbox', icon: Mail },
       ],
     },
