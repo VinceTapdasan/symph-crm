@@ -13,7 +13,7 @@
  *   sessionId?: string
  *   workspaceId?: string
  *   dealId?: string
- *   attachment?: { filename: string; mimeType: string }
+ *   attachment?: { filename: string; mimeType: string; base64?: string }
  * }
  *
  * Response: Server-Sent Events (text/event-stream)
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     sessionId?: string
     workspaceId?: string
     dealId?: string
-    attachment?: { filename: string; mimeType: string }
+    attachment?: { filename: string; mimeType: string; base64?: string }
   }
 
   try {
@@ -67,10 +67,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'content is required' }, { status: 400 })
   }
 
-  // Aria gateway does not accept raw base64 — note attachments inline
+  // Build message content — parse file attachments into text when possible
   let messageContent = content
   if (attachment) {
-    messageContent += `\n\n[Attachment: ${attachment.filename} (${attachment.mimeType})]`
+    const attachmentNote = `[Attachment: ${attachment.filename} (${attachment.mimeType})]`
+    let fileText = ''
+
+    if (attachment.base64) {
+      try {
+        const parseRes = await fetch(`${NESTJS_API_BASE}/chat/parse-file`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            base64: attachment.base64,
+            mimeType: attachment.mimeType,
+            filename: attachment.filename,
+          }),
+        })
+        if (parseRes.ok) {
+          const parsed = (await parseRes.json()) as { text?: string }
+          if (parsed.text) {
+            fileText = parsed.text
+          }
+        }
+      } catch (err) {
+        console.error('[chat/aria] parse-file failed, falling back to metadata only:', err)
+      }
+    }
+
+    if (fileText) {
+      messageContent += `\n\n${attachmentNote}\n\n<file_content>\n${fileText}\n</file_content>`
+    } else {
+      messageContent += `\n\n${attachmentNote}`
+    }
   }
 
   // Build CRM system prompt additions
@@ -134,21 +163,9 @@ export async function POST(req: NextRequest) {
     ? `crm-${sessionId}`
     : `crm-web-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
-  // Persist the user message to the DB immediately — before the AI responds.
-  // This ensures the message is visible if the user navigates away mid-stream.
-  // Fire-and-forget: a failure here should not block the AI response.
-  if (sessionId && userId) {
-    fetch(`${NESTJS_API_BASE}/chat/sessions/${sessionId}/messages/user`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': userId,
-      },
-      body: JSON.stringify({ userId, userMessage: messageContent }),
-    }).catch((err) => {
-      console.error('[chat/aria] saveUserMessage failed:', err)
-    })
-  }
+  // User message is now saved by the frontend (Chat.tsx) before calling this
+  // route, so we no longer duplicate the save here. The frontend awaits the
+  // save to guarantee the message is in the DB before any page navigation.
 
   // Fire send to Aria without awaiting — so we can open the stream in parallel.
   // ariaSessionId is deterministic (we own it), so we don't need to wait for

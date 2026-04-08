@@ -843,6 +843,20 @@ export function Chat({ dealId }: { dealId?: string }) {
     setTypingCtx(activeSessionId, true)
     setApiError(null)
 
+    // Persist the user message to DB immediately so it survives page
+    // navigation (e.g. new-session redirect). Awaited to guarantee the
+    // message is in the DB before history is fetched on the new page.
+    try {
+      await fetch(`/api/chat/sessions/${activeSessionId}/messages/user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
+        body: JSON.stringify({ userId, userMessage: text }),
+      })
+    } catch (err) {
+      console.error('[Chat] pre-save user message failed:', err)
+      // Non-fatal: the Aria route also saves the user message as fallback
+    }
+
     const assistantMsgId = `a-${Date.now()}`
 
     try {

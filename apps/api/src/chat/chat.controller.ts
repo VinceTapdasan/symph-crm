@@ -27,6 +27,22 @@ export class ChatController {
     private readonly voiceUpload: VoiceUploadService,
   ) {}
 
+
+  /**
+   * POST /api/chat/parse-file
+   * Accepts a base64-encoded file and returns its extracted text.
+   * Used by the Next.js Aria route to inject file content into the prompt.
+   */
+  @Post('parse-file')
+  async parseFile(@Body() body: { base64: string; mimeType: string; filename: string }) {
+    const buffer = Buffer.from(body.base64, 'base64')
+    if (!this.fileParser.canParse(body.mimeType)) {
+      return { text: `[Unsupported file type: ${body.mimeType}]` }
+    }
+    const result = await this.fileParser.parse(buffer, body.mimeType, body.filename)
+    return { text: result.text }
+  }
+
   /**
    * POST /api/chat/message
    * Text-only JSON endpoint — existing flow unchanged.
