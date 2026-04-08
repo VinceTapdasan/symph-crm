@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Patch, Delete, Param, Body, Query, Headers } from '@nestjs/common'
 import { DealsService } from './deals.service'
 import { DealNotesService } from './deal-notes.service'
+import { SaveDealNoteDto } from './dto/save-deal-note.dto'
 import { deals } from '@symph-crm/database'
 
 @Controller('deals')
@@ -29,6 +30,11 @@ export class DealsController {
     })
   }
 
+  @Get(':id/notes/flat')
+  getDealNotesFlat(@Param('id') id: string) {
+    return this.dealNotesService.getNotesFlat(id)
+  }
+
   @Get(':id/notes')
   getDealNotes(@Param('id') id: string) {
     return this.dealNotesService.getNotes(id)
@@ -37,6 +43,14 @@ export class DealsController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.dealsService.findOne(id)
+  }
+
+  @Post(':id/notes')
+  saveDealNote(
+    @Param('id') id: string,
+    @Body() body: SaveDealNoteDto,
+  ) {
+    return this.dealNotesService.saveNote(id, body.type, body.title, body.content)
   }
 
   @Post()
@@ -69,6 +83,15 @@ export class DealsController {
     @Headers('x-user-id') userId?: string,
   ) {
     return this.dealsService.updateStage(id, body.stage, userId)
+  }
+
+  @Delete(':id/notes/:category/:filename')
+  deleteDealNote(
+    @Param('id') id: string,
+    @Param('category') category: string,
+    @Param('filename') filename: string,
+  ) {
+    return this.dealNotesService.deleteNote(id, category, filename)
   }
 
   @Delete(':id')

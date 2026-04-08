@@ -35,6 +35,7 @@ export const queryKeys = {
     filtered: (params: DealsFilterParams) => ['deals', params] as const,
     detail: (id: string) => ['deals', id] as const,
     notes: (id: string) => ['deals', id, 'notes'] as const,
+    notesFlat: (id: string) => ['deals', id, 'notes', 'flat'] as const,
   },
   pipeline: {
     summary: ['pipeline', 'summary'] as const,

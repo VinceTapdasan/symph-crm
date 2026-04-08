@@ -13,11 +13,24 @@ import type { ApiDocument } from '@/lib/types'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+/** Minimal shape that both ApiDocument and NfsDealNote satisfy */
+export type ViewableDoc = {
+  id: string
+  title: string
+  type: string
+  createdAt: string
+  excerpt?: string | null
+  wordCount?: number | null
+  storagePath?: string
+  tags?: string[] | null
+  authorId?: string | null
+}
+
 /**
  * Markdown if storagePath ends in .md, or tags include 'markdown'/'notes'.
  * Covers both inline notes (auto-derived .md path) and uploaded .md/.txt files.
  */
-function isMarkdownDoc(doc: ApiDocument): boolean {
+function isMarkdownDoc(doc: ViewableDoc): boolean {
   if (doc.storagePath?.endsWith('.md')) return true
   if (doc.tags?.includes('markdown')) return true
   if (doc.tags?.includes('notes')) return true
@@ -25,17 +38,17 @@ function isMarkdownDoc(doc: ApiDocument): boolean {
 }
 
 /** Image if tags contain a known image extension */
-function isImageDoc(doc: ApiDocument): boolean {
+function isImageDoc(doc: ViewableDoc): boolean {
   return ['jpeg', 'jpg', 'png', 'webp', 'gif'].some(t => doc.tags?.includes(t))
 }
 
 /** Audio if tags contain a known audio extension */
-function isAudioDoc(doc: ApiDocument): boolean {
+function isAudioDoc(doc: ViewableDoc): boolean {
   return ['mp4', 'x-m4a', 'mpeg', 'mp3', 'm4a'].some(t => doc.tags?.includes(t))
 }
 
 /** Friendly type label from tags */
-function getFileTypeLabel(doc: ApiDocument): string {
+function getFileTypeLabel(doc: ViewableDoc): string {
   if (!doc.tags?.length) return 'Note'
   const ext = doc.tags.find(t => !['notes', 'resources'].includes(t))
   return ext ? ext.toUpperCase() : 'Document'
@@ -46,18 +59,21 @@ function getFileTypeLabel(doc: ApiDocument): string {
 type ViewMode = 'rendered' | 'raw'
 
 type DocumentViewerModalProps = {
-  doc: ApiDocument
+  doc: ViewableDoc
   onClose: () => void
-  onDelete?: (doc: ApiDocument) => void
-  onDownload?: (doc: ApiDocument) => void
+  onDelete?: (doc: ViewableDoc) => void
+  onDownload?: (doc: ViewableDoc) => void
+  /** Pre-loaded content — when provided, skips the GET /documents/:id/content fetch (used for NFS notes) */
+  initialContent?: string
 }
 
-export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: DocumentViewerModalProps) {
+export function DocumentViewerModal({ doc, onClose, onDelete, onDownload, initialContent }: DocumentViewerModalProps) {
   const qc = useQueryClient()
   const isMarkdown = isMarkdownDoc(doc)
   const isImage = isImageDoc(doc)
   const isAudio = isAudioDoc(doc)
-  const canEdit = !isImage && !isAudio
+  const hasPreloadedContent = initialContent !== undefined
+  const canEdit = !isImage && !isAudio && !hasPreloadedContent
   const [viewMode, setViewMode] = useState<ViewMode>('rendered')
   const [isEditing, setIsEditing] = useState(false)
   const [editedContent, setEditedContent] = useState('')
@@ -68,7 +84,8 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
   isEditingRef.current = isEditing
 
   // Fetch content for all non-image, non-audio documents (text, extracted PDF text, etc.)
-  const { data, isLoading } = useGetDocumentContent(!isImage && !isAudio ? doc.id : null)
+  // Skip fetch when initialContent is provided (NFS notes already include content)
+  const { data, isLoading } = useGetDocumentContent(!hasPreloadedContent && !isImage && !isAudio ? doc.id : null)
 
   // Fetch signed preview URL for images and audio (stored as binaries in ATTACHMENTS_BUCKET)
   const { data: preview, isLoading: previewLoading } = useGetDocumentPreview(
@@ -106,7 +123,7 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload }: Docu
     }
   }, [isEditing])
 
-  const content = data?.content ?? ''
+  const content = hasPreloadedContent ? initialContent : (data?.content ?? '')
 
   function handleEnterEdit() {
     if (!canEdit || isEditing || !content) return

@@ -30,6 +30,7 @@ import type {
   ApiNotification,
   DealNotesResponse,
   ContactNotesResponse,
+  NfsDealNote,
 } from '@/lib/types'
 
 // ─── Companies ────────────────────────────────────────────────────────────────
@@ -114,6 +115,18 @@ export function useGetDealNotes(
   return useQuery<DealNotesResponse>({
     queryKey: queryKeys.deals.notes(dealId ?? ''),
     queryFn: () => api.get<DealNotesResponse>(`/deals/${dealId}/notes`),
+    enabled: !!dealId,
+    ...options,
+  })
+}
+
+export function useGetDealNotesFlat(
+  dealId: string | undefined,
+  options?: Partial<UseQueryOptions<NfsDealNote[]>>,
+) {
+  return useQuery<NfsDealNote[]>({
+    queryKey: queryKeys.deals.notesFlat(dealId ?? ''),
+    queryFn: () => api.get<NfsDealNote[]>(`/deals/${dealId}/notes/flat`),
     enabled: !!dealId,
     ...options,
   })

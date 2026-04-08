@@ -198,6 +198,41 @@ export function useDeleteDocument(
   })
 }
 
+// ─── NFS Deal Note mutations ─────────────────────────────────────────────────
+
+export type SaveDealNoteInput = {
+  dealId: string
+  type: string
+  title: string
+  content: string
+}
+
+export function useSaveDealNote(
+  options?: UseMutationOptions<unknown, Error, SaveDealNoteInput>,
+) {
+  return useMutation({
+    mutationFn: ({ dealId, type, title, content }: SaveDealNoteInput) =>
+      api.post(`/deals/${dealId}/notes`, { type, title, content }),
+    ...withToast('Note saved', options),
+  })
+}
+
+export type DeleteDealNoteInput = {
+  dealId: string
+  category: string
+  filename: string
+}
+
+export function useDeleteDealNote(
+  options?: UseMutationOptions<void, Error, DeleteDealNoteInput>,
+) {
+  return useMutation<void, Error, DeleteDealNoteInput>({
+    mutationFn: ({ dealId, category, filename }) =>
+      api.delete(`/deals/${dealId}/notes/${category}/${filename}`),
+    ...withToast('Note deleted', options),
+  })
+}
+
 export function useUploadDocumentFile(
   options?: UseMutationOptions<ApiDocument[], Error, { dealId: string; authorId: string; files: File[]; dealStage?: string }>,
 ) {

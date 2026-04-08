@@ -267,6 +267,25 @@ export type FilterTab = 'all' | 'unread'
 
 export type InboxChannel = 'all' | 'email' | 'messenger' | 'instagram' | 'whatsapp' | 'viber'
 
+// ── Deal Notes (NFS flat) ──────────────────────────────────────────────────
+
+/** Flat NFS note returned by GET /deals/:id/notes/flat */
+export type NfsDealNote = {
+  id: string
+  title: string
+  type: string
+  excerpt: string | null
+  content: string
+  createdAt: string
+  updatedAt: string
+  wordCount: number
+  authorId: string | null
+  storagePath: string
+  tags: string[]
+  filename: string
+  category: string
+}
+
 // ── Deal Notes (NFS) ────────────────────────────────────────────────────────
 
 export type DealNoteFile = {

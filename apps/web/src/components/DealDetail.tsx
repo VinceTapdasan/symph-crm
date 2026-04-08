@@ -4,8 +4,8 @@ import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { queryKeys } from '@/lib/query-keys'
-import { usePatchDealStage, useCreateDocument, useUploadDocumentFile, useUpdateDeal, useDeleteDocument, useCreateContact, useDeleteContact, useDeleteDeal } from '@/lib/hooks/mutations'
-import { useGetDeal, useGetCompany, useGetActivitiesByDeal, useGetDocumentsByDeal, useGetUsers, useGetContactsByCompany } from '@/lib/hooks/queries'
+import { usePatchDealStage, useSaveDealNote, useUploadDocumentFile, useUpdateDeal, useDeleteDealNote, useDeleteDocument, useCreateContact, useDeleteContact, useDeleteDeal } from '@/lib/hooks/mutations'
+import { useGetDeal, useGetCompany, useGetActivitiesByDeal, useGetDealNotesFlat, useGetDocumentsByDeal, useGetUsers, useGetContactsByCompany } from '@/lib/hooks/queries'
 import { useUser } from '@/lib/hooks/use-user'
 import { EmptyState } from './EmptyState'
 import { Avatar } from './Avatar'
@@ -23,7 +23,7 @@ import {
 } from '@/lib/utils'
 import { getMimeLabel, supportsWordCount, isImage } from '@/lib/utils/document-utils'
 import { api } from '@/lib/api'
-import type { ApiDealDetail, ApiCompanyDetail, ApiDocument } from '@/lib/types'
+import type { ApiDealDetail, ApiCompanyDetail, ApiDocument, NfsDealNote } from '@/lib/types'
 import {
   STAGE_LABELS, STAGE_COLORS, STAGE_ADVANCE_MAP,
   PROGRESS_STAGES, ACTIVITY_LABELS, DOC_TYPE_LABELS, ACCEPTED_FILE_TYPES,
@@ -307,8 +307,8 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
   const [uploading, setUploading] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [isDragging, setIsDragging] = useState(false)
-  const [viewingDoc, setViewingDoc] = useState<ApiDocument | null>(null)
-  const [deletingDoc, setDeletingDoc] = useState<ApiDocument | null>(null)
+  const [viewingDoc, setViewingDoc] = useState<NfsDealNote | ApiDocument | null>(null)
+  const [deletingDoc, setDeletingDoc] = useState<NfsDealNote | ApiDocument | null>(null)
   const [notePasteChips, setNotePasteChips] = useState<string[]>([])
   const [notePastePreviewText, setNotePastePreviewText] = useState<string | null>(null)
   const [noteFocused, setNoteFocused] = useState(false)
@@ -344,11 +344,19 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
   const { data: deal, isLoading, isError } = useGetDeal(dealId)
   const { data: company } = useGetCompany(deal?.companyId)
   const { data: activities = [], isLoading: loadingActivities } = useGetActivitiesByDeal(dealId, { enabled: !!deal })
-  const { data: documents = [], isLoading: loadingDocs, refetch: refetchDocs } = useGetDocumentsByDeal(dealId, { enabled: !!deal })
+  const { data: nfsNotes = [], isLoading: loadingDocs, refetch: refetchDocs } = useGetDealNotesFlat(dealId, { enabled: !!deal })
+  const { data: documents = [], isLoading: loadingResourceDocs, refetch: refetchResourceDocs } = useGetDocumentsByDeal(dealId, { enabled: !!deal })
   const { data: users = [] } = useGetUsers()
-  const deleteDoc = useDeleteDocument({
+  const deleteNfsNote = useDeleteDealNote({
     onSuccess: () => {
       refetchDocs()
+      setDeletingDoc(null)
+      setViewingDoc(null)
+    },
+  })
+  const deleteDoc = useDeleteDocument({
+    onSuccess: () => {
+      refetchResourceDocs()
       queryClient.invalidateQueries({ queryKey: queryKeys.documents.byDeal(dealId) })
       setDeletingDoc(null)
       setViewingDoc(null)
@@ -393,10 +401,10 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
   const amUser = deal?.assignedTo ? users.find(u => u.id === deal.assignedTo) : null
 
   // ── Notes vs Resources split ─────────────────────────────────────────────
-  // Resources: docs uploaded to the /resources/ bucket path
-  // Notes: everything else (inline notes and /notes/ uploads)
+  // Notes: NFS flat notes from GET /deals/:id/notes/flat
+  // Resources: docs uploaded to the /resources/ bucket path (still from Supabase documents)
+  const noteDocs = nfsNotes
   const resourceDocs = documents.filter(d => d.storagePath?.includes('/resources/'))
-  const noteDocs = documents.filter(d => !d.storagePath?.includes('/resources/'))
 
   // ── Filtered docs ────────────────────────────────────────────────────────
   const filteredNotes = useMemo(() => {
@@ -472,12 +480,12 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
     })
   }, [deal, dealId, patchStage, queryClient])
 
-  const saveNote = useCreateDocument({
+  const saveNote = useSaveDealNote({
     onSuccess: () => { setNoteText(''); setNotePasteChips([]); void refetchDocs() },
   })
 
   const uploadFiles = useUploadDocumentFile({
-    onSuccess: () => { void refetchDocs() },
+    onSuccess: () => { void refetchResourceDocs() },
     onSettled: () => {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -497,8 +505,6 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
         type: noteType,
         title,
         content: combined,
-        authorId: userId,
-        tags: [`deal_stage:${deal.stage}`],
       },
       { onSettled: () => setAddingNote(false) },
     )
@@ -569,14 +575,19 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
     setPendingFiles([])
   }, [pendingFiles, deal, dealId, userId, uploadFiles])
 
-  const handleDeleteDoc = useCallback((doc: ApiDocument) => {
+  const handleDeleteDoc = useCallback((doc: NfsDealNote | ApiDocument) => {
     setDeletingDoc(doc)
   }, [])
 
   const confirmDeleteDoc = useCallback(() => {
     if (!deletingDoc) return
-    deleteDoc.mutate(deletingDoc.id)
-  }, [deletingDoc, deleteDoc])
+    // NFS notes have `category` and `filename` fields; Supabase docs do not
+    if ('category' in deletingDoc && 'filename' in deletingDoc) {
+      deleteNfsNote.mutate({ dealId, category: deletingDoc.category, filename: deletingDoc.filename })
+    } else {
+      deleteDoc.mutate(deletingDoc.id)
+    }
+  }, [deletingDoc, deleteNfsNote, deleteDoc, dealId])
 
   const handleDownloadDoc = useCallback(async (doc: ApiDocument) => {
     try {
@@ -661,7 +672,7 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
             <div className="rounded-lg bg-red-50/50 dark:bg-red-500/[.06] border border-red-100 dark:border-red-500/10 px-3 py-2.5 mb-5">
               <p className="text-xs text-red-700 dark:text-red-400 font-medium truncate">{deletingDoc.title}</p>
               <p className="text-atom text-red-500/70 dark:text-red-400/60 mt-0.5">
-                {deletingDoc.storagePath?.includes('/resources/') ? 'Resource file' : 'Note'} · Created {new Date(deletingDoc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {'category' in deletingDoc ? 'Note' : (deletingDoc as ApiDocument).storagePath?.includes('/resources/') ? 'Resource file' : 'Note'} · Created {new Date(deletingDoc.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
             </div>
             <div className="flex gap-2">
@@ -673,10 +684,10 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
               </button>
               <button
                 onClick={confirmDeleteDoc}
-                disabled={deleteDoc.isPending}
+                disabled={deleteNfsNote.isPending || deleteDoc.isPending}
                 className="flex-1 h-9 rounded-lg text-ssm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
               >
-                {deleteDoc.isPending ? (
+                {(deleteNfsNote.isPending || deleteDoc.isPending) ? (
                   <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                 ) : (
                   'Delete forever'
@@ -771,8 +782,9 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
         <DocumentViewerModal
           doc={viewingDoc}
           onClose={() => setViewingDoc(null)}
-          onDelete={handleDeleteDoc}
-          onDownload={handleDownloadDoc}
+          onDelete={() => handleDeleteDoc(viewingDoc)}
+          onDownload={'category' in viewingDoc ? undefined : () => handleDownloadDoc(viewingDoc as ApiDocument)}
+          initialContent={'category' in viewingDoc ? (viewingDoc as NfsDealNote).content : undefined}
         />
       )}
 
@@ -1584,7 +1596,7 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
               )}
 
               {/* Uploaded resource files */}
-              {loadingDocs ? (
+              {loadingResourceDocs ? (
                 <div className="flex items-center justify-center py-6">
                   <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                 </div>
@@ -1672,7 +1684,7 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                     })}
                   </div>
                 </div>
-              ) : !loadingDocs && pendingFiles.length === 0 ? (
+              ) : !loadingResourceDocs && pendingFiles.length === 0 ? (
                 <div className="py-8 text-center">
                   <p className="text-ssm text-slate-400">No files uploaded yet</p>
                   <p className="text-xxs text-slate-300 dark:text-slate-600 mt-1">Drop files here or click Upload to add resources</p>
