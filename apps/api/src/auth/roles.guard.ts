@@ -43,6 +43,10 @@ export class RolesGuard implements CanActivate {
     // Always allow auth-related endpoints (sync + onboarding)
     if (url.includes('/users/sync') || url.includes('/users/onboarding')) return true
 
+    // Internal routes (/api/internal/*) have their own InternalGuard (X-Internal-Secret).
+    // Skip RolesGuard for these — they are not user-session-scoped.
+    if (url.includes('/internal/')) return true
+
     // Check for explicit @Roles() decorator
     const requiredRoles = this.reflector.getAllAndOverride<string[] | undefined>(ROLES_KEY, [
       context.getHandler(),
