@@ -96,7 +96,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (fileText) {
-      messageContent += `\n\n${attachmentNote}\n\n<file_content>\n${fileText}\n</file_content>`
+      // Truncate very large files to avoid blowing up the prompt context
+      const MAX_FILE_CHARS = 8000
+      const truncatedText =
+        fileText.length > MAX_FILE_CHARS
+          ? fileText.slice(0, MAX_FILE_CHARS) + `\n\n[... truncated at ${MAX_FILE_CHARS} characters]`
+          : fileText
+      messageContent += `\n\n${attachmentNote}\n\n<file_content>\n${truncatedText}\n</file_content>`
     } else {
       messageContent += `\n\n${attachmentNote}`
     }
