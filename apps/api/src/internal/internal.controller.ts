@@ -566,7 +566,13 @@ export class InternalController {
     return { id, content }
   }
 
-  /** POST /api/internal/documents — Create a document (metadata + optional content) */
+  /**
+   * POST /api/internal/documents — Create a document (metadata + optional content)
+   *
+   * authorId is required by the DB (NOT NULL FK → users.id).
+   * Resolution order: body.authorId → X-Performed-By header → fallback admin user.
+   * The fallback ensures Aria-initiated document creation never fails on missing author.
+   */
   @Post('documents')
   async createDocument(
     @Headers() headers: Record<string, string | string[] | undefined>,
@@ -587,8 +593,19 @@ export class InternalController {
     },
   ) {
     const { performedBy } = this.resolvePerformer(headers)
+
+    // Resolve authorId: body → header → DB lookup → hard fallback
+    let authorId = body.authorId ?? performedBy
+    if (!authorId || !authorId.match(/^[0-9a-f-]{8,}$/i)) {
+      // performedBy was a non-UUID string (e.g. 'aria') or undefined.
+      // Look up the first SALES user as fallback, or use admin account.
+      const allUsers = await this.users.findAll()
+      const fallback = allUsers.find((u: any) => u.role === 'SALES') ?? allUsers[0]
+      authorId = fallback?.id ?? 'admin-001'
+    }
+
     const doc = await this.documents.create(
-      { ...body, authorId: body.authorId ?? performedBy } as any,
+      { ...body, authorId, isAiGenerated: body.isAiGenerated ?? !body.authorId } as any,
       performedBy,
     )
     return { ok: true, document: doc }
