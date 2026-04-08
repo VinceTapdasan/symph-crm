@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { cn, getBrandColor, getInitials, formatDealValue } from '@/lib/utils'
 import { STAGE_COLORS, STAGE_LABELS } from '@/lib/constants'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useGetDealNotes } from '@/lib/hooks/queries'
 import type { ApiCompanyDetail, ApiDeal } from '@/lib/types'
 
@@ -22,6 +23,7 @@ type WikiSidebarProps = {
   isLoading?: boolean
   view: WikiView
   onViewChange: (v: WikiView) => void
+  searchInputRef?: React.RefObject<HTMLInputElement | null>
 }
 
 // Note category config for 3rd level
@@ -198,6 +200,7 @@ export function WikiSidebar({
   isLoading = false,
   view,
   onViewChange,
+  searchInputRef,
 }: WikiSidebarProps) {
   const router = useRouter()
   const params = useParams()
@@ -308,47 +311,57 @@ export function WikiSidebar({
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-[#1a1a1d] border-r border-black/[.06] dark:border-white/[.06]">
+    <div className="flex flex-col h-full w-full min-w-0 bg-white dark:bg-[#1a1a1d] border-r border-black/[.06] dark:border-white/[.06]">
       {/* Header + view toggle */}
       <div className="px-3 pt-3 pb-2 shrink-0 border-b border-black/[.06] dark:border-white/[.06]">
         <div className="flex items-center justify-between mb-2.5">
           <span className="text-xxs font-semibold uppercase tracking-[0.06em] text-slate-400">
             Wiki
           </span>
-          <div className="flex items-center bg-slate-100 dark:bg-white/[.06] rounded-md p-0.5 gap-0.5">
-            <button
-              onClick={() => onViewChange('list')}
-              title="List view"
-              className={cn(
-                'h-6 w-6 rounded flex items-center justify-center transition-all',
-                view === 'list'
-                  ? 'bg-white dark:bg-[#2a2a2e] text-slate-900 dark:text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-              )}
-            >
-              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round">
-                <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
-                <circle cx="3" cy="6" r="1.5" fill="currentColor" stroke="none" />
-                <circle cx="3" cy="12" r="1.5" fill="currentColor" stroke="none" />
-                <circle cx="3" cy="18" r="1.5" fill="currentColor" stroke="none" />
-              </svg>
-            </button>
-            <button
-              onClick={() => onViewChange('graph')}
-              title="Graph view"
-              className={cn(
-                'h-6 w-6 rounded flex items-center justify-center transition-all',
-                view === 'graph'
-                  ? 'bg-white dark:bg-[#2a2a2e] text-slate-900 dark:text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-              )}
-            >
-              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
-                <circle cx="5" cy="12" r="2" /><circle cx="19" cy="5" r="2" /><circle cx="19" cy="19" r="2" /><circle cx="12" cy="12" r="2" />
-                <line x1="7" y1="12" x2="10" y2="12" /><line x1="13.4" y1="10.6" x2="17" y2="6.9" /><line x1="13.4" y1="13.4" x2="17" y2="17.1" />
-              </svg>
-            </button>
-          </div>
+          <TooltipProvider delayDuration={0}>
+            <div className="flex items-center bg-slate-100 dark:bg-white/[.06] rounded-md p-0.5 gap-0.5">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => onViewChange('list')}
+                    className={cn(
+                      'h-6 w-6 rounded flex items-center justify-center transition-all',
+                      view === 'list'
+                        ? 'bg-white dark:bg-[#2a2a2e] text-slate-900 dark:text-white shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    )}
+                  >
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round">
+                      <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+                      <circle cx="3" cy="6" r="1.5" fill="currentColor" stroke="none" />
+                      <circle cx="3" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                      <circle cx="3" cy="18" r="1.5" fill="currentColor" stroke="none" />
+                    </svg>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">List view</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => onViewChange('graph')}
+                    className={cn(
+                      'h-6 w-6 rounded flex items-center justify-center transition-all',
+                      view === 'graph'
+                        ? 'bg-white dark:bg-[#2a2a2e] text-slate-900 dark:text-white shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    )}
+                  >
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+                      <circle cx="5" cy="12" r="2" /><circle cx="19" cy="5" r="2" /><circle cx="19" cy="19" r="2" /><circle cx="12" cy="12" r="2" />
+                      <line x1="7" y1="12" x2="10" y2="12" /><line x1="13.4" y1="10.6" x2="17" y2="6.9" /><line x1="13.4" y1="13.4" x2="17" y2="17.1" />
+                    </svg>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Graph view</TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
         </div>
 
         {/* Search -- list view only */}
@@ -363,6 +376,7 @@ export function WikiSidebar({
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             <input
+              ref={searchInputRef}
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -433,7 +447,7 @@ export function WikiSidebar({
 
                       {/* Brand name */}
                       <span className={cn(
-                        'flex-1 text-xs truncate min-w-0',
+                        'flex-1 text-sm truncate min-w-0',
                         isSelectedBrand && !selectedDealId
                           ? 'text-primary font-semibold'
                           : 'text-slate-700 dark:text-slate-200 font-medium'
@@ -494,7 +508,7 @@ export function WikiSidebar({
                                   />
                                   {/* Deal title */}
                                   <span className={cn(
-                                    'flex-1 text-xs truncate min-w-0',
+                                    'flex-1 text-sm truncate min-w-0',
                                     isThisDealSelected
                                       ? 'text-primary font-medium'
                                       : 'text-slate-600 dark:text-slate-300'

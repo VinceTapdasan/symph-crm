@@ -9,7 +9,7 @@ import { CommandPalette } from './CommandPalette'
 export function CrmShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
-  const sidebarCollapsed = pathname === '/chat' || pathname === '/wiki'
+  const sidebarCollapsed = pathname === '/chat' || pathname.startsWith('/wiki')
 
   return (
     <div className="flex h-dvh overflow-hidden bg-[#f3f4f6] dark:bg-[#191a1c]">

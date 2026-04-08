@@ -7,6 +7,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useTheme } from 'next-themes'
 import { Avatar } from './Avatar'
 import { cn } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useGetNotifications } from '@/lib/hooks/queries'
 import {
   MessageCircle,
@@ -164,6 +165,7 @@ export function Sidebar({ isOpen, onClose, collapsed = false }: SidebarProps) {
         />
       )}
 
+      <TooltipProvider delayDuration={0}>
       <aside className={cn(
         'shrink-0 bg-white dark:bg-[#1e1e21] border-r border-black/[.06] dark:border-white/[.08] flex flex-col h-full overflow-hidden',
         'fixed inset-y-0 left-0 z-30 md:relative md:z-auto',
@@ -202,14 +204,14 @@ export function Sidebar({ isOpen, onClose, collapsed = false }: SidebarProps) {
                   const active = isActive(item.path, pathname)
                   const hovered = hoveredPath === item.path
                   const Icon = item.icon
-                  return (
+
+                  const linkEl = (
                     <Link
                       key={item.path}
                       href={item.path}
                       onClick={() => onClose?.()}
                       onMouseEnter={() => setHoveredPath(item.path)}
                       onMouseLeave={() => setHoveredPath(null)}
-                      title={collapsed ? item.label : undefined}
                       className={cn(
                         'relative flex items-center gap-[9px] px-[10px] py-[6px] rounded text-ssm w-full text-left transition-colors duration-150',
                         active
@@ -235,6 +237,15 @@ export function Sidebar({ isOpen, onClose, collapsed = false }: SidebarProps) {
                       )}
                     </Link>
                   )
+
+                  if (!collapsed) return <div key={item.path}>{linkEl}</div>
+
+                  return (
+                    <Tooltip key={item.path}>
+                      <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
+                      <TooltipContent side="right" className="hidden md:block">{item.label}</TooltipContent>
+                    </Tooltip>
+                  )
                 })}
               </div>
             </div>
@@ -243,21 +254,41 @@ export function Sidebar({ isOpen, onClose, collapsed = false }: SidebarProps) {
 
         {/* Settings — pinned bottom, outside nav sections */}
         <div className={cn('mt-auto pt-1', collapsed ? 'md:px-1.5 px-2' : 'px-2')}>
-          <Link
-            href="/settings"
-            onClick={() => onClose?.()}
-            title={collapsed ? 'Settings' : undefined}
-            className={cn(
-              'relative flex items-center gap-[9px] px-[10px] py-[6px] rounded text-ssm w-full transition-colors duration-150',
-              isActive('/settings', pathname)
-                ? 'bg-primary/[.08] dark:bg-primary/[.12] text-primary font-semibold ring-1 ring-primary/20 dark:ring-primary/25'
-                : 'font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[.06] hover:text-slate-900 dark:hover:text-white',
-              collapsed && 'md:justify-center md:px-0 md:py-[8px]'
-            )}
-          >
-            <Settings size={15} strokeWidth={1.4} className="shrink-0" />
-            <span className={cn('flex-1', collapsed && 'md:hidden')}>Settings</span>
-          </Link>
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  href="/settings"
+                  onClick={() => onClose?.()}
+                  className={cn(
+                    'relative flex items-center gap-[9px] px-[10px] py-[6px] rounded text-ssm w-full transition-colors duration-150',
+                    isActive('/settings', pathname)
+                      ? 'bg-primary/[.08] dark:bg-primary/[.12] text-primary font-semibold ring-1 ring-primary/20 dark:ring-primary/25'
+                      : 'font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[.06] hover:text-slate-900 dark:hover:text-white',
+                    'md:justify-center md:px-0 md:py-[8px]'
+                  )}
+                >
+                  <Settings size={15} strokeWidth={1.4} className="shrink-0" />
+                  <span className="flex-1 md:hidden">Settings</span>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="hidden md:block">Settings</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Link
+              href="/settings"
+              onClick={() => onClose?.()}
+              className={cn(
+                'relative flex items-center gap-[9px] px-[10px] py-[6px] rounded text-ssm w-full transition-colors duration-150',
+                isActive('/settings', pathname)
+                  ? 'bg-primary/[.08] dark:bg-primary/[.12] text-primary font-semibold ring-1 ring-primary/20 dark:ring-primary/25'
+                  : 'font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[.06] hover:text-slate-900 dark:hover:text-white',
+              )}
+            >
+              <Settings size={15} strokeWidth={1.4} className="shrink-0" />
+              <span className="flex-1">Settings</span>
+            </Link>
+          )}
         </div>
 
         {/* Theme toggle */}
@@ -266,17 +297,30 @@ export function Sidebar({ isOpen, onClose, collapsed = false }: SidebarProps) {
             'py-2 border-t border-black/[.06] dark:border-white/[.08]',
             collapsed ? 'md:px-1.5 px-[14px]' : 'px-[14px]'
           )}>
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              title={collapsed ? (theme === 'dark' ? 'Light mode' : 'Dark mode') : undefined}
-              className={cn(
-                'w-full flex items-center gap-2 px-[10px] py-[6px] rounded text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors',
-                collapsed && 'md:justify-center md:px-0'
-              )}
-            >
-              {theme === 'dark' ? <Sun size={14} strokeWidth={1.4} className="shrink-0" /> : <Moon size={14} strokeWidth={1.4} className="shrink-0" />}
-              <span className={cn(collapsed && 'md:hidden')}>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
-            </button>
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                    className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors md:justify-center md:px-0"
+                  >
+                    {theme === 'dark' ? <Sun size={14} strokeWidth={1.4} className="shrink-0" /> : <Moon size={14} strokeWidth={1.4} className="shrink-0" />}
+                    <span className="md:hidden">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="hidden md:block">
+                  {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors"
+              >
+                {theme === 'dark' ? <Sun size={14} strokeWidth={1.4} className="shrink-0" /> : <Moon size={14} strokeWidth={1.4} className="shrink-0" />}
+                <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+              </button>
+            )}
           </div>
         )}
 
@@ -307,6 +351,7 @@ export function Sidebar({ isOpen, onClose, collapsed = false }: SidebarProps) {
           </button>
         </div>
       </aside>
+      </TooltipProvider>
     </>
   )
 }

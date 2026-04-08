@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn, getBrandColor, getInitials, formatDealValue, totalNumericValue } from '@/lib/utils'
 import { STAGE_COLORS, STAGE_LABELS } from '@/lib/constants'
@@ -256,13 +257,7 @@ function WikiDeal({
   activeTab?: string
 }) {
   const stageColor = STAGE_COLORS[deal.stage] ?? '#94a3b8'
-
-  const meta: Array<{ label: string; value: string }> = []
-  if (deal.value && parseFloat(deal.value) > 0) meta.push({ label: 'Value', value: formatDealValue(deal.value) })
-  if (deal.pricingModel) meta.push({ label: 'Pricing', value: deal.pricingModel })
-  if (deal.contractLength) meta.push({ label: 'Contract', value: deal.contractLength })
-  if (deal.outreachCategory) meta.push({ label: 'Outreach', value: deal.outreachCategory })
-  if (deal.assignedTo) meta.push({ label: 'Assigned', value: deal.assignedTo })
+  const brandColor = company ? getBrandColor(company.name) : '#64748b'
 
   return (
     <div className="flex flex-col h-full">
@@ -281,82 +276,81 @@ function WikiDeal({
         </div>
       )}
 
-      {/* Deal header */}
-      <div className="px-5 pt-5 pb-4 border-b border-black/[.06] dark:border-white/[.06] shrink-0">
-        {/* Stage pill */}
-        <div className="flex items-center gap-2 mb-2">
-          <span
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xxs font-medium"
-            style={{ background: `${stageColor}18`, color: stageColor }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: stageColor }} />
-            {STAGE_LABELS[deal.stage] ?? deal.stage}
-          </span>
-        </div>
-
-        <h2 className="text-sbase font-semibold text-slate-900 dark:text-white leading-snug mb-1">
-          {deal.title}
-        </h2>
-
-        {/* Brand link */}
-        {company && (
-          <div className="flex items-center gap-1.5 mt-1.5">
+      {/* Compact deal header — single row */}
+      <div className="px-5 py-3.5 border-b border-black/[.06] dark:border-white/[.06] shrink-0">
+        <div className="flex items-center gap-3">
+          {/* Brand avatar */}
+          {company && (
             <div
-              className="w-4 h-4 rounded flex items-center justify-center text-atom font-bold shrink-0"
-              style={{ background: `${getBrandColor(company.name)}18`, color: getBrandColor(company.name) }}
+              className="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+              style={{ background: `${brandColor}18`, color: brandColor }}
             >
               {getInitials(company.name)}
             </div>
-            <span className="text-xxs text-slate-500 dark:text-slate-400">{company.name}</span>
+          )}
+
+          {/* Title + company name */}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-ssm font-semibold text-slate-900 dark:text-white truncate leading-snug">
+              {deal.title}
+            </h2>
+            {company && (
+              <span className="text-xxs text-slate-500 dark:text-slate-400">{company.name}</span>
+            )}
           </div>
-        )}
+
+          {/* Inline badges */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Stage pill */}
+            <span
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xxs font-medium whitespace-nowrap"
+              style={{ background: `${stageColor}18`, color: stageColor }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: stageColor }} />
+              {STAGE_LABELS[deal.stage] ?? deal.stage}
+            </span>
+
+            {/* Outreach category */}
+            {deal.outreachCategory && (
+              <span className="px-2.5 py-1 rounded-full text-xxs font-medium bg-slate-100 dark:bg-white/[.06] text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                {deal.outreachCategory}
+              </span>
+            )}
+
+            {/* Service tags */}
+            {(deal.servicesTags ?? []).map(tag => (
+              <span
+                key={tag}
+                className="px-2.5 py-1 rounded-full text-xxs font-medium whitespace-nowrap"
+                style={{ background: `${stageColor}12`, color: stageColor }}
+              >
+                {tag}
+              </span>
+            ))}
+
+            {/* More menu placeholder */}
+            <button className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors">
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+              </svg>
+            </button>
+
+            {/* Open deal CTA */}
+            <button
+              onClick={onOpenFull}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/80 transition-colors active:scale-[0.98] whitespace-nowrap"
+            >
+              Open deal
+              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Meta fields */}
-      <div className="flex-1 overflow-y-auto px-5 py-4">
-        {meta.length > 0 && (
-          <div className="space-y-3 mb-6">
-            {meta.map(({ label, value }) => (
-              <div key={label} className="flex items-start justify-between gap-4">
-                <span className="text-xxs text-slate-400 shrink-0 pt-px">{label}</span>
-                <span className="text-xs text-slate-700 dark:text-slate-200 text-right">{value}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Services tags */}
-        {(deal.servicesTags ?? []).length > 0 && (
-          <div className="mb-6">
-            <p className="text-xxs text-slate-400 mb-2">Services</p>
-            <div className="flex flex-wrap gap-1.5">
-              {(deal.servicesTags ?? []).map(tag => (
-                <span
-                  key={tag}
-                  className="px-2 py-0.5 rounded-full text-xxs font-medium bg-slate-100 dark:bg-white/[.06] text-slate-600 dark:text-slate-300"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Open full deal CTA */}
-        <button
-          onClick={onOpenFull}
-          className={cn(
-            'w-full flex items-center justify-center gap-2 h-9 rounded-lg text-xs font-semibold',
-            'bg-primary text-primary-foreground hover:bg-primary/80 transition-colors'
-          )}
-        >
-          Open deal
-          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </button>
-
-        {/* Tab-based Notes */}
+      {/* Tab-based Notes — fills remaining space */}
+      <div className="flex-1 overflow-y-auto">
         <DealNotesTabs dealId={deal.id} activeTab={activeTab} />
       </div>
     </div>
@@ -447,26 +441,37 @@ function inlineBold(text: string): React.ReactNode {
 
 // ─── Tab-based Notes section ────────────────────────────────────────────────
 
-type NoteTabId = 'general' | 'meeting' | 'discovery' | 'transcript' | 'proposal' | 'notes' | 'resources' | 'log'
+type NoteTabId = 'general' | 'meeting' | 'notes' | 'resources'
 
 const NOTE_TABS: Array<{ id: NoteTabId; label: string }> = [
   { id: 'general', label: 'General' },
   { id: 'meeting', label: 'Meeting' },
-  { id: 'discovery', label: 'Discovery' },
-  { id: 'transcript', label: 'Transcript' },
-  { id: 'proposal', label: 'Proposal' },
   { id: 'notes', label: 'Notes' },
   { id: 'resources', label: 'Resources' },
-  { id: 'log', label: 'Log' },
 ]
 
-const VALID_NOTE_TABS = new Set<NoteTabId>(['general', 'meeting', 'discovery', 'transcript', 'proposal', 'notes', 'resources', 'log'])
+const VALID_NOTE_TABS = new Set<NoteTabId>(['general', 'meeting', 'notes', 'resources'])
+
+// Badge color per note type/category
+const NOTE_TYPE_COLORS: Record<string, { text: string; bg: string }> = {
+  general:    { text: '#2563eb', bg: 'rgba(37,99,235,0.08)' },
+  meeting:    { text: '#7c3aed', bg: 'rgba(124,58,237,0.08)' },
+  discovery:  { text: '#16a34a', bg: 'rgba(22,163,74,0.08)' },
+  transcript: { text: '#0891b2', bg: 'rgba(8,145,178,0.08)' },
+  proposal:   { text: '#d97706', bg: 'rgba(217,119,6,0.08)' },
+  notes:      { text: '#6c63ff', bg: 'rgba(108,99,255,0.08)' },
+  internal:   { text: '#d97706', bg: 'rgba(217,119,6,0.08)' },
+  research:   { text: '#16a34a', bg: 'rgba(22,163,74,0.08)' },
+}
+
+function getNoteTypeColor(type: string) {
+  return NOTE_TYPE_COLORS[type.toLowerCase()] ?? { text: '#64748b', bg: 'rgba(100,116,139,0.08)' }
+}
 
 function formatNoteDate(ts: number): string {
   if (!ts) return ''
   const d = new Date(ts)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  return d.toISOString().slice(0, 10)
 }
 
 function formatFileSize(bytes: number): string {
@@ -474,19 +479,36 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / 1024).toFixed(1)} KB`
 }
 
+// Extract a readable title from a note filename
+function extractNoteTitle(filename: string, content: string): string {
+  // Try first heading from content
+  const headingMatch = content.match(/^#{1,3}\s+(.+)$/m)
+  if (headingMatch) return headingMatch[1].trim()
+
+  // Fall back to filename without extension and timestamp
+  return filename
+    .replace(/\.md$/, '')
+    .replace(/^\d{4}-\d{2}-\d{2}[-_]?/, '')
+    .replace(/[-_]/g, ' ')
+    .trim() || filename
+}
+
+// Extract a type/category label from the note's filename or content
+function extractNoteType(filename: string, category: string): string {
+  // Use the category the note is filed under
+  return category.toUpperCase()
+}
+
 function DealNotesTabs({ dealId, activeTab }: { dealId: string; activeTab?: string }) {
   const router = useRouter()
   const { data, isLoading } = useGetDealNotes(dealId)
+  const [selectedNote, setSelectedNote] = useState<{ note: DealNoteFile; category: string } | null>(null)
 
   if (isLoading) {
     return (
-      <div className="mt-6 border-t border-black/[.06] dark:border-white/[.06] pt-4 space-y-3">
+      <div className="px-5 pt-4 space-y-2">
         {[1, 2, 3].map(i => (
-          <div key={i} className="animate-pulse">
-            <div className="h-2 w-20 bg-slate-200 dark:bg-white/[.06] rounded mb-2" />
-            <div className="h-2 w-full bg-slate-100 dark:bg-white/[.04] rounded mb-1" />
-            <div className="h-2 w-3/4 bg-slate-100 dark:bg-white/[.04] rounded" />
-          </div>
+          <div key={i} className="animate-pulse h-12 rounded-lg bg-slate-100 dark:bg-white/[.04]" />
         ))}
       </div>
     )
@@ -494,35 +516,29 @@ function DealNotesTabs({ dealId, activeTab }: { dealId: string; activeTab?: stri
 
   if (!data) return null
 
+  // Flatten all notes for the "notes" tab (which aggregates all categories)
+  const allNotes: Array<DealNoteFile & { category: string }> = []
+  for (const [cat, files] of Object.entries(data.categories)) {
+    for (const file of files) {
+      allNotes.push({ ...file, category: cat })
+    }
+  }
+
+  const notesCount = allNotes.length
+
   const counts: Record<NoteTabId, number> = {
     general: data.categories.general.length,
     meeting: data.categories.meeting.length,
-    discovery: data.categories.discovery.length,
-    transcript: data.categories.transcript.length,
-    proposal: data.categories.proposal.length,
-    notes: data.categories.notes.length,
+    notes: notesCount,
     resources: data.resources.length,
-    log: data.log ? 1 : 0,
   }
 
-  const hasAny = Object.values(counts).some(c => c > 0)
-
-  // Resolve active tab: use URL param if valid, else default to first non-empty category
+  // Resolve active tab: default to notes
   let resolvedTab: NoteTabId
   if (activeTab && VALID_NOTE_TABS.has(activeTab as NoteTabId)) {
     resolvedTab = activeTab as NoteTabId
-  } else if (counts.general > 0) {
-    resolvedTab = 'general'
   } else {
-    resolvedTab = NOTE_TABS.find(t => counts[t.id] > 0)?.id ?? 'general'
-  }
-
-  if (!hasAny) {
-    return (
-      <div className="mt-6 border-t border-black/[.06] dark:border-white/[.06] pt-4">
-        <p className="text-xxs text-slate-400 text-center py-3">No notes yet</p>
-      </div>
-    )
+    resolvedTab = 'notes'
   }
 
   function handleTabClick(tabId: NoteTabId) {
@@ -530,108 +546,219 @@ function DealNotesTabs({ dealId, activeTab }: { dealId: string; activeTab?: stri
   }
 
   return (
-    <div className="mt-6 border-t border-black/[.06] dark:border-white/[.06] pt-4">
-      {/* Tab bar */}
-      <div className="flex border-b border-black/[.06] dark:border-white/[.06] mb-3 -mx-1">
-        {NOTE_TABS.map(tab => {
-          const count = counts[tab.id]
-          const isActive = resolvedTab === tab.id
+    <>
+      <div className="px-5 pt-1">
+        {/* Tab bar */}
+        <div className="flex border-b border-black/[.06] dark:border-white/[.06] mb-0">
+          {NOTE_TABS.map(tab => {
+            const count = counts[tab.id]
+            const isActive = resolvedTab === tab.id
 
-          return (
-            <button
-              key={tab.id}
-              onClick={() => handleTabClick(tab.id)}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-2 text-xxs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
-                isActive
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-              )}
-            >
-              {tab.label}
-              {count > 0 && (
-                <span className={cn(
-                  'text-[9px] font-semibold px-1.5 py-0.5 rounded-full min-w-[16px] text-center',
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab.id)}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-2.5 text-ssm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
                   isActive
-                    ? 'bg-primary/15 text-primary dark:bg-primary/20'
-                    : 'bg-slate-100 dark:bg-white/[.08] text-slate-500'
-                )}>
-                  {count}
-                </span>
-              )}
-            </button>
-          )
-        })}
+                    ? 'border-primary text-slate-900 dark:text-white'
+                    : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                )}
+              >
+                {tab.label}
+                {count > 0 && (
+                  <span className={cn(
+                    'text-[9px] font-semibold px-1.5 py-0.5 rounded-full min-w-[16px] text-center',
+                    isActive
+                      ? 'bg-primary/15 text-primary dark:bg-primary/20'
+                      : 'bg-slate-100 dark:bg-white/[.08] text-slate-500'
+                  )}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Tab content */}
+        <div className="pt-3">
+          {resolvedTab === 'resources' ? (
+            <ResourcesTabContent resources={data.resources} />
+          ) : resolvedTab === 'notes' ? (
+            <NotesCompactList notes={allNotes} onSelect={(note, cat) => setSelectedNote({ note, category: cat })} />
+          ) : resolvedTab === 'general' ? (
+            <NotesCompactList
+              notes={data.categories.general.map(n => ({ ...n, category: 'general' }))}
+              onSelect={(note, cat) => setSelectedNote({ note, category: cat })}
+            />
+          ) : resolvedTab === 'meeting' ? (
+            <NotesCompactList
+              notes={data.categories.meeting.map(n => ({ ...n, category: 'meeting' }))}
+              onSelect={(note, cat) => setSelectedNote({ note, category: cat })}
+            />
+          ) : null}
+        </div>
       </div>
 
-      {/* Tab content */}
-      {resolvedTab === 'resources' ? (
-        <ResourcesTabContent resources={data.resources} />
-      ) : resolvedTab === 'log' ? (
-        <LogTabContent log={data.log} />
-      ) : (
-        <NotesTabContent notes={data.categories[resolvedTab as keyof typeof data.categories] ?? []} />
+      {/* Note detail modal */}
+      {selectedNote && (
+        <NoteDetailModal
+          note={selectedNote.note}
+          category={selectedNote.category}
+          onClose={() => setSelectedNote(null)}
+        />
       )}
-    </div>
+    </>
   )
 }
 
-function NotesTabContent({ notes }: { notes: DealNoteFile[] }) {
+// ─── Compact note row list ──────────────────────────────────────────────────
+
+function NotesCompactList({
+  notes,
+  onSelect,
+}: {
+  notes: Array<DealNoteFile & { category: string }>
+  onSelect: (note: DealNoteFile, category: string) => void
+}) {
   if (notes.length === 0) {
-    return <p className="text-xxs text-slate-400 text-center py-3">No notes in this category</p>
+    return <p className="text-xxs text-slate-400 text-center py-6">No notes yet</p>
   }
 
-  // Newest first
   const sorted = [...notes].sort((a, b) => b.createdAt - a.createdAt)
 
   return (
-    <div className="space-y-6">
-      {sorted.map((note) => (
-        <div key={note.filename}>
-          <p className="text-[10px] text-slate-400 mb-2">{formatNoteDate(note.createdAt)}</p>
-          <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+    <div className="space-y-1.5">
+      {sorted.map((note) => {
+        const title = extractNoteTitle(note.filename, note.content)
+        const typeLabel = extractNoteType(note.filename, note.category)
+        const typeColor = getNoteTypeColor(note.category)
+
+        return (
+          <button
+            key={note.filename}
+            onClick={() => onSelect(note, note.category)}
+            className="w-full flex items-center gap-3 px-3.5 py-3 rounded-lg text-left transition-colors bg-slate-50/60 dark:bg-white/[.03] hover:bg-slate-100 dark:hover:bg-white/[.06] group"
+          >
+            {/* Expand chevron */}
+            <svg
+              width={12} height={12} viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"
+              className="shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-slate-400 transition-colors"
+            >
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+
+            {/* Title */}
+            <span className="flex-1 min-w-0 text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
+              {title}
+            </span>
+
+            {/* Type badge */}
+            <span
+              className="shrink-0 px-2 py-0.5 rounded text-atom font-semibold uppercase tracking-wide"
+              style={{ background: typeColor.bg, color: typeColor.text }}
+            >
+              {typeLabel}
+            </span>
+
+            {/* Date */}
+            <span className="shrink-0 text-xxs text-slate-400 tabular-nums">
+              {formatNoteDate(note.createdAt)}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Note detail modal ──────────────────────────────────────────────────────
+
+function NoteDetailModal({
+  note,
+  category,
+  onClose,
+}: {
+  note: DealNoteFile
+  category: string
+  onClose: () => void
+}) {
+  const title = extractNoteTitle(note.filename, note.content)
+  const typeLabel = extractNoteType(note.filename, category)
+  const typeColor = getNoteTypeColor(category)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 dark:bg-black/70"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative w-full max-w-2xl max-h-[80vh] mx-4 flex flex-col bg-white dark:bg-[#1e1e21] rounded-md border border-black/[.06] dark:border-white/[.08] shadow-[var(--shadow-card)]">
+        {/* Header */}
+        <div className="flex items-start gap-3 px-6 py-4 border-b border-black/[.06] dark:border-white/[.06] shrink-0">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white leading-snug mb-1.5">
+              {title}
+            </h3>
+            <div className="flex items-center gap-2">
+              <span
+                className="px-2 py-0.5 rounded text-atom font-semibold uppercase tracking-wide"
+                style={{ background: typeColor.bg, color: typeColor.text }}
+              >
+                {typeLabel}
+              </span>
+              <span className="text-xxs text-slate-400 tabular-nums">{formatNoteDate(note.createdAt)}</span>
+            </div>
+          </div>
+
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors shrink-0"
+          >
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="prose-wiki">
             {renderSimpleMarkdown(note.content)}
           </div>
         </div>
-      ))}
+      </div>
     </div>
   )
 }
 
-function LogTabContent({ log }: { log: string | null }) {
-  if (!log) {
-    return <p className="text-xxs text-slate-400 text-center py-3">No log entries yet</p>
-  }
-  return (
-    <div className="space-y-1">
-      {log.split('\n').filter(Boolean).map((line, i) => (
-        <p key={i} className="text-[10px] text-slate-500 dark:text-slate-400 font-mono leading-relaxed">
-          {line}
-        </p>
-      ))}
-    </div>
-  )
-}
+// ─── Resources tab (unchanged shape, compact rows) ──────────────────────────
 
 function ResourcesTabContent({ resources }: { resources: Array<{ filename: string; size: number; ext: string }> }) {
   if (resources.length === 0) {
-    return <p className="text-xxs text-slate-400 text-center py-3">No resources attached</p>
+    return <p className="text-xxs text-slate-400 text-center py-6">No resources attached</p>
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       {resources.map((res) => (
         <div
           key={res.filename}
-          className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-slate-50 dark:bg-white/[.03]"
+          className="flex items-center gap-3 px-3.5 py-3 rounded-lg bg-slate-50/60 dark:bg-white/[.03]"
         >
           <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" className="shrink-0 text-slate-400">
             <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
           </svg>
-          <span className="text-xxs text-slate-600 dark:text-slate-300 truncate flex-1" title={res.filename}>
+          <span className="text-xs text-slate-700 dark:text-slate-300 truncate flex-1" title={res.filename}>
             {res.filename}
           </span>
-          <span className="text-atom text-slate-400 shrink-0">{formatFileSize(res.size)}</span>
+          <span className="text-xxs text-slate-400 shrink-0 tabular-nums">{formatFileSize(res.size)}</span>
         </div>
       ))}
     </div>

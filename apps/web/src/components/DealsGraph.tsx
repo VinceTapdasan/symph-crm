@@ -131,9 +131,12 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
     const matched = new Set<string>()
 
     for (const deal of deals) {
+      const stageLabel = (STAGE_TOOLTIP_LABEL[deal.stage] || deal.stage).toLowerCase()
       if (
         deal.title.toLowerCase().includes(q) ||
         deal.stage.toLowerCase().includes(q) ||
+        stageLabel.includes(q) ||
+        (deal.assignedTo ?? '').toLowerCase().includes(q) ||
         (deal.servicesTags ?? []).some(s => s.toLowerCase().includes(q))
       ) {
         matched.add(`d-${deal.id}`)
@@ -204,7 +207,7 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
         label: c.name,
         sublabel: c.industry || c.domain || undefined,
         color: getBrandColor(c.name),
-        r: 22,
+        r: 11,
         companyId: c.id,
         documentCount: companyDocCount > 0 ? companyDocCount : undefined,
       })
@@ -217,7 +220,7 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
         label: 'No Brand',
         sublabel: `${dealsWithoutCompany.length} deal${dealsWithoutCompany.length !== 1 ? 's' : ''}`,
         color: '#64748b',
-        r: 18,
+        r: 9,
       })
     }
 
@@ -267,15 +270,30 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
 
     const root = svg.append('g').attr('class', 'root')
 
-    // Zoom
+    // Zoom — two-finger trackpad pans, pinch/Ctrl+scroll zooms
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.15, 6])
+      .filter((event) => {
+        // Allow all non-wheel events (drag, pinch, dblclick)
+        if (event.type !== 'wheel') return true
+        // Wheel events: only zoom when Ctrl is held (pinch gesture or Ctrl+scroll)
+        return event.ctrlKey
+      })
       .on('zoom', (event) => {
         root.attr('transform', event.transform)
         setTooltip(null)
       })
     svg.call(zoom)
     svg.call(zoom.transform, d3.zoomIdentity.translate(W / 2, H / 2).scale(1))
+
+    // Two-finger trackpad pan (non-Ctrl wheel events → translate)
+    svg.on('wheel.pan', (event: WheelEvent) => {
+      if (event.ctrlKey) return // pinch zoom handled by d3.zoom
+      event.preventDefault()
+      const current = d3.zoomTransform(svg.node()!)
+      const newTransform = current.translate(-event.deltaX / current.k, -event.deltaY / current.k)
+      svg.call(zoom.transform, newTransform)
+    }, { passive: false })
 
     zoomRef.current = zoom
 
@@ -288,7 +306,7 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
         .strength(0.9)
       )
       .force('charge', d3.forceManyBody<GraphNode>()
-        .strength(d => d.kind === 'company' ? -300 : -80)
+        .strength(d => d.kind === 'company' ? -150 : -80)
         .distanceMax(250)
       )
       .force('center', d3.forceCenter(0, 0).strength(0.1))
@@ -304,8 +322,8 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
       .data(links)
       .join('line')
       .attr('stroke', d => (d.target as GraphNode).color)
-      .attr('stroke-opacity', 0.15)
-      .attr('stroke-width', 0.8)
+      .attr('stroke-opacity', 0.4)
+      .attr('stroke-width', 0.6)
 
     // ── Draw nodes ────────────────────────────────────────────────────────────
 
@@ -318,7 +336,7 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
     // Company: glow ring
     nodeSel.filter(d => d.kind === 'company')
       .append('circle')
-      .attr('r', d => d.r + 8)
+      .attr('r', d => d.r + 4)
       .attr('fill', d => d.color)
       .attr('opacity', 0.06)
 
@@ -342,7 +360,7 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
       .text(d => getInitials(d.label))
       .attr('text-anchor', 'middle')
       .attr('dy', '0.35em')
-      .attr('font-size', 9)
+      .attr('font-size', 6)
       .attr('font-weight', 700)
       .attr('fill', d => d.color)
       .attr('font-family', 'system-ui, sans-serif')
@@ -461,9 +479,12 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
     const companiesSnap = companiesRef.current
 
     for (const deal of dealsSnap) {
+      const stageLabel = (STAGE_TOOLTIP_LABEL[deal.stage] || deal.stage).toLowerCase()
       if (
         deal.title.toLowerCase().includes(q) ||
         deal.stage.toLowerCase().includes(q) ||
+        stageLabel.includes(q) ||
+        (deal.assignedTo ?? '').toLowerCase().includes(q) ||
         (deal.servicesTags ?? []).some(s => s.toLowerCase().includes(q))
       ) {
         ids.add(`d-${deal.id}`)
@@ -610,7 +631,7 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
 
       {/* Controls hint */}
       <div className="absolute bottom-3 right-3 bg-[#1a1d27]/80 backdrop-blur-sm border border-white/[0.08] rounded-lg px-2.5 py-1.5 pointer-events-none">
-        <span className="text-atom text-white/30">Scroll to zoom · Drag to pan · Ctrl+F to search</span>
+        <span className="text-atom text-white/30">Two-finger pan · Pinch to zoom · Ctrl+F to search</span>
       </div>
     </div>
   )
