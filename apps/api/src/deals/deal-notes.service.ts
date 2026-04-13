@@ -459,19 +459,31 @@ export class DealNotesService {
     return { meta, content }
   }
 
-  /** Check if new notes exist since the latest summary */
+  /**
+   * Check if notes have changed since the last summary.
+   *
+   * Strategy: compare the current NFS note count against `notesIncluded` stored
+   * in the latest summary's frontmatter. Catches both additions and deletions.
+   *
+   * We deliberately avoid a DB counter because notes can be written directly to
+   * NFS by Aria (wiki sync, summary generation) — a DB column would drift
+   * immediately and require reconciliation on every check anyway.
+   */
   async hasNewNotesSinceLastSummary(dealId: string): Promise<{ hasNew: boolean; noteCount: number; latestSummaryAt: string | null }> {
     const summaries = await this.listSummaries(dealId)
     const latestSummary = summaries[0] ?? null
     const latestSummaryAt = latestSummary?.generatedAt ?? null
-    const latestSummaryTs = latestSummaryAt ? new Date(latestSummaryAt).getTime() : 0
 
     const allNotes = await this.getNotesFlat(dealId)
-    const newNotes = latestSummaryTs > 0
-      ? allNotes.filter(n => new Date(n.createdAt).getTime() > latestSummaryTs)
-      : allNotes
+    const currentCount = allNotes.length
 
-    return { hasNew: newNotes.length > 0, noteCount: newNotes.length, latestSummaryAt }
+    // No summary yet → any notes mean regeneration is needed
+    // Summary exists → regenerate if count changed (add or delete)
+    const hasNew = latestSummary
+      ? currentCount !== latestSummary.notesIncluded
+      : currentCount > 0
+
+    return { hasNew, noteCount: currentCount, latestSummaryAt }
   }
 
   /** Write a generated summary as a new markdown file */
