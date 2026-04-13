@@ -152,6 +152,14 @@ export class DealNotesService {
   private readonly gatewayUrl: string
   private readonly apiToken: string
 
+  /**
+   * Per-deal debounce timers for wiki sync. When a user saves notes rapidly,
+   * only the final sync fires (3s after the last note). See docs/WIKI-SYNC.md.
+   * Note: in-memory only — works for single Cloud Run instance. If multi-instance
+   * scaling is needed, replace with Redis-based distributed debounce.
+   */
+  private readonly pendingWikiSyncs = new Map<string, ReturnType<typeof setTimeout>>()
+
   constructor(
     private readonly auditLogs: AuditLogsService,
     @Inject(DB) private readonly db: Database,
@@ -162,6 +170,35 @@ export class DealNotesService {
       config.get<string>('ARIA_GATEWAY_URL') ?? 'https://aria-gateway.symph.co'
     ).replace(/\/+$/, '')
     this.apiToken = config.get<string>('ARIA_API_TOKEN') ?? ''
+  }
+
+  /**
+   * Fire a wiki sync + summary regeneration to Aria for this deal.
+   * Called after the debounce settles — Aria reads all current NFS notes and
+   * updates deal index.md, company index.md, MASTER_INDEX, and summary.
+   */
+  private fireWikiSync(dealId: string, performedBy?: string | null): void {
+    const sessionId = `crm-wiki-sync-${dealId}-${Date.now()}`
+    const message = `[CRM_WIKI_SYNC] deal_id=${dealId}${performedBy ? ` performed_by=${performedBy}` : ''}`
+
+    fetch(`${this.gatewayUrl}/v1/chat/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.apiToken}`,
+      },
+      body: JSON.stringify({
+        session_id: sessionId,
+        content: message,
+        user_id: performedBy ?? 'system',
+        user_tier: 3,
+        workspace_path: '/share/agency/products/symph-crm',
+      }),
+    }).catch(err => {
+      this.logger.error(`Wiki sync fire failed for deal ${dealId}: ${err}`)
+    })
+
+    this.logger.log(`Wiki sync triggered for deal ${dealId} (session ${sessionId})`)
   }
 
   private async getDealName(dealId: string): Promise<string | null> {
@@ -298,6 +335,17 @@ export class DealNotesService {
       performedBy: authorId || undefined,
       details: { noteTitle: title, category, filename, dealName },
     }).catch(() => {})
+
+    // Debounced wiki sync — cancels any pending sync for this deal and resets
+    // the 3s timer. If the user adds multiple notes quickly, only one sync fires
+    // after they stop. See docs/WIKI-SYNC.md for edge cases and scaling notes.
+    const existing = this.pendingWikiSyncs.get(dealId)
+    if (existing) clearTimeout(existing)
+    const timer = setTimeout(() => {
+      this.pendingWikiSyncs.delete(dealId)
+      this.fireWikiSync(dealId, authorId)
+    }, 3_000)
+    this.pendingWikiSyncs.set(dealId, timer)
 
     return fileToNfsDealNote(filename, fullContent, category, dealId)
   }

@@ -346,32 +346,32 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
   const { data: activities = [], isLoading: loadingActivities } = useGetActivitiesByDeal(dealId, { enabled: !!deal })
   const { data: nfsNotes = [], isLoading: loadingDocs, refetch: refetchDocs } = useGetDealNotesFlat(dealId, { enabled: !!deal })
   const { data: documents = [], isLoading: loadingResourceDocs, refetch: refetchResourceDocs } = useGetDocumentsByDeal(dealId, { enabled: !!deal })
-  const [summaryTriggeredAt, setSummaryTriggeredAt] = useState<string | null>(null)
-  const isSummaryGenerating = summaryTriggeredAt !== null
+  // ── Summary: auto-generate + poll, no manual button ───────────────────
+  const summaryAutoTriggeredRef = useRef(false)
+  const [isSummaryGenerating, setIsSummaryGenerating] = useState(false)
   const { data: summaries = [] } = useGetDealSummaries(dealId, {
-    // Poll every 3s while Aria is generating — stop once a new summary appears
-    refetchInterval: isSummaryGenerating ? 3000 : false,
+    // Poll every 5s whenever no summary exists yet — stops once one appears
+    refetchInterval: summaries => (!summaries || summaries.length === 0) ? 5000 : false,
   })
   const latestSummaryFilename = summaries[0]?.filename
   const { data: latestSummary } = useGetDealSummaryLatest(dealId, latestSummaryFilename)
-
-  // Clear generating state once a new summary appears after the trigger
-  useEffect(() => {
-    if (!summaryTriggeredAt || !summaries[0]?.generatedAt) return
-    if (new Date(summaries[0].generatedAt) > new Date(summaryTriggeredAt)) {
-      setSummaryTriggeredAt(null)
-      queryClient.invalidateQueries({ queryKey: queryKeys.deals.summaries(dealId) })
-    }
-  }, [summaries, summaryTriggeredAt, dealId, queryClient])
-
-  const generateSummary = useGenerateDealSummary({
-    onSuccess: (data) => {
-      setSummaryTriggeredAt(data.triggeredAt)
-    },
-    onError: () => {
-      toast.error('Failed to start summary generation')
-    },
+  const triggerSummary = useGenerateDealSummary({
+    onSuccess: () => setIsSummaryGenerating(true),
+    onSettled: () => { summaryAutoTriggeredRef.current = true },
   })
+
+  // Auto-trigger once when deal has notes but no summary
+  useEffect(() => {
+    if (summaryAutoTriggeredRef.current) return
+    if (!deal || loadingDocs || nfsNotes.length === 0 || summaries.length > 0) return
+    summaryAutoTriggeredRef.current = true
+    triggerSummary.mutate(dealId)
+  }, [deal, nfsNotes.length, summaries.length, loadingDocs, dealId])
+
+  // Clear generating state once summary file lands
+  useEffect(() => {
+    if (summaries.length > 0) setIsSummaryGenerating(false)
+  }, [summaries.length])
   const { data: users = [] } = useGetUsers()
   const deleteNfsNote = useDeleteDealNote({
     onSuccess: () => {
@@ -1279,8 +1279,8 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
           {/* ── Notes tab ─────────────────────────────────────────────────── */}
           {activeTab === 'notes' && (
             <div>
-              {/* Note Summary */}
-              {latestSummary && (
+              {/* Note Summary — auto-generated, no button */}
+              {latestSummary ? (
                 <div className="mx-4 mt-4 mb-0">
                   <div
                     className="rounded-md bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] overflow-hidden"
@@ -1299,20 +1299,6 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                         <span className="text-atom text-slate-400 ml-auto tabular-nums">
                           {new Date(latestSummary.meta.generatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
-                        <button
-                          type="button"
-                          disabled={isSummaryGenerating || generateSummary.isPending}
-                          onClick={() => generateSummary.mutate(dealId)}
-                          className="ml-2 flex items-center gap-1 text-xxs font-medium text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {isSummaryGenerating || generateSummary.isPending && (
-                            <svg className="animate-spin" width={10} height={10} viewBox="0 0 24 24" fill="none">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                          )}
-                          {isSummaryGenerating || generateSummary.isPending ? 'Generating...' : 'Regenerate'}
-                        </button>
                       </div>
                       <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
                         {latestSummary.content
@@ -1324,31 +1310,18 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* Generate Summary button (shown when no summary exists) */}
-              {!latestSummary && nfsNotes.length > 0 && (
+              ) : isSummaryGenerating && nfsNotes.length > 0 ? (
                 <div className="mx-4 mt-4 mb-0">
-                  <button
-                    type="button"
-                    disabled={isSummaryGenerating || generateSummary.isPending}
-                    onClick={() => generateSummary.mutate(dealId)}
-                    className="w-full flex items-center justify-center gap-2 rounded-md border border-dashed border-primary/30 bg-primary/[.03] hover:bg-primary/[.06] text-primary text-xs font-medium py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSummaryGenerating || generateSummary.isPending ? (
-                      <svg className="animate-spin shrink-0" width={14} height={14} viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                    ) : (
-                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="shrink-0">
-                        <path d="M12 2l2.09 6.26L20.18 9l-4.64 3.74L16.72 19 12 15.77 7.28 19l1.18-6.26L3.82 9l6.09-.74L12 2z" fill="currentColor" />
-                      </svg>
-                    )}
-                    {isSummaryGenerating || generateSummary.isPending ? 'Generating Summary...' : 'Generate Summary'}
-                  </button>
+                  <div className="rounded-md border border-dashed border-primary/20 bg-primary/[.02] px-4 py-3 flex items-center gap-2 text-primary text-xs">
+                    <svg className="animate-spin shrink-0" width={12} height={12} viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    <span className="font-medium">Generating summary...</span>
+                    <span className="text-primary/50">Aria is reading your notes</span>
+                  </div>
                 </div>
-              )}
+              ) : null}
 
               {/* Note input — Chat-style unified container */}
               <div className="p-4 border-b border-black/[.05] dark:border-white/[.06]">
