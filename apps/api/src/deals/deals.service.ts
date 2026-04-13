@@ -153,7 +153,7 @@ export class DealsService {
       entityId: id,
       performedBy: performedBy ?? undefined,
       details: {
-        title: existing?.title,
+        dealName: existing?.title,
         from: oldStageSlug,
         to: stage,
       },
@@ -199,7 +199,7 @@ export class DealsService {
       entityType: 'deal',
       entityId: deal.id,
       performedBy: performedBy ?? data.createdBy ?? undefined,
-      details: { title: deal.title, stageId: deal.stageId },
+      details: { dealName: deal.title, stageId: deal.stageId },
     }).catch(() => {})
 
     return deal
@@ -221,7 +221,7 @@ export class DealsService {
       entityType: 'deal',
       entityId: id,
       performedBy: performedBy ?? undefined,
-      details: { fields: Object.keys(data).filter(k => k !== 'updatedAt') },
+      details: { dealName: deal?.title, fields: Object.keys(data).filter(k => k !== 'updatedAt') },
     }).catch(() => {})
 
     return deal
@@ -238,7 +238,7 @@ export class DealsService {
       entityType: 'deal',
       entityId: id,
       performedBy: performedBy ?? undefined,
-      details: { title: existing?.title },
+      details: { dealName: existing?.title },
     }).catch(() => {})
   }
 

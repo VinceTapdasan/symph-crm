@@ -13,6 +13,13 @@ import {
   SelectContent,
   SelectItem,
 } from './ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from './ui/dialog'
 import { formatFullDate, describeAuditDetails, userDisplayName } from '@/lib/utils'
 import { AUDIT_ACTION_CONFIG, ENTITY_LABEL, AUDIT_PAGE_SIZE } from '@/lib/constants'
 import type { AuditLogEntry, AuditLogsResponse, ApiUser } from '@/lib/types'
@@ -73,7 +80,10 @@ const columns: ColumnDef<AuditLogEntry>[] = [
       return (
         <div className="flex flex-col">
           <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{entityLabel}</span>
-          {entry.entityId && (
+          {entry.entityName && (
+            <span className="text-xxs text-slate-500 dark:text-slate-400 truncate max-w-[140px]">{entry.entityName}</span>
+          )}
+          {!entry.entityName && entry.entityId && (
             <span className="text-xxs text-slate-400 font-mono">#{entry.entityId.slice(0, 8)}</span>
           )}
         </div>
@@ -124,6 +134,7 @@ export function AuditLogs() {
   const [actionFilter, setActionFilter] = useState<string>('all')
   const [userFilter, setUserFilter] = useState<string>('all')
   const [page, setPage] = useState(0)
+  const [selectedEntry, setSelectedEntry] = useState<AuditLogEntry | null>(null)
 
   const auditParams = {
     entityType: entityFilter !== 'all' ? entityFilter : undefined,
@@ -247,6 +258,7 @@ export function AuditLogs() {
             columns={columns}
             data={filtered}
             globalFilter={search}
+            onRowClick={(entry) => setSelectedEntry(entry)}
             emptyMessage="No audit events found"
             emptyDescription={
               search || entityFilter !== 'all' || actionFilter !== 'all' || userFilter !== 'all'
@@ -281,6 +293,93 @@ export function AuditLogs() {
           </div>
         </div>
       )}
+
+      {/* ── Audit Detail Modal ──────────────────────────────────────────── */}
+      <Dialog open={!!selectedEntry} onOpenChange={(open) => { if (!open) setSelectedEntry(null) }}>
+        <DialogContent className="max-w-lg">
+          {selectedEntry && (() => {
+            const cfg = AUDIT_ACTION_CONFIG[selectedEntry.action] ?? AUDIT_ACTION_CONFIG.update
+            const entityLabel = ENTITY_LABEL[selectedEntry.entityType] ?? selectedEntry.entityType
+            return (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-full text-xs"
+                      style={{ background: cfg.bg, color: cfg.color }}
+                    >
+                      <span className="text-xs leading-none">{cfg.icon}</span>
+                      {cfg.label}
+                    </span>
+                    <DialogTitle className="text-sm">
+                      {selectedEntry.auditType?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                    </DialogTitle>
+                  </div>
+                  <DialogDescription className="sr-only">Audit event details</DialogDescription>
+                </DialogHeader>
+
+                <div className="px-6 py-4 space-y-3 text-xs">
+                  {/* When */}
+                  <div className="flex items-start gap-3">
+                    <span className="w-12 shrink-0 font-medium text-slate-400 uppercase tracking-wide text-xxs pt-0.5">When</span>
+                    <span className="text-slate-700 dark:text-slate-300 tabular-nums">{formatFullDate(selectedEntry.createdAt)}</span>
+                  </div>
+
+                  {/* On */}
+                  <div className="flex items-start gap-3">
+                    <span className="w-12 shrink-0 font-medium text-slate-400 uppercase tracking-wide text-xxs pt-0.5">On</span>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-slate-700 dark:text-slate-300">
+                        {entityLabel}
+                        {selectedEntry.entityName && <> &mdash; &ldquo;{selectedEntry.entityName}&rdquo;</>}
+                      </span>
+                      {selectedEntry.entityId && (
+                        <span className="text-xxs text-slate-400 font-mono">#{selectedEntry.entityId.slice(0, 8)}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* By */}
+                  <div className="flex items-start gap-3">
+                    <span className="w-12 shrink-0 font-medium text-slate-400 uppercase tracking-wide text-xxs pt-0.5">By</span>
+                    <div className="flex items-center gap-2">
+                      <Avatar name={selectedEntry.performerName || 'System'} src={selectedEntry.performerImage ?? undefined} size={20} />
+                      <span className="font-medium text-slate-700 dark:text-slate-300">{selectedEntry.performerName || 'System'}</span>
+                    </div>
+                  </div>
+
+                  {/* Via */}
+                  {selectedEntry.source && (
+                    <div className="flex items-start gap-3">
+                      <span className="w-12 shrink-0 font-medium text-slate-400 uppercase tracking-wide text-xxs pt-0.5">Via</span>
+                      <span className="inline-block px-1.5 py-px rounded text-xxs font-medium bg-slate-100 dark:bg-white/[.06] text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                        {selectedEntry.source}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Details */}
+                  {selectedEntry.details && Object.keys(selectedEntry.details).length > 0 && (
+                    <div className="pt-2 border-t border-black/[.06] dark:border-white/[.08]">
+                      <span className="block font-medium text-slate-400 uppercase tracking-wide text-xxs mb-2">Details</span>
+                      <div className="space-y-1.5 bg-slate-50 dark:bg-white/[.03] rounded-md p-3">
+                        {Object.entries(selectedEntry.details).map(([key, value]) => (
+                          <div key={key} className="flex items-start gap-2">
+                            <span className="text-xxs font-mono text-slate-400 shrink-0 min-w-[80px]">{key}</span>
+                            <span className="text-xxs text-slate-700 dark:text-slate-300 break-all">
+                              {typeof value === 'object' ? JSON.stringify(value) : String(value ?? '—')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

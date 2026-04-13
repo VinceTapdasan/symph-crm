@@ -1,8 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
-import { notifications, deals, companies } from '@symph-crm/database'
-import { eq, and, lt, sql } from 'drizzle-orm'
+import { notifications, deals, companies, pipelineStages } from '@symph-crm/database'
+import { eq, and, lt, sql, inArray } from 'drizzle-orm'
 
 @Injectable()
 export class NotificationsService {
@@ -10,14 +10,16 @@ export class NotificationsService {
 
   async getForUser(userId: string) {
     // 1. Upsert dormant deal notifications (deals with no activity for > 3 days)
+    // Left join pipeline_stages to filter out closed deals without a fragile subquery
     const dormantDeals = await this.db
       .select({ id: deals.id, title: deals.title, companyId: deals.companyId })
       .from(deals)
+      .leftJoin(pipelineStages, eq(deals.stageId, pipelineStages.id))
       .where(
         and(
           eq(deals.assignedTo, userId),
           lt(deals.lastActivityAt, sql`NOW() - INTERVAL '3 days'`),
-          sql`COALESCE((SELECT slug FROM pipeline_stages WHERE id = ${deals.stageId}), '') NOT IN ('closed_won', 'closed_lost')`,
+          sql`COALESCE(${pipelineStages.slug}, '') NOT IN ('closed_won', 'closed_lost')`,
         ),
       )
 
@@ -70,7 +72,7 @@ export class NotificationsService {
       ? await this.db
           .select({ id: companies.id, name: companies.name })
           .from(companies)
-          .where(sql`${companies.id} = ANY(${companyIds})`)
+          .where(inArray(companies.id, companyIds as [string, ...string[]]))
       : []
     const companyMap = new Map(companiesData.map(c => [c.id, c.name]))
 

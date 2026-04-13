@@ -233,6 +233,18 @@ export function useDeleteDealNote(
   })
 }
 
+// ─── Deal Summary mutations ─────────────────────────────────────────────────
+
+export function useGenerateDealSummary(
+  options?: UseMutationOptions<unknown, Error, string>,
+) {
+  return useMutation({
+    mutationFn: (dealId: string) =>
+      api.post(`/deals/${dealId}/summaries/generate`, {}),
+    ...withToast('Summary generated', options),
+  })
+}
+
 export function useUploadDocumentFile(
   options?: UseMutationOptions<ApiDocument[], Error, { dealId: string; authorId: string; files: File[]; dealStage?: string }>,
 ) {

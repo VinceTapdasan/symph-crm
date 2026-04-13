@@ -153,6 +153,7 @@ export type AuditLogEntry = {
   details: Record<string, unknown> | null
   performerName: string | null
   performerImage: string | null
+  entityName: string | null
 }
 
 export type AuditLogsResponse = {

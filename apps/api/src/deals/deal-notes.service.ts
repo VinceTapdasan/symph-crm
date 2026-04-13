@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
+import { Injectable, Inject, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import * as fs from 'fs'
 import * as path from 'path'
+import { eq } from 'drizzle-orm'
+import { deals } from '@symph-crm/database'
+import { DB } from '../database/database.module'
+import type { Database } from '../database/database.types'
 import { AuditLogsService } from '../audit-logs/audit-logs.service'
 
 export type DealNoteFile = {
@@ -143,9 +148,33 @@ function fileToNfsDealNote(
 @Injectable()
 export class DealNotesService {
   private readonly basePath: string
+  private readonly logger = new Logger(DealNotesService.name)
+  private readonly gatewayUrl: string
+  private readonly apiToken: string
 
-  constructor(private readonly auditLogs: AuditLogsService) {
+  constructor(
+    private readonly auditLogs: AuditLogsService,
+    @Inject(DB) private readonly db: Database,
+    private readonly config: ConfigService,
+  ) {
     this.basePath = process.env.NFS_CRM_PATH || '/share/crm'
+    this.gatewayUrl = (
+      config.get<string>('ARIA_GATEWAY_URL') ?? 'https://aria-gateway.symph.co'
+    ).replace(/\/+$/, '')
+    this.apiToken = config.get<string>('ARIA_API_TOKEN') ?? ''
+  }
+
+  private async getDealName(dealId: string): Promise<string | null> {
+    try {
+      const rows = await this.db
+        .select({ title: deals.title })
+        .from(deals)
+        .where(eq(deals.id, dealId))
+        .limit(1)
+      return rows[0]?.title ?? null
+    } catch {
+      return null
+    }
   }
 
   async getNotes(dealId: string): Promise<DealNotesResponse> {
@@ -259,20 +288,21 @@ export class DealNotesService {
     const fullContent = `${frontmatter}\n\n# ${title}\n\n${content}`
     await fs.promises.writeFile(filePath, fullContent, 'utf-8')
 
-    // Audit log — fire and forget
+    // Audit log — fire and forget (enrich with deal name)
+    const dealName = await this.getDealName(dealId)
     this.auditLogs.log({
       action: 'create',
       auditType: 'note',
       entityType: 'deal',
       entityId: dealId,
       performedBy: authorId || undefined,
-      details: { noteTitle: title, category, filename },
+      details: { noteTitle: title, category, filename, dealName },
     }).catch(() => {})
 
     return fileToNfsDealNote(filename, fullContent, category, dealId)
   }
 
-  async deleteNote(dealId: string, category: string, filename: string): Promise<{ deleted: true }> {
+  async deleteNote(dealId: string, category: string, filename: string, performedBy?: string): Promise<{ deleted: true }> {
     // Validate category
     if (!NOTE_CATEGORIES.includes(category as typeof NOTE_CATEGORIES[number])) {
       throw new BadRequestException(`Invalid category: ${category}`)
@@ -291,16 +321,124 @@ export class DealNotesService {
 
     await fs.promises.unlink(filePath)
 
-    // Audit log — fire and forget
+    // Audit log — fire and forget (enrich with deal name)
+    const dealName = await this.getDealName(dealId)
     this.auditLogs.log({
       action: 'delete',
       auditType: 'note',
       entityType: 'deal',
       entityId: dealId,
-      details: { category, filename },
+      performedBy: performedBy || undefined,
+      details: { category, filename, dealName },
     }).catch(() => {})
 
     return { deleted: true }
+  }
+
+  // ── Summary Generation (via Aria gateway) ───────────────────────────────
+
+  async generateSummary(dealId: string, userId?: string): Promise<DealSummaryMeta> {
+    const allNotes = await this.getNotesFlat(dealId)
+    if (allNotes.length === 0) {
+      throw new BadRequestException('No notes to summarize')
+    }
+
+    const dealName = await this.getDealName(dealId) ?? 'Unknown Deal'
+
+    // Build a concise text block of all notes for summarization
+    const noteBlock = allNotes
+      .map(n => `### ${n.title} (${n.category}, ${n.createdAt})\n${n.content.replace(/^---[\s\S]*?---\s*/, '').trim()}`)
+      .join('\n\n---\n\n')
+
+    const prompt = [
+      `Summarize the following ${allNotes.length} CRM notes for the deal "${dealName}".`,
+      'Produce a concise executive summary (3-6 paragraphs) covering:',
+      '- Current status and key facts',
+      '- Important decisions and outcomes',
+      '- Open questions or blockers',
+      '',
+      'Then list 3-7 concrete next steps as bullet points.',
+      '',
+      'Format your response EXACTLY as:',
+      'SUMMARY:',
+      '<your summary paragraphs>',
+      '',
+      'NEXT_STEPS:',
+      '- step one',
+      '- step two',
+      '...',
+      '',
+      '--- NOTES ---',
+      noteBlock,
+    ].join('\n')
+
+    // Send one-shot to Aria gateway
+    const sessionId = `crm-summary-${dealId}-${Date.now()}`
+
+    const sendResp = await fetch(`${this.gatewayUrl}/v1/chat/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.apiToken}`,
+      },
+      body: JSON.stringify({
+        session_id: sessionId,
+        content: prompt,
+        user_id: userId ?? 'system',
+        user_tier: 3,
+        workspace_path: '/share/agency/products/symph-crm',
+        system_prompt_additions: 'You are a CRM summary assistant. Be concise and actionable. Currency is PHP.',
+      }),
+    })
+
+    if (!sendResp.ok) {
+      const errText = await sendResp.text()
+      this.logger.error(`Aria gateway error for summary generation: ${sendResp.status} ${errText}`)
+      throw new BadRequestException('Summary generation failed — Aria gateway error')
+    }
+
+    // Poll for reply (simplified from ChatService pattern)
+    const reply = await this.pollForSummaryReply(sessionId)
+
+    // Parse the structured response
+    const summaryMatch = reply.match(/SUMMARY:\s*([\s\S]*?)(?=NEXT_STEPS:|$)/)
+    const stepsMatch = reply.match(/NEXT_STEPS:\s*([\s\S]*)$/)
+
+    const summaryText = summaryMatch?.[1]?.trim() || reply.trim()
+    const nextSteps = stepsMatch?.[1]
+      ?.split('\n')
+      .map(s => s.replace(/^[-*]\s*/, '').trim())
+      .filter(Boolean) ?? []
+
+    return this.writeSummary(dealId, summaryText, nextSteps, allNotes.length, userId)
+  }
+
+  private async pollForSummaryReply(sessionId: string): Promise<string> {
+    const maxWait = 60_000
+    const interval = 2_000
+    const start = Date.now()
+    let lastSeq = 0
+
+    while (Date.now() - start < maxWait) {
+      await new Promise(r => setTimeout(r, interval))
+      try {
+        const resp = await fetch(
+          `${this.gatewayUrl}/v1/chat/history?session_id=${encodeURIComponent(sessionId)}&after_seq=${lastSeq}`,
+          { headers: { Authorization: `Bearer ${this.apiToken}` } },
+        )
+        if (!resp.ok) continue
+        const data = await resp.json() as { messages?: Array<{ role: string; content: string; seq: number }> }
+        const messages = data.messages ?? []
+        for (const msg of messages) {
+          if (msg.seq > lastSeq) lastSeq = msg.seq
+          if (msg.role === 'assistant' && msg.content) return msg.content
+        }
+      } catch {
+        // retry
+      }
+    }
+
+    throw new BadRequestException('Summary generation timed out')
   }
 
   // ── Deal Summaries (NFS markdown files) ──────────────────────────────────

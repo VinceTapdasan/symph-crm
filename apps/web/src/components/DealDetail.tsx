@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { queryKeys } from '@/lib/query-keys'
-import { usePatchDealStage, useSaveDealNote, useUploadDocumentFile, useUpdateDeal, useDeleteDealNote, useDeleteDocument, useCreateContact, useDeleteContact, useDeleteDeal } from '@/lib/hooks/mutations'
+import { usePatchDealStage, useSaveDealNote, useUploadDocumentFile, useUpdateDeal, useDeleteDealNote, useDeleteDocument, useCreateContact, useDeleteContact, useDeleteDeal, useGenerateDealSummary } from '@/lib/hooks/mutations'
 import { useGetDeal, useGetCompany, useGetActivitiesByDeal, useGetDealNotesFlat, useGetDealSummaries, useGetDealSummaryLatest, useGetDocumentsByDeal, useGetUsers, useGetContactsByCompany } from '@/lib/hooks/queries'
 import { useUser } from '@/lib/hooks/use-user'
 import { EmptyState } from './EmptyState'
@@ -349,6 +349,11 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
   const { data: summaries = [] } = useGetDealSummaries(dealId)
   const latestSummaryFilename = summaries[0]?.filename
   const { data: latestSummary } = useGetDealSummaryLatest(dealId, latestSummaryFilename)
+  const generateSummary = useGenerateDealSummary({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.deals.summaries(dealId) })
+    },
+  })
   const { data: users = [] } = useGetUsers()
   const deleteNfsNote = useDeleteDealNote({
     onSuccess: () => {
@@ -1276,6 +1281,14 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                         <span className="text-atom text-slate-400 ml-auto tabular-nums">
                           {new Date(latestSummary.meta.generatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
+                        <button
+                          type="button"
+                          disabled={generateSummary.isPending}
+                          onClick={() => generateSummary.mutate(dealId)}
+                          className="ml-2 text-xxs font-medium text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {generateSummary.isPending ? 'Generating...' : 'Regenerate'}
+                        </button>
                       </div>
                       <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
                         {latestSummary.content
@@ -1286,6 +1299,23 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Generate Summary button (shown when no summary exists) */}
+              {!latestSummary && nfsNotes.length > 0 && (
+                <div className="mx-4 mt-4 mb-0">
+                  <button
+                    type="button"
+                    disabled={generateSummary.isPending}
+                    onClick={() => generateSummary.mutate(dealId)}
+                    className="w-full flex items-center justify-center gap-2 rounded-md border border-dashed border-primary/30 bg-primary/[.03] hover:bg-primary/[.06] text-primary text-xs font-medium py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="shrink-0">
+                      <path d="M12 2l2.09 6.26L20.18 9l-4.64 3.74L16.72 19 12 15.77 7.28 19l1.18-6.26L3.82 9l6.09-.74L12 2z" fill="currentColor" />
+                    </svg>
+                    {generateSummary.isPending ? 'Generating Summary...' : 'Generate Summary'}
+                  </button>
                 </div>
               )}
 

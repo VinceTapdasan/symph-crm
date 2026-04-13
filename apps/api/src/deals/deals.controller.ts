@@ -102,6 +102,14 @@ export class DealsController {
     return this.dealNotesService.readSummary(id, filename)
   }
 
+  @Post(':id/summaries/generate')
+  generateSummary(
+    @Param('id') id: string,
+    @Headers('x-user-id') userId?: string,
+  ) {
+    return this.dealNotesService.generateSummary(id, userId)
+  }
+
   @Post(':id/summaries')
   writeSummary(
     @Param('id') id: string,
@@ -122,8 +130,9 @@ export class DealsController {
     @Param('id') id: string,
     @Param('category') category: string,
     @Param('filename') filename: string,
+    @Headers('x-user-id') userId?: string,
   ) {
-    return this.dealNotesService.deleteNote(id, category, filename)
+    return this.dealNotesService.deleteNote(id, category, filename, userId)
   }
 
   @Delete(':id')
