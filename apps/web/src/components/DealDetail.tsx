@@ -1285,8 +1285,14 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                           type="button"
                           disabled={generateSummary.isPending}
                           onClick={() => generateSummary.mutate(dealId)}
-                          className="ml-2 text-xxs font-medium text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="ml-2 flex items-center gap-1 text-xxs font-medium text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
+                          {generateSummary.isPending && (
+                            <svg className="animate-spin" width={10} height={10} viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                          )}
                           {generateSummary.isPending ? 'Generating...' : 'Regenerate'}
                         </button>
                       </div>
@@ -1311,9 +1317,16 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                     onClick={() => generateSummary.mutate(dealId)}
                     className="w-full flex items-center justify-center gap-2 rounded-md border border-dashed border-primary/30 bg-primary/[.03] hover:bg-primary/[.06] text-primary text-xs font-medium py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="shrink-0">
-                      <path d="M12 2l2.09 6.26L20.18 9l-4.64 3.74L16.72 19 12 15.77 7.28 19l1.18-6.26L3.82 9l6.09-.74L12 2z" fill="currentColor" />
-                    </svg>
+                    {generateSummary.isPending ? (
+                      <svg className="animate-spin shrink-0" width={14} height={14} viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="shrink-0">
+                        <path d="M12 2l2.09 6.26L20.18 9l-4.64 3.74L16.72 19 12 15.77 7.28 19l1.18-6.26L3.82 9l6.09-.74L12 2z" fill="currentColor" />
+                      </svg>
+                    )}
                     {generateSummary.isPending ? 'Generating Summary...' : 'Generate Summary'}
                   </button>
                 </div>

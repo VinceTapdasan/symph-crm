@@ -414,10 +414,11 @@ export class DealNotesService {
   }
 
   private async pollForSummaryReply(sessionId: string): Promise<string> {
-    const maxWait = 60_000
+    const maxWait = 90_000
     const interval = 2_000
     const start = Date.now()
     let lastSeq = 0
+    const textChunks: string[] = []
 
     while (Date.now() - start < maxWait) {
       await new Promise(r => setTimeout(r, interval))
@@ -427,16 +428,32 @@ export class DealNotesService {
           { headers: { Authorization: `Bearer ${this.apiToken}` } },
         )
         if (!resp.ok) continue
-        const data = await resp.json() as { messages?: Array<{ role: string; content: string; seq: number }> }
-        const messages = data.messages ?? []
-        for (const msg of messages) {
-          if (msg.seq > lastSeq) lastSeq = msg.seq
-          if (msg.role === 'assistant' && msg.content) return msg.content
+
+        // Gateway returns { session_id, entries: [{ seq, type, payload }] }
+        const data = await resp.json() as {
+          entries?: Array<{ seq: number; type: string; payload: Record<string, unknown> }>
+        }
+        const entries = data.entries ?? []
+
+        for (const entry of entries) {
+          if (entry.seq > lastSeq) lastSeq = entry.seq
+
+          if (entry.type === 'text' && typeof entry.payload.text === 'string') {
+            textChunks.push(entry.payload.text)
+          }
+
+          // 'done' signals the agent has finished responding
+          if (entry.type === 'done' && textChunks.length > 0) {
+            return textChunks.join('')
+          }
         }
       } catch {
         // retry
       }
     }
+
+    // If we collected some text but never saw 'done', return what we have
+    if (textChunks.length > 0) return textChunks.join('')
 
     throw new BadRequestException('Summary generation timed out')
   }
