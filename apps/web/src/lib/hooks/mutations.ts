@@ -11,7 +11,7 @@ import { useMutation, useQueryClient, type UseMutationOptions } from '@tanstack/
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
-import type { CreateEventForm, ApiDocument, ApiBilling, ApiBillingMilestone } from '@/lib/types'
+import type { CreateEventForm, ApiDocument, ApiBilling, ApiBillingMilestone, ApiCompany } from '@/lib/types'
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
@@ -50,10 +50,10 @@ export type CreateCompanyInput = {
 export type UpdateCompanyInput = Partial<CreateCompanyInput>
 
 export function useCreateCompany(
-  options?: UseMutationOptions<unknown, Error, CreateCompanyInput>,
+  options?: UseMutationOptions<ApiCompany, Error, CreateCompanyInput>,
 ) {
-  return useMutation({
-    mutationFn: (input: CreateCompanyInput) => api.post('/companies', input),
+  return useMutation<ApiCompany, Error, CreateCompanyInput>({
+    mutationFn: (input: CreateCompanyInput) => api.post<ApiCompany>('/companies', input),
     ...withToast('Brand created', options),
   })
 }

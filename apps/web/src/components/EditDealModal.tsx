@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Combobox } from '@/components/ui/combobox'
-import { useUpdateDeal, useAssignDealBrand } from '@/lib/hooks/mutations'
+import { useUpdateDeal, useAssignDealBrand, useCreateCompany } from '@/lib/hooks/mutations'
 import { useGetCompanies } from '@/lib/hooks/queries'
 import { queryKeys } from '@/lib/query-keys'
 import { useEscapeKey } from '@/lib/hooks/use-escape-key'
@@ -132,6 +132,9 @@ function formatValueDisplay(raw: string): string {
   return parts.join('.')
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const isUuid = (s: string) => UUID_RE.test(s)
+
 export function EditDealModal({ deal, onClose }: Props) {
   useEscapeKey(useCallback(onClose, [onClose]))
 
@@ -161,6 +164,8 @@ export function EditDealModal({ deal, onClose }: Props) {
     },
   })
 
+  const createCompany = useCreateCompany()
+
   const assignBrand = useAssignDealBrand({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.deals.all })
@@ -170,7 +175,7 @@ export function EditDealModal({ deal, onClose }: Props) {
     },
   })
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim()) return
 
@@ -200,17 +205,31 @@ export function EditDealModal({ deal, onClose }: Props) {
     const newProb = probability ? Number(probability) : null
     if (newProb !== deal.probability) changes.probability = newProb
 
-    // companyId is handled separately via useAssignDealBrand
-    const newCompanyId = companyId || null
+    // companyId is handled separately via useAssignDealBrand.
+    // If user typed a free-text name (not a UUID), create the company first.
+    const rawCompanyId = companyId || null
     const oldCompanyId = deal.companyId || null
-    if (newCompanyId !== oldCompanyId) {
-      assignBrand.mutate({ id: deal.id, companyId: newCompanyId })
+
+    let resolvedCompanyId = rawCompanyId
+    if (rawCompanyId && !isUuid(rawCompanyId)) {
+      try {
+        const created = await createCompany.mutateAsync({ name: rawCompanyId })
+        resolvedCompanyId = created.id
+        qc.invalidateQueries({ queryKey: queryKeys.companies.all })
+      } catch {
+        // createCompany error is already toasted by withToast — stop submit
+        return
+      }
+    }
+
+    if (resolvedCompanyId !== oldCompanyId) {
+      assignBrand.mutate({ id: deal.id, companyId: resolvedCompanyId })
     }
 
     // Only call updateDeal if there are non-brand changes
     if (Object.keys(changes).length > 0) {
       updateDeal.mutate({ id: deal.id, data: changes })
-    } else if (newCompanyId === oldCompanyId) {
+    } else if (resolvedCompanyId === oldCompanyId) {
       // Nothing changed at all — just close
       onClose()
     }
@@ -218,7 +237,7 @@ export function EditDealModal({ deal, onClose }: Props) {
   }
 
   const canSubmit = !!title.trim()
-  const isPending = updateDeal.isPending || assignBrand.isPending
+  const isPending = updateDeal.isPending || assignBrand.isPending || createCompany.isPending
   const error = updateDeal.error || assignBrand.error
 
   return (
@@ -263,7 +282,8 @@ export function EditDealModal({ deal, onClose }: Props) {
               ]}
               value={companyId}
               onValueChange={setCompanyId}
-              placeholder="Search brands..."
+              placeholder="Search or type new brand..."
+              allowCustom
             />
           </div>
 
