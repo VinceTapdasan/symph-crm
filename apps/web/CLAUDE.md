@@ -305,3 +305,122 @@ const drag = d3.drag<SVGGElement, GraphNode>()
 - Never render SVG elements via JSX in a force graph — D3 manages enter/update/exit
 - Never forget cleanup — `sim.stop()` in useEffect return
 - Never use `d3-transition` for force graphs — simulation handles movement
+
+---
+
+## Sidebar Navigation Rules
+
+- **Settings lives at the bottom** as a standalone item — NOT grouped under "Main", "Tools", or any section
+- Settings is a system-level feature; grouping it with operational features violates UX hierarchy
+- All future sidebar updates must respect this placement without exception
+- Sidebar width: `w-[216px]` — do not change
+
+---
+
+## Calendar Page Rules
+
+- **Full-height viewport flush** — calendar must extend to full viewport height, not contained in a card
+- Default view: **week view**
+- Event ownership indicator: owned events = solid fill, other events = outline/stroke style
+- Both owned and other variants must work in dark mode
+- "Now" time indicator line shows current time on the day grid
+- Always maintain mobile responsiveness
+
+---
+
+## Inbox Thread View Rules
+
+- Strip ALL email cruft: no footers, no signatures, no quoted-reply sections (`>>>` markers), no metadata headers
+- Render only the actual message bodies in a clean chat-like display
+- Use a formatter utility that extracts messages from email threads before rendering
+- Reply box and ComposeWindow must always send `x-user-id` header
+
+---
+
+## PartialCollapse Component
+
+Used for collapsible AI-generated summary content in deal detail cards.
+
+```
+Default state: clip content to ~88px (4-5 visible lines)
+  - overflow: hidden with fixed max-height
+  - gradient overlay fades from card bg to transparent
+  - gradient covers bottom 40px of clipped content
+
+Expanded state: full content visible
+  - 300ms ease-in-out max-height transition
+  - gradient fades out on expand, reappears on collapse
+
+Toggle button:
+  - Only renders when content height > 88px (measured via useLayoutEffect)
+  - Text: "Show more" / "Show less"
+  - No toggle if content fits within 88px
+
+Dark mode:
+  - Gradient must use dark variant — muted gradients render poorly in dark
+  - Use CSS mask-image as alternative to gradient overlay (avoids theme color-matching issues)
+```
+
+Component path: `src/components/PartialCollapse.tsx`
+
+```tsx
+// Pattern: useLayoutEffect for content height measurement
+const containerRef = useRef<HTMLDivElement>(null)
+const [isOverflowing, setIsOverflowing] = useState(false)
+const [isExpanded, setIsExpanded] = useState(false)
+
+useLayoutEffect(() => {
+  if (containerRef.current) {
+    setIsOverflowing(containerRef.current.scrollHeight > 88)
+  }
+}, [children])
+```
+
+---
+
+## DocumentViewerModal
+
+- Typography reference: **Warp IDE rendered markdown** — heading sizes, bullet fills, blockquote formatting, code block styling, line spacing
+- Color scheme: MUST follow app dark/light mode toggle — **never force dark theme on markdown rendering**
+- Keyboard: ESC must dismiss the modal (use existing ESC-dismiss utility in codebase, do not build new handler)
+- Focus trap: Ctrl+A inside modal must select modal content only, not the full page
+
+---
+
+## React Query v5 — Polling Pattern
+
+For polling until data exists (e.g. AI-generated summaries):
+
+```tsx
+// CORRECT — callback receives Query object, not raw data
+useQuery({
+  queryKey: queryKeys.deals.summary(dealId),
+  queryFn: fetchSummary,
+  refetchInterval: (query) => query.state.data ? false : 5000,
+})
+
+// WRONG — causes temporal dead zone error
+refetchInterval: (data) => data ? false : 5000,
+```
+
+Show a spinner during polling wait. Show "No content to summarize" empty state when source data (e.g. notes) doesn't exist yet — do not trigger generation on empty input.
+
+---
+
+## Stage Colors
+
+Stage colors use CSS variables defined in `globals.css`. **Never hardcode hex stage colors inline.**
+
+```tsx
+// CORRECT
+style={{ color: `var(--stage-${stageId})` }}
+className="text-[color:var(--stage-lead)]"
+
+// For tinted backgrounds
+style={{ background: `color-mix(in srgb, var(--stage-${stageId}) 12%, transparent)` }}
+
+// WRONG — hardcoded hex breaks dark mode remapping
+style={{ color: '#6c63ff' }}
+```
+
+Dark mode remaps stage variables to lighter, desaturated values — always use the CSS vars.

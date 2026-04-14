@@ -1,25 +1,97 @@
 # Symph CRM — Architecture & Tech Stack
 
-**Last Updated:** 2026-03-25
+**Last Updated:** 2026-04-14  
 **Status:** Living document — update when stack decisions change
 
 ---
 
-## Current Stack (Phase 1 — Live)
+## What Symph CRM Is
+
+An **AI-first sales CRM** for Symph's internal team. The key difference from a traditional CRM: **chat is the primary input, not forms**. AMs don't fill in fields — they talk to AI, and the AI maintains all structured data and deal documents.
+
+---
+
+## Core Loop
+
+```
+AM sends a message
+        │
+        ├─── Via Discord (Aria) ──────────────────────────────────┐
+        │                                                          │
+        └─── Via CRM Chat UI (crm.symph.co/chat) ─────────────────┤
+                                                                   │
+                                                                   ▼
+                                                          ┌─────────────────┐
+                                                          │   Aria (Claude) │
+                                                          │   AI Processing │
+                                                          └──┬──┬──┬──┬────┘
+                                                             │  │  │  │
+                                   Update deal fields (DB) ◄─┘  │  │  │
+                                         Log activity (DB) ◄────┘  │  │
+                                  Update context.md (NFS) ◄─────────┘  │
+                                        Respond to AM ◄────────────────┘
+```
+
+**Chat is the only input AMs need.** Everything else — structured data, living documents, activity logs — is maintained by AI automatically.
+
+---
+
+## Two Ways to Use
+
+### 1. Aria on Discord
+
+AMs interact with the CRM directly from Discord by invoking Aria with CRM-related requests.
+
+```
+Discord message → Aria (agent-worker)
+                    │
+                    ├── Reads: GET /api/internal/* (deals, contacts, companies)
+                    ├── Writes: POST/PUT /api/internal/* (create deals, update stages)
+                    └── Notes: NFS vault at /share/crm/deals/{id}/
+```
+
+**Auth:** `X-Internal-Secret` header (secret: `symph-crm-internal-secret` in GCP Secret Manager)  
+**Attribution:** `X-Performed-By: {crmUserId}`, `X-Performed-By-Name: {displayName}`  
+**Used for:** Quick deal lookups, logging call notes, updating stages, generating summaries
+
+### 2. CRM Chat UI
+
+AMs use the embedded chat interface at `crm.symph.co/chat` — a full Aria-powered assistant scoped to the CRM context.
+
+```
+crm.symph.co/chat → POST /api/chat/message → ChatService → Aria SDK
+                                                                │
+                                                                ├── 11 CRM tools
+                                                                ├── Deal context reads
+                                                                └── Document writes
+```
+
+**Used for:** Deep deal discussions, deal Q&A with full context, on-the-fly proposals, document generation
+
+Both channels write to the same data layer — same deals, same NFS notes, same activity log.
+
+---
+
+## Current Stack
 
 | Layer | Choice | Notes |
 |---|---|---|
 | Monorepo | pnpm workspaces | 3 packages: apps/api, apps/web, packages/database |
 | Frontend | Next.js 15.2 + React 19 + TypeScript 5.7 | App Router, Turbopack |
 | Backend | NestJS 11 | Port 4000, global module architecture |
-| Database | PostgreSQL via Supabase | Managed hosting |
+| Database | PostgreSQL via Supabase | Managed hosting, daily backups |
 | ORM | Drizzle ORM v0.39 | Type-safe, explicit queries, postgres-js driver |
 | Auth | NextAuth.js v5 + Google OAuth | Sessions + @auth/pg-adapter |
-| Styling | Tailwind v4 + Radix UI | Custom component library on top of Radix primitives |
+| Styling | Tailwind v4 + Radix UI | Custom component library on Radix primitives |
 | Data Fetching | TanStack React Query v5 | 60s staleTime, no window focus refetch |
-| Forms | react-hook-form + Zod | Client + API level validation |
-| AI | Anthropic Claude API | Pitch deck generation (Phase 1), full integration Phase 4 |
-| Hosting | VPS | PM2 process management |
+| Forms | react-hook-form + Zod | Client + API validation |
+| AI | Anthropic Claude API (via Aria SDK) | Chat, doc generation, deal intelligence |
+| Google | googleapis SDK | Gmail inbox sync, Calendar integration |
+| Voice | Groq SDK (Whisper) | Fast speech-to-text for voice notes |
+| Hosting | Google Cloud Run (asia-southeast1) | API + Web as separate services |
+| CI/CD | GitHub Actions → Cloud Build | Push to main → parallel build & deploy |
+| Doc Storage | NFS (/share/crm/) | Markdown files via Aria's shared Filestore |
+| Binary Storage | Supabase Storage `attachments` bucket | PDFs, images, audio |
 
 ---
 
@@ -29,23 +101,107 @@
 Browser
   │
   ▼
-Next.js 15 (apps/web) — port 3000
+Next.js 15 (apps/web) — crm.symph.co
   │
-  ├── React Server Components   ← Initial page load
-  ├── Client Components         ← Interactive UI (React Query for data)
-  └── /api/* proxy              ← Forwards to NestJS API
+  ├── React Server Components        ← Initial page load
+  ├── Client Components              ← Interactive UI (React Query for data)
+  └── /api/* proxy                   ← Forwards to NestJS API
         │
         ▼
-NestJS 11 (apps/api) — port 4000
+NestJS 11 (apps/api) — symph-crm-api Cloud Run
   │
-  ├── Controllers               ← HTTP handlers
-  ├── Services                  ← Business logic
-  └── DatabaseModule (Global)   ← Drizzle + postgres-js
+  ├── /api/*                         ← User-facing endpoints
+  │     ├── /api/chat/message        ← Chat → AI processing loop
+  │     ├── /api/deals/*
+  │     ├── /api/companies/*
+  │     ├── /api/contacts/*
+  │     ├── /api/documents/*
+  │     ├── /api/gmail/*
+  │     ├── /api/calendar/*
+  │     └── /api/notes/*
+  │
+  ├── /api/internal/*                ← Aria-only API (35+ endpoints)
+  │     ├── X-Internal-Secret auth
+  │     ├── X-Performed-By attribution
+  │     └── Full CRUD on all entities
+  │
+  ├── DatabaseModule (Global)        ← Drizzle + postgres-js
+  ├── StorageService                 ← NFS primary, Supabase fallback
+  └── ChatService (11 tools)         ← AI chat loop via Aria SDK
         │
         ▼
-PostgreSQL (Supabase)
-  └── packages/database         ← Shared Drizzle schema (consumed by both apps)
+  ┌─────────────────┬──────────────────┐
+  │ PostgreSQL      │ NFS /share/crm/  │
+  │ (Supabase)      │ (markdown docs)  │
+  └─────────────────┴──────────────────┘
+        ▲
+        └── packages/database         ← Shared Drizzle schema
 ```
+
+---
+
+## Three-Layer Storage (Critical)
+
+> Full spec: `docs/ARCHITECTURE-HYBRID.md` and `docs/nfs-storage-architecture.md`
+
+```
+Layer 1 — PostgreSQL (structured/queryable)
+  users, workspaces, companies, contacts, deals, activities
+  chat_sessions, chat_messages (raw input)
+  documents (metadata index ONLY — no content column)
+  files (attachment metadata)
+
+Layer 2 — NFS /share/crm/ (markdown documents)
+  deals/{id}/context/context-{ts}.md     ← AI-maintained living record
+  deals/{id}/general/general-{ts}.md
+  deals/{id}/meeting/meeting-{ts}.md
+  deals/{id}/transcript_raw/...
+  deals/{id}/proposal/...
+  companies/{id}/{type}/{type}-{ts}.md
+
+Layer 3 — Supabase Storage `attachments` (binary)
+  PDFs, images, voice recordings (.m4a), signed contracts
+```
+
+**Rule:** Zero content in PostgreSQL. All markdown on NFS. All binaries in Supabase Storage. No exceptions.
+
+The `documents` table is a **metadata-only index** — `id`, `deal_id`, `title`, `type`, `storage_path`, `excerpt` (500 chars max), `word_count`. The `storage_path` field points to the NFS file.
+
+---
+
+## Chat → Document Pipeline
+
+```
+AM sends chat message (either Discord or CRM Chat UI)
+        │
+        ▼
+chat_messages (DB) ← raw input stored
+        │
+        ▼
+ChatService / Aria (11 tools)
+  │
+  ├── update_deal_fields()   → deals table (stage, value, last_activity_at)
+  ├── log_activity()         → activities table
+  ├── update_context_doc()   → NFS context.md (append + rewrite)
+  └── respond()              → confirmation, draft, next steps
+```
+
+---
+
+## Wiki Sync System
+
+Notes saved in the CRM UI trigger an automatic wiki sync (3-second debounce per deal):
+
+```
+Note saved (UI)
+  → 3s in-memory debounce (Map<dealId, NodeJS.Timeout>)
+  → Debounce fires
+  → Aria reads all NFS notes for the deal
+  → Updates deal + company wiki pages + MASTER_INDEX
+  → Triggers summary generation (Aria SDK)
+```
+
+The `[CRM_WIKI_SYNC]` trigger mode in `crm-ingest` handles the sync. Implementation: `docs/WIKI-SYNC.md`.
 
 ---
 
@@ -55,57 +211,75 @@ PostgreSQL (Supabase)
 symph-crm/
 ├── apps/
 │   ├── api/                    # NestJS backend
-│   │   └── src/
-│   │       ├── main.ts         # Bootstrap — port 4000
-│   │       ├── app.module.ts   # Root module
-│   │       ├── database/       # Global DB provider (Drizzle + postgres-js)
-│   │       ├── deals/          # Deals module (controller + service)
-│   │       ├── companies/      # Companies module
-│   │       ├── contacts/       # Contacts module
-│   │       ├── notes/          # Notes module
-│   │       └── activities/     # Activities module
+│   │   ├── src/
+│   │   │   ├── main.ts         # Bootstrap — port 4000
+│   │   │   ├── app.module.ts
+│   │   │   ├── auth/
+│   │   │   ├── chat/           # Chat loop + AI integration (11 tools)
+│   │   │   ├── companies/
+│   │   │   ├── contacts/
+│   │   │   ├── deals/
+│   │   │   ├── documents/      # Document CRUD via StorageService
+│   │   │   ├── files/
+│   │   │   ├── gmail/          # Gmail OAuth sync
+│   │   │   ├── calendar/       # Google Calendar sync
+│   │   │   ├── notes/
+│   │   │   ├── activities/
+│   │   │   ├── billing/
+│   │   │   ├── internal/       # Aria-only API (35+ endpoints)
+│   │   │   ├── storage/        # StorageService (NFS + Supabase fallback)
+│   │   │   └── database/       # Global DB provider (Drizzle + postgres-js)
+│   │   └── CLAUDE.md           # API design rules (DTOs, validation)
 │   │
 │   └── web/                    # Next.js frontend
-│       └── src/
-│           ├── app/            # Next.js App Router
-│           │   ├── page.tsx              # Dashboard
-│           │   ├── deals/page.tsx
-│           │   ├── deals/[id]/page.tsx
-│           │   ├── pipeline/page.tsx
-│           │   ├── inbox/page.tsx
-│           │   ├── calendar/page.tsx
-│           │   ├── chat/page.tsx
-│           │   ├── proposals/page.tsx
-│           │   └── reports/page.tsx
-│           ├── components/     # Feature + UI components
-│           │   ├── ui/         # Radix UI primitives (button, input, select, etc.)
-│           │   ├── Dashboard.tsx
-│           │   ├── Pipeline.tsx
-│           │   ├── DealDetail.tsx
-│           │   ├── Chat.tsx
-│           │   └── ...
-│           └── lib/
-│               ├── constants.ts
-│               └── utils.ts
+│       ├── src/
+│       │   ├── app/            # Next.js App Router
+│       │   │   ├── page.tsx              # Dashboard
+│       │   │   ├── deals/page.tsx
+│       │   │   ├── deals/[id]/page.tsx
+│       │   │   ├── pipeline/page.tsx
+│       │   │   ├── inbox/page.tsx
+│       │   │   ├── calendar/page.tsx
+│       │   │   ├── chat/page.tsx
+│       │   │   ├── proposals/page.tsx
+│       │   │   └── settings/page.tsx
+│       │   ├── components/
+│       │   │   ├── ui/         # Radix UI primitives
+│       │   │   ├── Dashboard.tsx
+│       │   │   ├── Pipeline.tsx
+│       │   │   ├── DealDetail.tsx
+│       │   │   ├── Chat.tsx
+│       │   │   ├── PartialCollapse.tsx   # Summary card collapse component
+│       │   │   └── DocumentViewerModal.tsx
+│       │   └── lib/
+│       │       ├── constants.ts          # 45+ centralized constants
+│       │       ├── types.ts              # All entity types
+│       │       ├── query-keys.ts         # React Query key hierarchy
+│       │       └── hooks/mutations.ts    # All useMutation hooks
+│       └── CLAUDE.md           # Frontend design rules (colors, components, D3)
 │
-└── packages/
-    └── database/               # Shared Drizzle schema
-        └── src/
-            └── schema/
-                ├── users.ts
-                ├── auth.ts
-                ├── workspaces.ts
-                ├── companies.ts
-                ├── contacts.ts
-                ├── deals.ts
-                ├── products.ts
-                ├── notes.ts
-                ├── activities.ts
-                ├── files.ts
-                ├── pipeline.ts
-                ├── chat.ts
-                ├── pitch-decks.ts
-                └── customization-requests.ts
+├── packages/
+│   ├── aria-crm-client/        # Aria SDK client for CRM integration
+│   └── database/               # Shared Drizzle schema (TS-only, webpack bundled)
+│       └── src/schema/
+│           ├── users.ts
+│           ├── auth.ts
+│           ├── workspaces.ts
+│           ├── companies.ts
+│           ├── contacts.ts
+│           ├── deals.ts
+│           ├── documents.ts    # Metadata-only index
+│           ├── activities.ts
+│           ├── chat.ts
+│           ├── files.ts
+│           ├── pitch-decks.ts
+│           └── customization-requests.ts
+│
+└── docs/
+    ├── ARCHITECTURE.md          ← this file
+    ├── ARCHITECTURE-HYBRID.md   ← storage layer deep-dive
+    ├── nfs-storage-architecture.md ← NFS integration details
+    └── WIKI-SYNC.md             ← debounced wiki sync system
 ```
 
 ---
@@ -121,7 +295,6 @@ All core entities are workspace-scoped for multi-tenancy.
 | users | id, name, email, emailVerified, image, role, passwordHash |
 | accounts | userId, provider, providerAccountId, accessToken, refreshToken |
 | sessions | sessionToken, userId, expires |
-| verificationTokens | identifier, token, expires |
 
 **Roles:** `super_admin | admin | manager | rep | viewer`
 
@@ -135,24 +308,25 @@ All core entities are workspace-scoped for multi-tenancy.
 
 | Table | Key Fields |
 |---|---|
-| companies | id, name, domain, industry, headcountRange, website, linkedinUrl, assignedTo, workspaceId |
-| contacts | id, companyId, name, email, phone, title, linkedinUrl, isPrimary |
-| deals | id, companyId, productId, tierId, title, stage, value, probability, closeDate, assignedTo, lossReason, competitorNotes, demoLink, proposalLink, isFlagged, lastActivityAt, workspaceId |
-| products | id, name, slug, description, color, icon, sortOrder |
-| tiers | id, name, slug, description, customizationSlots, sortOrder |
+| companies | id, name, domain, industry, website, linkedinUrl, assignedTo, parent_id (self-ref), workspaceId |
+| contacts | id, name, email, phone, title — linked to both companies AND deals (many-to-many) |
+| deals | id, companyId, productId, tierId, title, stage, value, assignedTo, lastActivityAt, workspaceId |
+| products | id, name, slug, description, color, icon |
+| tiers | id, name, slug, description, customizationSlots |
 
-**Deal stages:** `lead | discovery | assessment | proposal_demo | followup | closed_won | closed_lost`
+**Deal stages:** `lead | discovery | assessment | demo + proposal | follow up | won | lost`
 
-### Notes & Activity
+### Documents & Activity
 
 | Table | Key Fields |
 |---|---|
-| notes | id, content, templateType, authorId, dealId, companyId, contactId, tags, isPinned |
-| noteAttachments | id, noteId, filename, storagePath, fileUrl, mimeType |
+| documents | id, deal_id, company_id, author_id, **type**, title, tags, excerpt (500 chars), **storage_path**, version, is_ai_generated, is_pinned |
 | activities | id, type, dealId, companyId, actorId, metadata (JSONB), workspaceId |
-| files | id, filename, storagePath, fileUrl, dealId, companyId, uploadedBy |
+| files | id, filename, storagePath, dealId, companyId, uploadedBy (binary attachment metadata) |
 
-**Activity types:** `deal_created | deal_stage_changed | deal_updated | deal_value_changed | note_added | note_updated | file_uploaded | contact_added | company_created | company_updated | customization_requested | customization_delivered | pitch_created | am_assigned | deal_flagged | deal_unflagged | deal_won | deal_lost | proposal_created | proposal_sent | attachment_added`
+**Document types:** `context | discovery | transcript_raw | transcript_clean | meeting | proposal | summary | email_thread | company_profile | weekly_digest | general`
+
+> ⚠️ `notes` table has been **replaced by `documents`**. The documents table is metadata-only — all content lives in NFS files referenced by `storage_path`.
 
 ### Pipeline & AM Management
 
@@ -166,7 +340,7 @@ All core entities are workspace-scoped for multi-tenancy.
 | Table | Key Fields |
 |---|---|
 | pitchDecks | id, companyId, productId, tierId, title, content (JSONB), htmlUrl, demoToken |
-| customizationRequests | id, companyId, productId, tierId, title, status, requestedBy, year |
+| customizationRequests | id, companyId, productId, tierId, title, status, requestedBy |
 
 ### Chat
 
@@ -177,33 +351,61 @@ All core entities are workspace-scoped for multi-tenancy.
 
 ---
 
-## API Endpoints (Phase 1)
+## Internal API for Aria
 
-All routes served from NestJS at `http://localhost:4000/api`:
+All Aria interactions go through `/api/internal/*`. Never call user-facing routes from Aria.
 
-| Module | Endpoints |
+```
+Base URL: https://symph-crm-api-t5wb3mrt7q-as.a.run.app/api/internal
+Auth: X-Internal-Secret: {secret from Secret Manager: symph-crm-internal-secret}
+Attribution: X-Performed-By: {crmUserId}, X-Performed-By-Name: {displayName}
+Default Workspace: 60f84f03-283e-4c1a-8c88-b8330dc71d32
+```
+
+| Scope | Endpoints |
 |---|---|
-| Deals | `GET /deals`, `GET /deals/:id`, `POST /deals`, `PUT /deals/:id`, `DELETE /deals/:id` |
-| Companies | `GET /companies`, `GET /companies/:id`, `POST /companies`, `PUT /companies/:id`, `DELETE /companies/:id` |
-| Contacts | `GET /contacts`, `GET /contacts?companyId=`, `GET /contacts/:id`, `POST /contacts`, `PUT /contacts/:id`, `DELETE /contacts/:id` |
-| Notes | CRUD on `/notes` — queryable by dealId or companyId |
-| Activities | `POST /activities`, `GET /activities?dealId=`, `GET /activities?companyId=` |
+| Deals (7) | GET /deals, GET /deals/:id, POST /deals, PUT /deals/:id, PATCH /deals/:id/stage, DELETE /deals/:id, GET /deals/:id/activities |
+| Companies (5) | GET /companies, GET /companies/:id, POST /companies, PUT /companies/:id, DELETE /companies/:id |
+| Contacts (5) | GET /contacts, GET /contacts/:id, POST /contacts, PUT /contacts/:id, DELETE /contacts/:id |
+| Activities (4) | POST /activities, GET /activities?dealId=, GET /activities?companyId=, GET /activities/:id |
+| Documents (6) | GET /documents?dealId=, GET /documents/:id, POST /documents, PUT /documents/:id, DELETE /documents/:id, GET /documents/:id/content |
+| Users (2) | GET /users, GET /users/:id |
+| Pipeline (2) | GET /pipeline/summary, GET /pipeline/stages |
+| Audit (1) | GET /audit-logs |
+| Health (1) | GET /health |
+
+Full endpoint list: `apps/api/src/internal/internal.controller.ts`
+
+---
+
+## Infrastructure
+
+| Service | URL | Region |
+|---|---|---|
+| Web (Next.js) | https://crm.symph.co | asia-southeast1 |
+| API (NestJS) | https://symph-crm-api-t5wb3mrt7q-as.a.run.app | asia-southeast1 |
+| Database | PostgreSQL via Supabase | — |
+| NFS Storage | /share/crm/ on aria-vpc Filestore | 10.95.69.154 |
+| Binary Storage | Supabase Storage `attachments` bucket | — |
+
+**CI/CD:** Push to `main` → GitHub Actions (WIF) → Cloud Build → parallel deploy of API + Web to Cloud Run.
 
 ---
 
 ## Key Architectural Decisions
 
-| Date | Decision | Reason |
-|---|---|---|
-| Phase 1 | NestJS for API (not Next.js API routes) | Clear service boundary, scalable module system, DI for complex future features |
-| Phase 1 | Drizzle ORM over raw SQL | Type safety end-to-end via shared `@symph-crm/database` package; explicit enough to avoid magic |
-| Phase 1 | Supabase over self-hosted PostgreSQL | Managed backups, connection pooling, dashboard — lower ops burden vs VPS DB |
-| Phase 1 | pnpm monorepo (workspaces) | Shared DB schema between API and web without duplication or drift |
-| Phase 1 | React Query v5 over SWR | Better for this monorepo's patterns; invalidation and mutations are cleaner |
-| Phase 1 | JSONB for activity metadata | Flexible event data without schema migrations per new event type |
-| Phase 1 | Multi-workspace from day one | Enables SaaS model when Symph sells this product externally |
-| Phase 3 | PostgreSQL for graph layer (not Neo4j) | Sufficient at this scale; avoids separate infrastructure |
-| Phase 4 | pgvector for semantic search | Colocates vectors with data; avoids external service (Pinecone) |
+| Decision | Reason |
+|---|---|
+| NestJS over Next.js API routes | Clear service boundary, DI, modular architecture |
+| Drizzle over Prisma | Explicit queries, shared schema package, no migration magic |
+| Supabase over self-hosted PostgreSQL | Managed backups, connection pooling, less ops |
+| NFS over Supabase Storage for markdown | ~1ms vs ~150ms read latency; Aria reads directly without HTTP; grep-able |
+| pnpm monorepo | Shared DB schema between API and web with no duplication |
+| React Query v5 | Clean mutations + cache invalidation for CRM data patterns |
+| JSONB for activity metadata | Flexible event data without migrations per event type |
+| Multi-workspace from day one | SaaS model when Symph sells the product externally |
+| Aria SDK for all AI calls | Symph CRM has no direct Anthropic API key — all LLM calls route through Aria |
+| Discord + CRM Chat UI as dual input channels | Meets AMs where they are; Discord for quick updates, Chat UI for deep work |
 
 ---
 
@@ -211,126 +413,72 @@ All routes served from NestJS at `http://localhost:4000/api`:
 
 | Technology | Why Not |
 |---|---|
-| Raw SQL | Replaced by Drizzle — same control, full TypeScript types |
-| Prisma | Too much magic and migration complexity for our patterns |
-| Redis | Supabase connection pooler handles concurrency; revisit at scale |
-| Neo4j | PostgreSQL handles our graph needs at this scale |
-| Pinecone | pgvector keeps vectors in the same DB — simpler ops |
-| Firebase / Firestore | Replaced by PostgreSQL — better for relational CRM data |
+| Raw SQL | Drizzle gives same control with full TypeScript types |
+| Prisma | Too much migration complexity and magic |
+| Redis | Supabase connection pooler handles concurrency; wiki sync uses in-memory debounce |
+| Neo4j | PostgreSQL handles graph needs at this scale |
+| Pinecone | pgvector (Phase 4) keeps vectors in the same DB |
+| Firebase / Firestore | PostgreSQL is better for relational CRM data |
+| Direct Anthropic API | All AI routes through Aria SDK — CRM has no standalone Anthropic key |
 
 ---
 
-## Phase Architecture Changes
+## Phase Roadmap
+
+### Phase 1 — Live ✅
+- Core CRM (deals, companies, contacts, pipeline, activities)
+- Internal API (35+ endpoints for Aria)
+- Chat → AI loop (11 tools, context.md maintenance)
+- Gmail sync + Calendar integration
+- NFS document storage
+- Voice note transcription (Groq Whisper)
+- Wiki sync on note save (debounced)
+- Proposal builder integration
 
 ### Phase 2 — CRM Depth
-
-New tables:
 ```sql
-tasks (id, title, type, due_at, done_at, assigned_to, company_id, deal_id, contact_id)
+tasks (id, title, type, due_at, assigned_to, company_id, deal_id)
 custom_field_definitions (id, object_type, name, field_type, options JSONB)
 custom_field_values (id, definition_id, object_id, value)
-
--- Materialized view for analytics (refresh on deal stage change)
-CREATE MATERIALIZED VIEW pipeline_analytics AS
-  SELECT stage, COUNT(*), SUM(value), AVG(days_in_stage) FROM deals GROUP BY stage;
 ```
-
-Gmail integration via OAuth2 — email threads auto-linked to deal records.
+Full Gmail OAuth integration. Email threads auto-linked to deals.
 
 ### Phase 3 — Knowledge Graph
-
-New tables:
 ```sql
-note_links (id, source_note_id, target_type, target_id, link_text, created_at)
+note_links (id, source_id, target_type, target_id, link_text)
 tags (id, name, slug)
 note_tags (note_id, tag_id)
 note_versions (id, note_id, body, author_id, created_at)
-daily_notes (id, user_id, date, note_id)
 ```
-
-Graph view via React Flow or D3.js. Global search via PostgreSQL FTS (`tsvector` + GIN index).
-
-Wikilink flow:
-1. User types `[[Acme Corp]]` in note
-2. On save: remark plugin parses `[[...]]` tokens
-3. Resolves to CRM objects by name (fuzzy match)
-4. Writes rows to `note_links`
-5. Backlinks panel queries `WHERE target_id = :id AND target_type = :type`
+Wikilinks (`[[Acme Corp]]`) resolve to CRM entities. Graph view via D3. FTS via PostgreSQL `tsvector`.
 
 ### Phase 4 — AI & Automation
-
-New infrastructure:
 ```sql
--- pgvector for semantic search
-CREATE EXTENSION vector;
-ALTER TABLE notes ADD COLUMN embedding vector(1536);
+ALTER TABLE notes ADD COLUMN embedding vector(1536);  -- pgvector
 ```
-
-Background jobs via `pg-boss` (PostgreSQL-native job queue — no Redis needed):
-```typescript
-await boss.send('follow-up-reminder', { dealId, amId, sendAt })
-await boss.work('follow-up-reminder', async (job) => { ... })
-```
+Background jobs via `pg-boss` (PostgreSQL-native). Semantic search across all deal docs. Automated follow-up triggers.
 
 ### Phase 5 — Scale
-
 Only add when traffic demands it:
-
-| Addition | Trigger |
-|---|---|
-| Typesense / Meilisearch | Search >500ms consistently |
-| PostgreSQL read replica | DB CPU >70% |
-| Redis + BullMQ | pg-boss hitting throughput limits |
-| Cloud Run migration | Team needs zero-maintenance hosting |
+- Typesense: if search >500ms consistently
+- PostgreSQL read replica: if DB CPU >70%
+- Redis + BullMQ: if pg-boss hits throughput limits
 
 ---
 
 ## Running Locally
 
 ```bash
-# Install dependencies
 pnpm install
 
-# Set up environment
+# API env
 cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
-# Fill in: DATABASE_URL (Supabase), NEXTAUTH_SECRET, GOOGLE_CLIENT_ID/SECRET, ANTHROPIC_API_KEY
+# Fill: DATABASE_URL (Supabase), NEXTAUTH_SECRET, GOOGLE_CLIENT_ID/SECRET
 
-# Run migrations
-cd packages/database && pnpm db:migrate
-
-# Start both apps
+# Run everything
 pnpm dev
 # API: http://localhost:4000
 # Web: http://localhost:3000
-```
-
----
-
-## Security Checklist
-
-- [ ] Rate limiting on auth routes (`/api/auth/*`)
-- [ ] Centralized `withAuth()` guard in NestJS (not per-controller)
-- [ ] Auth events logged to activities table (login, role change, failed attempt)
-- [ ] `npm audit` in CI pipeline
-- [ ] No `.env` files committed — environment variables via PM2 ecosystem config
-- [ ] DB backups automated (Supabase handles this — verify schedule)
-
----
-
-## Performance Checklist
-
-Priority indexes to add before data grows:
-
-```sql
-CREATE INDEX idx_deals_company_id ON deals(company_id);
-CREATE INDEX idx_deals_stage ON deals(stage);
-CREATE INDEX idx_deals_assigned_to ON deals(assigned_to);
-CREATE INDEX idx_notes_deal_id ON notes(deal_id);
-CREATE INDEX idx_notes_company_id ON notes(company_id);
-CREATE INDEX idx_activities_company_id ON activities(company_id);
-CREATE INDEX idx_activities_deal_id ON activities(deal_id);
-CREATE INDEX idx_contacts_company_id ON contacts(company_id);
 ```
 
 ---
