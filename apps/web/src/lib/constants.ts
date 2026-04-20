@@ -13,13 +13,14 @@ type KanbanStage = {
   readonly matches: readonly string[]
 }
 
-/** 7 consolidated kanban columns — each `matches` array maps DB stage values to this column */
+/** 8 consolidated kanban columns — each `matches` array maps DB stage values to this column */
 export const KANBAN_STAGES: readonly KanbanStage[] = [
   { id: 'lead',         label: 'Lead',           color: '#94a3b8', matches: ['lead'] },
   { id: 'discovery',    label: 'Discovery',      color: '#2563eb', matches: ['discovery'] },
   { id: 'assessment',   label: 'Assessment',     color: '#7c3aed', matches: ['assessment', 'qualified'] },
   { id: 'demo_prop',    label: 'Demo + Proposal',color: '#d97706', matches: ['demo', 'proposal', 'proposal_demo'] },
   { id: 'followup',     label: 'Follow-up',      color: '#f59e0b', matches: ['negotiation', 'followup'] },
+  { id: 'parked',       label: 'Parked',         color: '#64748b', matches: ['parked'] },
   { id: 'closed_won',   label: 'Won',            color: '#16a34a', matches: ['closed_won'] },
   { id: 'closed_lost',  label: 'Lost',           color: '#dc2626', matches: ['closed_lost'] },
 ]
@@ -27,16 +28,17 @@ export const KANBAN_STAGES: readonly KanbanStage[] = [
 // ─── Badge Stage IDs (shorthand) ─────────────────────────────────────────────
 
 /** Compact stage IDs used by the Badge component */
-export type StageId = 'lead' | 'disc' | 'asm' | 'prop' | 'fup' | 'won' | 'lost'
+export type StageId = 'lead' | 'disc' | 'asm' | 'prop' | 'fup' | 'parked' | 'won' | 'lost'
 
 const STAGE_DEFS: Record<StageId, { label: string }> = {
-  lead: { label: 'Lead' },
-  disc: { label: 'Discovery' },
-  asm:  { label: 'Assessment' },
-  prop: { label: 'Demo + Proposal' },
-  fup:  { label: 'Follow-up' },
-  won:  { label: 'Won' },
-  lost: { label: 'Lost' },
+  lead:   { label: 'Lead' },
+  disc:   { label: 'Discovery' },
+  asm:    { label: 'Assessment' },
+  prop:   { label: 'Demo + Proposal' },
+  fup:    { label: 'Follow-up' },
+  parked: { label: 'Parked' },
+  won:    { label: 'Won' },
+  lost:   { label: 'Lost' },
 }
 
 export function getStage(id: StageId): { id: StageId; label: string } {
@@ -46,7 +48,7 @@ export function getStage(id: StageId): { id: StageId; label: string } {
 /** Maps droppable column id → the primary DB stage value sent to API */
 export const COLUMN_TO_STAGE: Record<string, string> = {
   lead: 'lead', discovery: 'discovery', assessment: 'assessment',
-  demo_prop: 'proposal_demo', followup: 'followup',
+  demo_prop: 'proposal_demo', followup: 'followup', parked: 'parked',
   closed_won: 'closed_won', closed_lost: 'closed_lost',
 }
 
@@ -55,7 +57,8 @@ export const STAGE_ORDER: Record<string, number> = {
   lead: 0, discovery: 1, assessment: 2, qualified: 2,
   demo: 3, proposal: 3, proposal_demo: 3,
   negotiation: 4, followup: 4,
-  closed_won: 5, closed_lost: 5,
+  parked: 5,
+  closed_won: 6, closed_lost: 6,
 }
 
 /** Maps a DB stage to the next DB stage when advancing */
@@ -64,7 +67,8 @@ export const STAGE_ADVANCE_MAP: Record<string, string> = {
   assessment: 'proposal_demo', qualified: 'proposal_demo',
   demo: 'proposal_demo', proposal: 'proposal_demo',
   proposal_demo: 'followup', negotiation: 'followup',
-  followup: 'closed_won',
+  followup: 'parked',
+  parked: 'closed_won',
 }
 
 export const CLOSED_STAGE_IDS = new Set(['closed_won', 'closed_lost'])
@@ -73,13 +77,14 @@ export const STAGE_LABELS: Record<string, string> = {
   lead: 'Lead', discovery: 'Discovery', assessment: 'Assessment',
   qualified: 'Qualified', demo: 'Demo', proposal: 'Proposal',
   proposal_demo: 'Demo + Proposal', negotiation: 'Negotiation',
-  followup: 'Follow-up', closed_won: 'Won', closed_lost: 'Lost',
+  followup: 'Follow-up', parked: 'Parked', closed_won: 'Won', closed_lost: 'Lost',
 }
 
 export const STAGE_COLORS: Record<string, string> = {
   lead: '#94a3b8', discovery: '#2563eb', assessment: '#7c3aed',
   qualified: '#0369a1', demo: '#d97706', proposal: '#d97706',
   proposal_demo: '#d97706', negotiation: '#f59e0b', followup: '#f59e0b',
+  parked: '#64748b',
   closed_won: '#16a34a', closed_lost: '#dc2626',
 }
 
@@ -87,6 +92,7 @@ export const STAGE_DOT: Record<string, string> = {
   lead: 'bg-slate-400', discovery: 'bg-blue-600', assessment: 'bg-violet-600',
   qualified: 'bg-sky-700', demo: 'bg-amber-600', proposal: 'bg-amber-600',
   proposal_demo: 'bg-amber-600', negotiation: 'bg-yellow-500', followup: 'bg-yellow-500',
+  parked: 'bg-slate-500',
   closed_won: 'bg-green-600', closed_lost: 'bg-red-600',
 }
 
@@ -100,6 +106,7 @@ export const STAGE_DISPLAY: Record<string, { label: string; bg: string; color: s
   proposal_demo: { label: 'Demo + Proposal', bg: 'rgba(217,119,6,0.08)', color: '#d97706' },
   negotiation:   { label: 'Negotiation',     bg: 'rgba(245,158,11,0.08)', color: '#92400e' },
   followup:      { label: 'Follow-up',       bg: 'rgba(245,158,11,0.08)', color: '#92400e' },
+  parked:        { label: 'Parked',          bg: 'rgba(100,116,139,0.08)', color: '#64748b' },
   closed_won:    { label: 'Won',             bg: 'rgba(22,163,74,0.08)',  color: '#16a34a' },
   closed_lost:   { label: 'Lost',            bg: 'rgba(220,38,38,0.08)',  color: '#dc2626' },
 }
@@ -110,6 +117,7 @@ export const STAGE_OPTIONS = [
   { value: 'assessment',    label: 'Assessment' },
   { value: 'proposal_demo', label: 'Demo + Proposal' },
   { value: 'followup',      label: 'Follow-up' },
+  { value: 'parked',        label: 'Parked' },
   { value: 'closed_won',    label: 'Won' },
   { value: 'closed_lost',   label: 'Lost' },
 ]
@@ -133,6 +141,7 @@ export const PROGRESS_STAGES = [
   { id: 'assessment',  label: 'Assessment',      matches: ['assessment', 'qualified'] },
   { id: 'demo_prop',   label: 'Demo + Proposal', matches: ['demo', 'proposal', 'proposal_demo'] },
   { id: 'followup',    label: 'Follow-up',       matches: ['negotiation', 'followup'] },
+  { id: 'parked',      label: 'Parked',          matches: ['parked'] },
   { id: 'won',         label: 'Won',             matches: ['closed_won'] },
 ]
 
