@@ -163,7 +163,7 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload, initia
       onClick={isEditing ? undefined : onClose}
     >
       <div
-        className="bg-white dark:bg-[#1a1d21] rounded-xl shadow-2xl border border-black/[.08] dark:border-white/[.08] w-[92vw] max-w-[860px] min-h-[60vh] max-h-[88vh] flex flex-col animate-in fade-in-0 zoom-in-95 duration-150"
+        className="bg-white dark:bg-[#1a1d21] shadow-2xl border border-black/[.08] dark:border-white/[.08] flex flex-col animate-in fade-in-0 zoom-in-95 duration-150 w-screen h-screen rounded-none sm:w-[96vw] sm:h-[96vh] sm:rounded-xl"
         onClick={e => e.stopPropagation()}
         onKeyDown={e => {
           if (e.key === 'Escape') {
@@ -395,7 +395,7 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload, initia
           </div>
         ) : (
           /* tabIndex + ref: makes this div focusable so Ctrl+A selects only its text */
-          <div ref={contentRef} className="flex-1 overflow-y-auto outline-none" tabIndex={0}>
+          <div ref={contentRef} className={`flex-1 outline-none ${isPdf ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`} tabIndex={0}>
             {isLoading ? (
               <div className="flex items-center justify-center h-48">
                 <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
@@ -462,7 +462,7 @@ export function DocumentViewerModal({ doc, onClose, onDelete, onDownload, initia
               <iframe
                 src={`/api/documents/${doc.id}/file?inline=1`}
                 title={doc.title}
-                className="w-full flex-1 min-h-[60vh] border-0"
+                className="w-full flex-1 border-0"
               />
             ) : !content ? (
               /* No content — storage may not be configured */
