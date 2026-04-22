@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import imageCompression from 'browser-image-compression'
+import { useChatSidebar } from '@/lib/chat-sidebar-context'
 import {
   cn, getGreeting, formatDuration, getAudioMimeType, mimeToExt,
 } from '@/lib/utils'
@@ -303,14 +304,26 @@ function SessionSidebar({
 }) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
+  // On mobile the sidebar is controlled via context (toggled from the Topbar
+  // chat-sessions icon). On desktop it's always visible as a relative panel.
+  const { isOpen: isMobileOpen, close: closeMobile } = useChatSidebar()
+
   return (
     <>
-      {/* Session sidebar — desktop only. On mobile the outer CrmShell sidebar
-          handles navigation via the Topbar hamburger. */}
+      {/* Mobile overlay backdrop */}
+      {isMobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-sm"
+          onClick={closeMobile}
+        />
+      )}
+
+      {/* Sidebar panel */}
       <div
         className={cn(
-          'hidden lg:flex lg:relative shrink-0 h-full flex-col bg-white dark:bg-[#16171a] border-r border-black/[.06] dark:border-white/[.08] transition-all duration-200 ease-out',
-          expanded ? 'lg:w-[260px]' : 'lg:w-[52px]',
+          'fixed lg:relative z-30 top-0 left-0 h-full flex flex-col bg-white dark:bg-[#16171a] border-r border-black/[.06] dark:border-white/[.08] transition-all duration-200 ease-out shrink-0',
+          expanded ? 'w-[260px]' : 'w-[52px]',
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         )}
       >
         {/* Header + New Chat + Collapse toggle */}
@@ -494,6 +507,7 @@ export function Chat({ dealId }: { dealId?: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { typing, typingSessionId, setTyping: setTypingCtx } = useChatTyping()
+  const { close: closeSessionSidebar } = useChatSidebar()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [sessionId, setSessionId] = useState<string | undefined>(
     () => searchParams.get('session') ?? undefined,
@@ -506,7 +520,7 @@ export function Chat({ dealId }: { dealId?: string }) {
   // Derived: typing indicator is relevant only when it belongs to the active session
   const isTyping = typing && typingSessionId === sessionId
 
-  // Sidebar state
+  // Sidebar desktop expand state (mobile open/close is handled via ChatSidebarContext)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarExpanded, setSidebarExpanded] = useState(true)
 
@@ -572,8 +586,9 @@ export function Chat({ dealId }: { dealId?: string }) {
     setTypingCtx(id, false)
     setApiError(null)
     setSidebarOpen(false)
+    closeSessionSidebar()
     router.replace(`/chat?session=${id}`)
-  }, [setTypingCtx, router])
+  }, [setTypingCtx, router, closeSessionSidebar])
 
   const handleNewChat = useCallback(() => {
     setSessionId(undefined)
@@ -584,8 +599,9 @@ export function Chat({ dealId }: { dealId?: string }) {
     setPasteChips([])
     setPendingAttachment(null)
     setSidebarOpen(false)
+    closeSessionSidebar()
     router.replace('/chat')
-  }, [setTypingCtx, router])
+  }, [setTypingCtx, router, closeSessionSidebar])
 
   const handleDeleteSession = useCallback((id: string) => {
     deleteSession.mutate(id)
