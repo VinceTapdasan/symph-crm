@@ -323,7 +323,13 @@ function SessionSidebar({
         className={cn(
           'fixed lg:relative z-30 top-0 left-0 h-full flex flex-col bg-white dark:bg-[#16171a] border-r border-black/[.06] dark:border-white/[.08] transition-all duration-200 ease-out shrink-0',
           expanded ? 'w-[260px]' : 'w-[52px]',
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          // When closed on mobile, slide off-screen AND disable pointer events so
+          // the off-screen panel doesn't intercept taps on the chat content behind it.
+          // lg:pointer-events-auto restores interactivity on desktop where the panel
+          // is always visible (lg:translate-x-0 keeps it on-screen).
+          isMobileOpen
+            ? 'translate-x-0'
+            : '-translate-x-full lg:translate-x-0 pointer-events-none lg:pointer-events-auto',
         )}
       >
         {/* Header + New Chat + Collapse toggle */}
