@@ -4,14 +4,13 @@ import withPWAInit from '@ducanh2912/next-pwa'
 const withPWA = withPWAInit({
   dest: 'public',
   cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
+  // aggressiveFrontEndNavCaching injects an async cacheWillUpdate plugin into the SW
+  // that uses _async_to_generator which isn't transpiled by workbox — causes SW crash.
+  aggressiveFrontEndNavCaching: false,
   reloadOnOnline: true,
   disable: process.env.NODE_ENV === 'development',
   workboxOptions: {
     disableDevLogs: true,
-    // Exclude custom sw.js from workbox processing to prevent _async_to_generator
-    // transpile error when workbox injects its runtime into the compiled SW
-    exclude: [/sw\.js$/],
   },
 })
 
@@ -28,7 +27,7 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://us-assets.i.posthog.com https://*.posthog.com",
-              "connect-src 'self' https://us.i.posthog.com https://*.posthog.com",
+              "connect-src 'self' https://us.i.posthog.com https://*.posthog.com https://lh3.googleusercontent.com https://*.googleusercontent.com",
               "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com",
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self' data:",
