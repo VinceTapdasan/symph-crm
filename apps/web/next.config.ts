@@ -1,17 +1,12 @@
 import type { NextConfig } from 'next'
 import withPWAInit from '@ducanh2912/next-pwa'
 
+// PWA is disabled: @ducanh2912/next-pwa@10 generates async cacheWillUpdate code
+// that references _async_to_generator without bundling the helper, crashing the SW.
+// Re-enable once the package fixes the compilation issue or we upgrade to a fixed version.
 const withPWA = withPWAInit({
   dest: 'public',
-  cacheOnFrontEndNav: true,
-  // aggressiveFrontEndNavCaching injects an async cacheWillUpdate plugin into the SW
-  // that uses _async_to_generator which isn't transpiled by workbox — causes SW crash.
-  aggressiveFrontEndNavCaching: false,
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV === 'development',
-  workboxOptions: {
-    disableDevLogs: true,
-  },
+  disable: true,
 })
 
 const nextConfig: NextConfig = {
