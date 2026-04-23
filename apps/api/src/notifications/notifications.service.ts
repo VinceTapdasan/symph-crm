@@ -9,6 +9,9 @@ export class NotificationsService {
   constructor(@Inject(DB) private db: Database) {}
 
   async getForUser(userId: string) {
+    // Guard: if session briefly has no user id, return empty rather than crashing with UNDEFINED_VALUE
+    if (!userId) return []
+
     // 1. Upsert dormant deal notifications (deals with no activity for > 3 days)
     // Left join pipeline_stages to filter out closed deals without a fragile subquery
     const dormantDeals = await this.db
