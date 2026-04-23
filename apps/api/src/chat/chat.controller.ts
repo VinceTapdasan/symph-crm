@@ -17,7 +17,12 @@ import { ChatService, ChatMessageDto, AttachmentContext } from './chat.service'
 import { FileParserService } from '../file-parser/file-parser.service'
 import { VoiceService } from '../voice/voice.service'
 import { VoiceUploadService, TranscribeError } from '../voice/voice-upload.service'
+import { Roles } from '../auth/roles.guard'
 
+// Chat is accessible to all authenticated CRM users regardless of role.
+// Without this, the global RolesGuard defaults mutations to SALES-only,
+// blocking BUILD users from creating sessions or sending messages.
+@Roles('SALES', 'BUILD')
 @Controller('chat')
 export class ChatController {
   constructor(
