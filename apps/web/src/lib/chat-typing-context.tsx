@@ -1,33 +1,60 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
 
 type ChatTypingState = {
-  /** Whether Aria is currently typing/streaming a response */
-  typing: boolean
-  /** The session ID the typing indicator belongs to (null = none) */
-  typingSessionId: string | undefined
-  /** Set typing state for a specific session */
-  setTyping: (sessionId: string | undefined, value: boolean) => void
+  /** Sessions where Aria is currently streaming a response. */
+  typingSessions: Record<string, boolean>
+  /** Sessions that received a response while the user was viewing a different session. */
+  unreadSessions: Record<string, boolean>
+  /** Mark a session as actively typing (true) or done (false). */
+  setTyping: (sessionId: string, value: boolean) => void
+  /** Mark a session as having an unread response (called when stream finishes off-session). */
+  markUnread: (sessionId: string) => void
+  /** Clear unread status when the user navigates to a session. */
+  markRead: (sessionId: string) => void
 }
 
 const ChatTypingContext = createContext<ChatTypingState>({
-  typing: false,
-  typingSessionId: undefined,
+  typingSessions: {},
+  unreadSessions: {},
   setTyping: () => {},
+  markUnread: () => {},
+  markRead: () => {},
 })
 
 export function ChatTypingProvider({ children }: { children: ReactNode }) {
-  const [typing, setTypingRaw] = useState(false)
-  const [typingSessionId, setTypingSessionId] = useState<string | undefined>()
+  const [typingSessions, setTypingSessions] = useState<Record<string, boolean>>({})
+  const [unreadSessions, setUnreadSessions] = useState<Record<string, boolean>>({})
 
-  const setTyping = useCallback((sessionId: string | undefined, value: boolean) => {
-    setTypingRaw(value)
-    setTypingSessionId(value ? sessionId : undefined)
+  const setTyping = useCallback((sessionId: string, value: boolean) => {
+    setTypingSessions(prev => {
+      if (!!prev[sessionId] === value) return prev
+      const next = { ...prev }
+      if (value) {
+        next[sessionId] = true
+      } else {
+        delete next[sessionId]
+      }
+      return next
+    })
+  }, [])
+
+  const markUnread = useCallback((sessionId: string) => {
+    setUnreadSessions(prev => ({ ...prev, [sessionId]: true }))
+  }, [])
+
+  const markRead = useCallback((sessionId: string) => {
+    setUnreadSessions(prev => {
+      if (!prev[sessionId]) return prev
+      const next = { ...prev }
+      delete next[sessionId]
+      return next
+    })
   }, [])
 
   return (
-    <ChatTypingContext.Provider value={{ typing, typingSessionId, setTyping }}>
+    <ChatTypingContext.Provider value={{ typingSessions, unreadSessions, setTyping, markUnread, markRead }}>
       {children}
     </ChatTypingContext.Provider>
   )

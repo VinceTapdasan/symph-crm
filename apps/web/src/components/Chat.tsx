@@ -304,6 +304,7 @@ function SessionSidebar({
 }) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const { isOpen: isMobileOpen, close: closeMobile } = useChatSidebar()
+  const { typingSessions, unreadSessions } = useChatTyping()
 
   // ── Session list (shared between mobile overlay and desktop panel) ──────────
   const sessionList = (
@@ -319,6 +320,8 @@ function SessionSidebar({
             const isActive = s.id === activeSessionId
             const label = s.title || s.id.slice(0, 8)
             const isMenuOpen = openMenuId === s.id
+            const isSessionTyping = !!typingSessions[s.id]
+            const isUnread = !!unreadSessions[s.id] && !isActive
             return (
               <div key={s.id} className="relative">
                 <Tooltip>
@@ -341,7 +344,19 @@ function SessionSidebar({
                           <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className="shrink-0 opacity-50">
                             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
                           </svg>
-                          <span className="text-xs font-medium truncate flex-1">{label}</span>
+                          <span className={cn('text-xs truncate flex-1', isUnread || isSessionTyping ? 'font-semibold text-slate-900 dark:text-white' : 'font-medium')}>{label}</span>
+                          {/* Typing animation — Aria still formulating */}
+                          {isSessionTyping && (
+                            <span className="flex items-center gap-[2px] shrink-0">
+                              {[0, 1, 2].map(i => (
+                                <span key={i} className="w-1 h-1 rounded-full bg-primary" style={{ animation: 'typingDot 1.2s ease-in-out infinite', animationDelay: `${i * 0.2}s` }} />
+                              ))}
+                            </span>
+                          )}
+                          {/* Unread dot — response arrived while user was away */}
+                          {isUnread && !isSessionTyping && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                          )}
                           <Popover open={isMenuOpen} onOpenChange={(open) => setOpenMenuId(open ? s.id : null)}>
                             <PopoverTrigger asChild>
                               <button
@@ -527,7 +542,7 @@ export function Chat({ dealId }: { dealId?: string }) {
   const queryClient = useQueryClient()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { typing, typingSessionId, setTyping: setTypingCtx } = useChatTyping()
+  const { typingSessions, unreadSessions, setTyping: setTypingCtx, markUnread, markRead } = useChatTyping()
   const { close: closeSessionSidebar } = useChatSidebar()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [sessionId, setSessionId] = useState<string | undefined>(
@@ -538,8 +553,8 @@ export function Chat({ dealId }: { dealId?: string }) {
   const [apiError, setApiError] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
 
-  // Derived: typing indicator is relevant only when it belongs to the active session
-  const isTyping = typing && typingSessionId === sessionId
+  // Typing indicator for the CURRENT session only
+  const isTyping = !!(sessionId && typingSessions[sessionId])
 
   // Sidebar desktop expand state (mobile open/close is handled via ChatSidebarContext)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -604,17 +619,17 @@ export function Chat({ dealId }: { dealId?: string }) {
   const handleSelectSession = useCallback((id: string) => {
     setSessionId(id)
     setMessages([])
-    setTypingCtx(id, false)
+    markRead(id)       // clear unread badge on the session we're navigating to
     setApiError(null)
     setSidebarOpen(false)
     closeSessionSidebar()
     router.replace(`/chat?session=${id}`)
-  }, [setTypingCtx, router, closeSessionSidebar])
+  }, [markRead, router, closeSessionSidebar])
 
   const handleNewChat = useCallback(() => {
     setSessionId(undefined)
     setMessages([])
-    setTypingCtx(undefined, false)
+    // Don't touch typing state — ongoing responses for other sessions keep streaming
     setApiError(null)
     setInput('')
     setPasteChips([])
@@ -622,7 +637,7 @@ export function Chat({ dealId }: { dealId?: string }) {
     setSidebarOpen(false)
     closeSessionSidebar()
     router.replace('/chat')
-  }, [setTypingCtx, router, closeSessionSidebar])
+  }, [router, closeSessionSidebar])
 
   const handleDeleteSession = useCallback((id: string) => {
     deleteSession.mutate(id)
@@ -1041,11 +1056,12 @@ export function Chat({ dealId }: { dealId?: string }) {
         { id: `err-${Date.now()}`, role: 'assistant', content: 'Something went wrong. Please try again.' },
       ])
     } finally {
-      // Only clear the typing indicator if the user is still on the same
-      // session that initiated this request. If they switched sessions while
-      // the response was streaming, the new session's UI should be unaffected.
-      if (sessionIdRef.current === activeSessionId) {
-        setTypingCtx(activeSessionId, false)
+      // Always clear the typing state for this session.
+      setTypingCtx(activeSessionId, false)
+      // If the user switched to a different session while this one was streaming,
+      // mark it as unread so the session nav shows a visual indicator.
+      if (sessionIdRef.current !== activeSessionId) {
+        markUnread(activeSessionId)
       }
     }
   }
