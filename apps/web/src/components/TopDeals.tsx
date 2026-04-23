@@ -4,13 +4,13 @@ import { formatPeso, getInitials, getBrandColor } from '@/lib/utils'
 import { EmptyState } from './EmptyState'
 
 type TopDealsProps = {
-  deals: { id: string; title: string; value: string | null; stage: string; companyId: string; assignedTo: string | null }[]
+  deals: { id: string; title: string; value: string | null; stage: string | null; companyId: string; assignedTo: string | null }[]
   onViewAll?: () => void
 }
 
 export function TopDeals({ deals, onViewAll }: TopDealsProps) {
   const sorted = [...deals]
-    .filter(d => !['closed_won', 'closed_lost'].includes(d.stage))
+    .filter(d => !['closed_won', 'closed_lost'].includes(d.stage ?? ''))
     .sort((a, b) => parseFloat(b.value ?? '0') - parseFloat(a.value ?? '0'))
     .slice(0, 5)
 
@@ -42,7 +42,7 @@ export function TopDeals({ deals, onViewAll }: TopDealsProps) {
                 <div className="min-w-0">
                   <div className="text-ssm font-semibold text-slate-900 dark:text-white truncate">{d.title}</div>
                   <div className="text-xxs text-slate-400 mt-px">
-                    {d.assignedTo || 'Unassigned'} &middot; <span className="capitalize">{d.stage.replace(/_/g, ' ')}</span>
+                    {d.assignedTo || 'Unassigned'} &middot; <span className="capitalize">{(d.stage ?? '').replace(/_/g, ' ')}</span>
                   </div>
                 </div>
                 <div className="text-right shrink-0">
