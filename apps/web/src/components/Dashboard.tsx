@@ -54,7 +54,7 @@ export function Dashboard() {
   const router = useRouter()
   const now = new Date()
   const [filter, setFilter] = useState<DashboardFilter>({
-    mode: 'month',
+    mode: 'lifetime',
     year: now.getFullYear(),
     month: now.getMonth(),
   })
