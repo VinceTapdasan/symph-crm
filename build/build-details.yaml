@@ -2,27 +2,26 @@
 
 ## Latest Deployment
 
-**Date**: 2026-04-02 07:47:15 UTC
-**Build ID**: f4de889f-1031-42e3-8dcb-72e780e99102
-**Commit**: 0d98ceb (feat: unified multi-channel inbox redesign)
+**Date**: 2026-05-04 06:36:47 UTC
+**Build ID**: 25304734441
+**Commit**: f3d3bbd (feat: wiki obsidian-style sidebar + inline note/resource viewing + graph restyle)
 **Status**: SUCCESS
 
 ### Service Revisions
 
 | Service | Revision | Image | URL |
 |---------|----------|-------|-----|
-| API | symph-crm-api-00122-8vm | asia-docker.pkg.dev/symph-crm/symph-crm/api:0d98ceb | https://symph-crm-api-188047996224.asia-southeast1.run.app |
-| Web | symph-crm-web-00121-s47 | asia-docker.pkg.dev/symph-crm/symph-crm/web:0d98ceb | https://symph-crm-web-188047996224.asia-southeast1.run.app |
+| API | symph-crm-api-00123-xgh | asia-docker.pkg.dev/symph-crm/symph-crm/api:f3d3bbd | https://symph-crm-api-t5wb3mrt7q-as.a.run.app |
+| Web | symph-crm-web-00288-fhb | asia-docker.pkg.dev/symph-crm/symph-crm/web:f3d3bbd | https://crm.symph.co |
 
 ### Feature
 
-**Unified Multi-Channel Inbox**
-- Channel filter tabs: All, Email, Messenger, Instagram, WhatsApp, Viber
-- Channel indicators: Brand-colored badge on conversation avatars (bottom-right)
-- Message readability: 15px mobile / 16px desktop, 1.57 line-height
-- Sidebar width: 320px → 360px
-- Social channels: "Coming Soon" state (ready for future integrations)
+**Obsidian-Style Wiki**
+- Sidebar with full note hierarchy navigation
+- Inline resource/note viewing (no modal popups)
+- Improved graph restyle and interaction
+- Deal + Company wiki pages fully integrated
 
 ### Build Logs
 
-https://console.cloud.google.com/cloud-build/builds/f4de889f-1031-42e3-8dcb-72e780e99102?project=188047996224
+https://github.com/SymphonyAgents/symph-crm/actions/runs/25304734441
