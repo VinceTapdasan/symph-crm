@@ -104,7 +104,7 @@ function DealNotesFlat({
       <div className="ml-[22px] border-l border-black/[.05] dark:border-white/[.05] py-1">
         <div className="flex items-center gap-2 px-2 py-1 pl-8">
           <div className="w-3 h-3 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-          <span className="text-[10px] text-slate-400">Loading...</span>
+          <span className="text-[11px] text-slate-400">Loading...</span>
         </div>
       </div>
     )
@@ -113,7 +113,7 @@ function DealNotesFlat({
   if (noteRows.length === 0 && resourceDocs.length === 0) {
     return (
       <div className="ml-[22px] border-l border-black/[.05] dark:border-white/[.05] py-1">
-        <div className="pl-8 pr-2 py-1 text-[10px] text-slate-400 italic">No notes yet</div>
+        <div className="pl-8 pr-2 py-1 text-[11px] text-slate-400 italic">No notes yet</div>
       </div>
     )
   }
@@ -450,7 +450,7 @@ export function WikiSidebar({
                       </div>
 
                       <span className={cn(
-                        'flex-1 text-sm truncate min-w-0',
+                        'flex-1 text-[12px] truncate min-w-0',
                         isSelectedBrand && !selectedDealId
                           ? 'text-primary font-semibold'
                           : 'text-slate-700 dark:text-slate-200 font-medium'
@@ -503,7 +503,7 @@ export function WikiSidebar({
                                     style={{ background: stageColor }}
                                   />
                                   <span className={cn(
-                                    'flex-1 text-sm truncate min-w-0',
+                                    'flex-1 text-[11px] truncate min-w-0',
                                     isThisDealSelected
                                       ? 'text-primary font-medium'
                                       : 'text-slate-600 dark:text-slate-300'

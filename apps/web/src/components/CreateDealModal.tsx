@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback, useRef, useMemo } from 'react'
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Check } from 'lucide-react'
 // Product/Tier inputs removed per Vins — not needed in create flow
@@ -144,12 +145,27 @@ type BrandInputProps = {
 
 function BrandInput({ companies, inputValue, selectedId, onInputChange, onSelect }: BrandInputProps) {
   const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
 
   const suggestions = useMemo(() => {
     const q = inputValue.trim().toLowerCase()
     if (!q) return companies.slice(0, 8)
     return companies.filter(c => c.name.toLowerCase().includes(q)).slice(0, 8)
   }, [inputValue, companies])
+
+  // Compute dropdown position from input bounding rect (portal rendering)
+  useEffect(() => {
+    if (!open || !containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    setDropdownStyle({
+      position: 'fixed',
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: rect.width,
+      zIndex: 9999,
+    })
+  }, [open])
 
   function handleSelect(c: ApiCompanyDetail) {
     onSelect(c.id, c.name)
@@ -162,49 +178,52 @@ function BrandInput({ companies, inputValue, selectedId, onInputChange, onSelect
     onSelect('', '')
   }
 
-  return (
-    <div className="relative">
-      <div className="relative">
-        <Input
-          value={inputValue}
-          onChange={e => { onInputChange(e.target.value); onSelect('', '') }}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
-          placeholder="Type brand name or leave blank to use deal name"
-          className="h-9 text-ssm pr-7"
-        />
-        {inputValue && (
-          <button
-            type="button"
-            onMouseDown={e => { e.preventDefault(); handleClear() }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-          >
-            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        )}
-      </div>
+  const dropdown = open && suggestions.length > 0 ? createPortal(
+    <div
+      style={dropdownStyle}
+      className="rounded-lg border border-black/[.08] dark:border-white/[.1] bg-white dark:bg-[#1e1e21] shadow-lg py-1 max-h-[220px] overflow-y-auto"
+    >
+      {suggestions.map(c => (
+        <button
+          key={c.id}
+          type="button"
+          onMouseDown={e => { e.preventDefault(); handleSelect(c) }}
+          className={cn(
+            'w-full text-left px-3 py-1.5 text-ssm transition-colors flex items-center gap-2',
+            'hover:bg-slate-50 dark:hover:bg-white/[.06]',
+            selectedId === c.id && 'text-[#6c63ff]',
+          )}
+        >
+          {selectedId === c.id && <Check className="w-3 h-3 shrink-0" />}
+          <span className={cn('truncate', selectedId !== c.id && 'pl-5')}>{c.name}</span>
+        </button>
+      ))}
+    </div>,
+    document.body,
+  ) : null
 
-      {open && suggestions.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg border border-black/[.08] dark:border-white/[.1] bg-white dark:bg-[#1e1e21] shadow-lg py-1 max-h-[200px] overflow-y-auto">
-          {suggestions.map(c => (
-            <button
-              key={c.id}
-              type="button"
-              onMouseDown={e => { e.preventDefault(); handleSelect(c) }}
-              className={cn(
-                'w-full text-left px-3 py-1.5 text-ssm transition-colors flex items-center gap-2',
-                'hover:bg-slate-50 dark:hover:bg-white/[.06]',
-                selectedId === c.id && 'text-[#6c63ff]',
-              )}
-            >
-              {selectedId === c.id && <Check className="w-3 h-3 shrink-0" />}
-              <span className={cn('truncate', selectedId !== c.id && 'pl-5')}>{c.name}</span>
-            </button>
-          ))}
-        </div>
+  return (
+    <div className="relative" ref={containerRef}>
+      <Input
+        value={inputValue}
+        onChange={e => { onInputChange(e.target.value); onSelect('', '') }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder="Type brand name or leave blank to use deal name"
+        className="h-9 text-ssm pr-7"
+      />
+      {inputValue && (
+        <button
+          type="button"
+          onMouseDown={e => { e.preventDefault(); handleClear() }}
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+        >
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       )}
+      {dropdown}
     </div>
   )
 }

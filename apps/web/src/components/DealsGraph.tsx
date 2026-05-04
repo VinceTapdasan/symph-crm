@@ -11,7 +11,7 @@
  *   - Compact legend top-right
  */
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import * as d3 from 'd3'
 import { formatCurrency } from '@/lib/utils'
 import type { ApiCompanyDetail, ApiDeal } from '@/lib/types'
@@ -58,9 +58,11 @@ type DealsGraphProps = {
   onOpenDeal: (id: string) => void
   onOpenBrand?: (companyId: string) => void
   searchQuery?: string
+  focusedNodeId?: string | null
+  onFocusNode?: (id: string | null) => void
 }
 
-export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQuery = '' }: DealsGraphProps) {
+export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQuery = '', focusedNodeId, onFocusNode }: DealsGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const simRef = useRef<d3.Simulation<GraphNode, GraphLink> | null>(null)
@@ -71,8 +73,14 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
   const companiesRef = useRef(companies)
   const onOpenDealRef = useRef(onOpenDeal)
   const onOpenBrandRef = useRef(onOpenBrand)
+  const onFocusNodeRef = useRef(onFocusNode)
   const [tooltip, setTooltip] = useState<Tooltip>(null)
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
+
+  // Cross-pane sync refs
+  const adjacencyRef = useRef<Map<string, Set<string>>>(new Map())
+  const focusedNodeIdRef = useRef<string | null>(focusedNodeId ?? null)
+  const applyHighlightRef = useRef<((id: string | null, fast?: boolean) => void) | null>(null)
 
   const graphKey = useMemo(() => {
     const cs = companies.map(c => `${c.id}:${c.name}`).join('|')
@@ -134,6 +142,7 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
   companiesRef.current = companies
   onOpenDealRef.current = onOpenDeal
   onOpenBrandRef.current = onOpenBrand
+  onFocusNodeRef.current = onFocusNode
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -221,6 +230,63 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
 
     if (nodes.length === 0) return
 
+    // Build adjacency map for hover/focus dimming
+    const adjacency = new Map<string, Set<string>>()
+    for (const node of nodes) adjacency.set(node.id, new Set())
+    for (const link of links) {
+      const src = typeof link.source === 'string' ? link.source : (link.source as GraphNode).id
+      const tgt = typeof link.target === 'string' ? link.target : (link.target as GraphNode).id
+      adjacency.get(src)?.add(tgt)
+      adjacency.get(tgt)?.add(src)
+    }
+    adjacencyRef.current = adjacency
+
+    // applyHighlight, dims unrelated nodes/edges for the given active node id
+    function applyHL(activeId: string | null, fast = false) {
+      const svg = d3.select(svgRef.current!)
+      const nodesGroup = svg.select<SVGGElement>('g.root g.nodes')
+      const linksGroup = svg.select('g.root g.links')
+      if (nodesGroup.empty()) return
+
+      const dur = fast ? 80 : 160
+
+      if (!activeId) {
+        nodesGroup.selectAll<SVGGElement, GraphNode>('g')
+          .transition().duration(dur)
+          .attr('opacity', 1)
+        linksGroup.selectAll<SVGLineElement, GraphLink>('line')
+          .transition().duration(dur)
+          .attr('stroke', 'rgba(255,255,255,0.12)')
+          .attr('stroke-width', 0.5)
+        return
+      }
+
+      const neighbors = adjacencyRef.current.get(activeId) ?? new Set()
+
+      nodesGroup.selectAll<SVGGElement, GraphNode>('g')
+        .transition().duration(dur)
+        .attr('opacity', d => d.id === activeId || neighbors.has(d.id) ? 1 : 0.22)
+
+      linksGroup.selectAll<SVGLineElement, GraphLink>('line')
+        .transition().duration(dur)
+        .attr('stroke', d => {
+          const src = (d.source as GraphNode).id
+          const tgt = (d.target as GraphNode).id
+          return src === activeId || tgt === activeId ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.12)'
+        })
+        .attr('stroke-width', d => {
+          const src = (d.source as GraphNode).id
+          const tgt = (d.target as GraphNode).id
+          return src === activeId || tgt === activeId ? 1 : 0.5
+        })
+    }
+    applyHighlightRef.current = applyHL
+
+    // Apply any existing focus state immediately after graph rebuild
+    if (focusedNodeIdRef.current) {
+      applyHL(focusedNodeIdRef.current, true)
+    }
+
     svg.attr('width', W).attr('height', H)
 
     const root = svg.append('g').attr('class', 'root')
@@ -306,17 +372,49 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
     nodeSel
       .on('mouseenter', (event: MouseEvent, d) => {
         setTooltip({ x: event.clientX, y: event.clientY, node: d })
+        applyHL(d.id, true)
+        // Enlarge hovered node circle
+        d3.select(event.currentTarget as SVGGElement)
+          .select('circle')
+          .transition().duration(80)
+          .attr('r', d.r * 1.35)
+          .attr('stroke-width', d.kind === 'brand' ? 8 : 4)
       })
       .on('mousemove', (event: MouseEvent, d) => {
         setTooltip({ x: event.clientX, y: event.clientY, node: d })
       })
-      .on('mouseleave', () => setTooltip(null))
+      .on('mouseleave', (event: MouseEvent, d) => {
+        setTooltip(null)
+        // Restore circle size
+        d3.select(event.currentTarget as SVGGElement)
+          .select('circle')
+          .transition().duration(120)
+          .attr('r', d.r)
+          .attr('stroke-width', d.kind === 'brand' ? 6 : 3)
+        // Restore to focus state (or full opacity if no focus)
+        applyHL(focusedNodeIdRef.current, false)
+      })
 
     nodeSel.on('click', (_event, d) => {
+      // Set focus on click (for highlight), then open
+      const nodeId = d.kind === 'deal' ? `d-${d.dealId}` : d.companyId ? `c-${d.companyId}` : d.id
+      focusedNodeIdRef.current = nodeId
+      onFocusNodeRef.current?.(nodeId)
+      applyHL(nodeId, true)
+
       if (d.kind === 'deal' && d.dealId) {
         onOpenDealRef.current(d.dealId)
       } else if (d.kind === 'brand' && d.companyId && onOpenBrandRef.current) {
         onOpenBrandRef.current(d.companyId)
+      }
+    })
+
+    // Click on empty SVG area clears focus
+    svg.on('click.focus', (event: MouseEvent) => {
+      if ((event.target as Element) === svg.node()) {
+        focusedNodeIdRef.current = null
+        onFocusNodeRef.current?.(null)
+        applyHL(null)
       }
     })
 
@@ -351,6 +449,25 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graphKey])
+
+  // Sync focusedNodeId prop → D3 highlight
+  useEffect(() => {
+    focusedNodeIdRef.current = focusedNodeId ?? null
+    applyHighlightRef.current?.(focusedNodeId ?? null)
+  }, [focusedNodeId])
+
+  // Escape key clears focus
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && focusedNodeIdRef.current) {
+        focusedNodeIdRef.current = null
+        onFocusNodeRef.current?.(null)
+        applyHighlightRef.current?.(null)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   // Search highlight + center
   useEffect(() => {

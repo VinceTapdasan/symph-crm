@@ -47,6 +47,7 @@ function WikiLayoutInner({ children }: { children: React.ReactNode }) {
 
   const [mobilePane, setMobilePane] = useState<MobilePane>('sidebar')
   const [view, setView] = useState<WikiView>('list')
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
   const { width: sidebarWidth, setWidth: setSidebarWidth } = useSidebarWidth()
   const [isDragging, setIsDragging] = useState(false)
   const dragRef = useRef<{ startX: number; startW: number } | null>(null)
@@ -154,10 +155,13 @@ function WikiLayoutInner({ children }: { children: React.ReactNode }) {
   function handleSelect(sel: WikiSelection) {
     if (sel.kind === 'brand') {
       router.push(`/wiki/brand/${sel.company.id}`)
+      if (view === 'graph') setFocusedNodeId(`c-${sel.company.id}`)
     } else if (sel.kind === 'deal') {
       router.push(`/wiki/deal/${sel.deal.id}`)
+      if (view === 'graph') setFocusedNodeId(`d-${sel.deal.id}`)
     } else {
       router.push('/wiki')
+      setFocusedNodeId(null)
     }
     if (sel.kind !== 'none') setMobilePane('content')
   }
@@ -252,9 +256,12 @@ function WikiLayoutInner({ children }: { children: React.ReactNode }) {
                 companies={companies}
                 deals={deals}
                 searchQuery={graphSearch}
+                focusedNodeId={focusedNodeId}
+                onFocusNode={setFocusedNodeId}
                 onOpenDeal={(id) => {
                   const deal = deals.find(d => d.id === id)
                   if (deal) {
+                    setFocusedNodeId(`d-${deal.id}`)
                     router.push(`/wiki/deal/${deal.id}`)
                     handleViewChange('list')
                   }
@@ -262,6 +269,7 @@ function WikiLayoutInner({ children }: { children: React.ReactNode }) {
                 onOpenBrand={(companyId) => {
                   const company = companyMap.get(companyId)
                   if (company) {
+                    setFocusedNodeId(`c-${companyId}`)
                     router.push(`/wiki/brand/${company.id}`)
                     handleViewChange('list')
                   }
