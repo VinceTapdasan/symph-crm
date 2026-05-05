@@ -1834,9 +1834,10 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                         href={deal.proposalLink.startsWith('http') ? deal.proposalLink : `https://${deal.proposalLink}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-ssm text-primary hover:underline font-medium truncate"
+                        title={deal.proposalLink}
+                        className="text-ssm text-primary hover:underline truncate"
                       >
-                        View Proposal
+                        {deal.proposalLink.replace(/^https?:\/\//, '')}
                       </a>
                       <button
                         onClick={() => { setProposalLinkDraft(deal.proposalLink || ''); setEditingProposalLink(true) }}
@@ -1897,9 +1898,10 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                         href={deal.demoLink.startsWith('http') ? deal.demoLink : `https://${deal.demoLink}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-ssm text-primary hover:underline font-medium truncate"
+                        title={deal.demoLink}
+                        className="text-ssm text-primary hover:underline truncate"
                       >
-                        Demo Recording
+                        {deal.demoLink.replace(/^https?:\/\//, '')}
                       </a>
                       <button
                         onClick={() => { setDemoLinkDraft(deal.demoLink || ''); setEditingDemoLink(true) }}

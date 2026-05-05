@@ -78,7 +78,7 @@ function getNavSections(dormantCount: number): NavSection[] {
         { path: '/reports', label: 'Reports', icon: BarChart3 },
         { path: '/proposals', label: 'Proposals', icon: FileText },
         { path: '/bills', label: 'Bills', icon: Receipt },
-        { path: '/products', label: 'Products', icon: Package },
+        { path: '/catalog', label: 'Catalog', icon: Package },
       ],
     },
     {

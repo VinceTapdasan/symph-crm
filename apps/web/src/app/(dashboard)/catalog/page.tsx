@@ -1,11 +1,16 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Pencil, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Pencil, Trash2, ToggleLeft, ToggleRight, ImageIcon, Upload } from 'lucide-react'
 import { useGetInternalProducts } from '@/lib/hooks/queries'
-import { useCreateInternalProduct, useUpdateInternalProduct, useDeleteInternalProduct } from '@/lib/hooks/mutations'
+import {
+  useCreateInternalProduct,
+  useUpdateInternalProduct,
+  useDeleteInternalProduct,
+  useUploadInternalProductIcon,
+} from '@/lib/hooks/mutations'
 import { queryKeys } from '@/lib/query-keys'
 import { cn } from '@/lib/utils'
 import { INDUSTRY_OPTIONS } from '@/lib/constants'
@@ -13,18 +18,56 @@ import { DataTable, SortableHeader, DataTableSkeleton } from '@/components/ui/da
 import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
 import { useEscapeKey } from '@/lib/hooks/use-escape-key'
-import type { ApiInternalProduct } from '@/lib/types'
+import type { ApiInternalProduct, ProductType } from '@/lib/types'
+
+const TABS: { id: ProductType; label: string; addCta: string; emptyText: string }[] = [
+  { id: 'internal', label: 'Products', addCta: '+ New Product', emptyText: 'No products yet' },
+  { id: 'service', label: 'Services', addCta: '+ New Service', emptyText: 'No services yet' },
+  { id: 'reseller', label: 'Resellers', addCta: '+ New Reseller', emptyText: 'No resellers yet' },
+]
 
 function formatDate(d: string): string {
   return new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function ProductsPage() {
+// ─── Icon thumbnail (16×16, default placeholder if missing) ──────────────────
+
+function IconThumb({ src, size = 16, className }: { src?: string | null; size?: number; className?: string }) {
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt=""
+        width={size}
+        height={size}
+        className={cn('rounded-sm object-contain', className)}
+        style={{ width: size, height: size }}
+      />
+    )
+  }
+  return (
+    <div
+      className={cn(
+        'rounded-sm bg-slate-100 dark:bg-white/[.06] flex items-center justify-center text-slate-400',
+        className,
+      )}
+      style={{ width: size, height: size }}
+    >
+      <ImageIcon size={Math.floor(size * 0.7)} strokeWidth={1.5} />
+    </div>
+  )
+}
+
+export default function CatalogPage() {
   const qc = useQueryClient()
-  const { data: products = [], isLoading } = useGetInternalProducts()
+  const [tab, setTab] = useState<ProductType>('internal')
+  const { data: items = [], isLoading } = useGetInternalProducts({ type: tab })
   const [editing, setEditing] = useState<ApiInternalProduct | null>(null)
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<ApiInternalProduct | null>(null)
+
+  const tabMeta = TABS.find(t => t.id === tab)!
 
   const updateProduct = useUpdateInternalProduct({
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.internalProducts.all }),
@@ -38,17 +81,40 @@ export default function ProductsPage() {
 
   const columns = useMemo<ColumnDef<ApiInternalProduct>[]>(() => [
     {
+      id: 'icon',
+      header: '',
+      size: 48,
+      cell: ({ row }) => <IconThumb src={row.original.iconUrl} size={20} />,
+    },
+    {
       accessorKey: 'name',
       header: ({ column }) => <SortableHeader column={column}>Name</SortableHeader>,
       cell: ({ row }) => (
         <span className="text-ssm font-medium text-slate-900 dark:text-white">{row.original.name}</span>
       ),
     },
-    {
+    ...(tab === 'internal' ? [{
       accessorKey: 'industry',
-      header: ({ column }) => <SortableHeader column={column}>Industry</SortableHeader>,
-      cell: ({ row }) => (
+      header: ({ column }: any) => <SortableHeader column={column}>Industry</SortableHeader>,
+      cell: ({ row }: any) => (
         <span className="text-ssm text-slate-600 dark:text-slate-300">{row.original.industry || '—'}</span>
+      ),
+    } as ColumnDef<ApiInternalProduct>] : []),
+    {
+      accessorKey: 'landingPageLink',
+      header: 'Landing page',
+      cell: ({ row }) => row.original.landingPageLink ? (
+        <a
+          href={row.original.landingPageLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="text-ssm text-primary hover:underline truncate inline-block max-w-[220px]"
+        >
+          {row.original.landingPageLink.replace(/^https?:\/\//, '')}
+        </a>
+      ) : (
+        <span className="text-ssm text-slate-400">—</span>
       ),
     },
     {
@@ -94,20 +160,14 @@ export default function ProductsPage() {
               {p.isActive ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
             </button>
             <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setEditing(p)
-              }}
+              onClick={(e) => { e.stopPropagation(); setEditing(p) }}
               className="h-7 w-7 rounded-md flex items-center justify-center text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors"
               title="Edit"
             >
               <Pencil size={13} />
             </button>
             <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setDeleting(p)
-              }}
+              onClick={(e) => { e.stopPropagation(); setDeleting(p) }}
               className="h-7 w-7 rounded-md flex items-center justify-center text-slate-500 hover:text-[#dc2626] hover:bg-slate-100 dark:hover:bg-white/[.06] transition-colors"
               title="Delete"
             >
@@ -117,22 +177,42 @@ export default function ProductsPage() {
         )
       },
     },
-  ], [updateProduct])
+  ], [updateProduct, tab])
 
   return (
     <div className="p-4 md:px-6 pb-6 max-w-[1200px]">
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-base font-semibold text-slate-900 dark:text-white">Products</h1>
-          <p className="text-xxs text-slate-500 dark:text-slate-400 mt-0.5">Internal products available for deal assignment</p>
+          <h1 className="text-base font-semibold text-slate-900 dark:text-white">Catalog</h1>
+          <p className="text-xxs text-slate-500 dark:text-slate-400 mt-0.5">
+            Manage internal products, service offerings, and reseller partners
+          </p>
         </div>
         <button
           onClick={() => setCreating(true)}
           className="rounded-lg px-3 py-[5px] text-xs font-medium text-white transition-colors flex items-center gap-1.5"
           style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
         >
-          + New Product
+          {tabMeta.addCta}
         </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 mb-4 border-b border-black/[.06] dark:border-white/[.08]">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={cn(
+              'px-3 py-2 text-ssm font-medium border-b-2 -mb-px transition-colors',
+              tab === t.id
+                ? 'border-primary text-primary'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-md shadow-[var(--shadow-card)]">
@@ -141,26 +221,24 @@ export default function ProductsPage() {
         ) : (
           <DataTable
             columns={columns}
-            data={products}
-            emptyMessage="No products yet"
-            emptyDescription="Click Add Product to create one"
+            data={items}
+            emptyMessage={tabMeta.emptyText}
+            emptyDescription="Click + to create one"
           />
         )}
       </div>
 
       {(creating || editing) && (
-        <ProductFormModal
-          product={editing}
-          onClose={() => {
-            setCreating(false)
-            setEditing(null)
-          }}
+        <CatalogItemFormModal
+          item={editing}
+          defaultType={tab}
+          onClose={() => { setCreating(false); setEditing(null) }}
         />
       )}
 
       {deleting && (
         <ConfirmDeleteModal
-          product={deleting}
+          item={deleting}
           isPending={deleteProduct.isPending}
           onCancel={() => setDeleting(null)}
           onConfirm={() => deleteProduct.mutate(deleting.id)}
@@ -170,46 +248,69 @@ export default function ProductsPage() {
   )
 }
 
-// ─── Product form modal — matches CreateDealModal style ──────────────────────
+// ─── Form modal ───────────────────────────────────────────────────────────────
 
-function ProductFormModal({
-  product,
+function CatalogItemFormModal({
+  item,
+  defaultType,
   onClose,
 }: {
-  product: ApiInternalProduct | null
+  item: ApiInternalProduct | null
+  defaultType: ProductType
   onClose: () => void
 }) {
   useEscapeKey(useCallback(onClose, [onClose]))
-
   const qc = useQueryClient()
-  const [name, setName] = useState(product?.name ?? '')
-  const [industry, setIndustry] = useState(product?.industry ?? '')
 
-  const create = useCreateInternalProduct({
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.internalProducts.all })
-      onClose()
-    },
-  })
-  const update = useUpdateInternalProduct({
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.internalProducts.all })
-      onClose()
-    },
-  })
-  const isPending = create.isPending || update.isPending
-  const error = create.error || update.error
+  const [name, setName] = useState(item?.name ?? '')
+  const [productType] = useState<ProductType>(item?.productType ?? defaultType)
+  const [industry, setIndustry] = useState(item?.industry ?? '')
+  const [landingPageLink, setLandingPageLink] = useState(item?.landingPageLink ?? '')
+  const [iconFile, setIconFile] = useState<File | null>(null)
+  const [iconPreview, setIconPreview] = useState<string | null>(item?.iconUrl ?? null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const create = useCreateInternalProduct({})
+  const update = useUpdateInternalProduct({})
+  const uploadIcon = useUploadInternalProductIcon({})
+  const isPending = create.isPending || update.isPending || uploadIcon.isPending
+  const error = create.error || update.error || uploadIcon.error
   const canSubmit = !!name.trim()
 
-  function handleSubmit(e: React.FormEvent) {
+  const typeLabel = TABS.find(t => t.id === productType)?.label.replace(/s$/, '') ?? 'Item'
+
+  function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    setIconFile(f)
+    setIconPreview(URL.createObjectURL(f))
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) return
-    if (product) {
-      update.mutate({ id: product.id, data: { name: trimmed, industry: industry || null } })
-    } else {
-      create.mutate({ name: trimmed, industry: industry || null })
+
+    const payload = {
+      productType,
+      name: trimmed,
+      industry: productType === 'internal' ? (industry || null) : null,
+      landingPageLink: landingPageLink.trim() || null,
     }
+
+    let savedId = item?.id
+    if (item) {
+      await update.mutateAsync({ id: item.id, data: payload })
+    } else {
+      const created = await create.mutateAsync(payload)
+      savedId = created.id
+    }
+
+    if (savedId && iconFile) {
+      await uploadIcon.mutateAsync({ id: savedId, file: iconFile })
+    }
+    qc.invalidateQueries({ queryKey: queryKeys.internalProducts.all })
+    onClose()
   }
 
   return (
@@ -221,11 +322,14 @@ function ProductFormModal({
         className="bg-white dark:bg-[#1e1e21] rounded-lg shadow-[0_8px_40px_rgba(0,0,0,0.18)] border border-black/[.06] dark:border-white/[.08] w-full max-w-[460px] mx-4 animate-in zoom-in-95 fade-in-0 duration-200"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="px-4 py-3 border-b border-black/[.06] dark:border-white/[.08] flex items-center justify-between bg-white dark:bg-[#1e1e21] rounded-t-lg">
           <div>
-            <div className="text-sm font-semibold text-slate-900 dark:text-white">{product ? 'Edit Product' : 'New Product'}</div>
-            <div className="text-xs text-slate-400 mt-0.5">{product ? 'Update name or industry' : 'Add an internal product to your catalog'}</div>
+            <div className="text-sm font-semibold text-slate-900 dark:text-white">
+              {item ? `Edit ${typeLabel}` : `New ${typeLabel}`}
+            </div>
+            <div className="text-xs text-slate-400 mt-0.5">
+              {item ? 'Update details' : `Add a new ${typeLabel.toLowerCase()} to the catalog`}
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -237,27 +341,66 @@ function ProductFormModal({
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="p-4 flex flex-col gap-4">
+          {/* Icon */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">
+              Icon <span className="text-slate-400">(optional, up to 512KB)</span>
+            </label>
+            <div className="flex items-center gap-3">
+              <IconThumb src={iconPreview} size={40} />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
+                onChange={handleFilePick}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-ssm font-medium border border-black/[.08] dark:border-white/[.08] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+              >
+                <Upload size={13} />
+                {iconPreview ? 'Replace icon' : 'Upload icon'}
+              </button>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">Name</label>
             <Input
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Product name"
+              placeholder={`${typeLabel} name`}
               className="h-9 text-ssm"
             />
           </div>
+
+          {productType === 'internal' && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">
+                Industry <span className="text-slate-400">(optional)</span>
+              </label>
+              <Combobox
+                options={INDUSTRY_OPTIONS.map(i => ({ value: i, label: i }))}
+                value={industry}
+                onValueChange={setIndustry}
+                placeholder="Search industry..."
+              />
+            </div>
+          )}
+
           <div className="flex flex-col gap-1.5">
             <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">
-              Industry <span className="text-slate-400">(optional)</span>
+              Landing page <span className="text-slate-400">(optional)</span>
             </label>
-            <Combobox
-              options={INDUSTRY_OPTIONS.map(i => ({ value: i, label: i }))}
-              value={industry}
-              onValueChange={setIndustry}
-              placeholder="Search industry..."
+            <Input
+              value={landingPageLink}
+              onChange={(e) => setLandingPageLink(e.target.value)}
+              placeholder="https://..."
+              className="h-9 text-ssm"
             />
           </div>
 
@@ -282,7 +425,7 @@ function ProductFormModal({
               style={{ background: 'linear-gradient(135deg, var(--primary), var(--color-primary-accent))' }}
             >
               {isPending && <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-              {product ? 'Save Changes' : 'Create Product'}
+              {item ? 'Save Changes' : `Create ${typeLabel}`}
             </button>
           </div>
         </form>
@@ -291,21 +434,18 @@ function ProductFormModal({
   )
 }
 
-// ─── Confirm delete modal — matches CreateDealModal style ────────────────────
-
 function ConfirmDeleteModal({
-  product,
+  item,
   isPending,
   onCancel,
   onConfirm,
 }: {
-  product: ApiInternalProduct
+  item: ApiInternalProduct
   isPending: boolean
   onCancel: () => void
   onConfirm: () => void
 }) {
   useEscapeKey(useCallback(onCancel, [onCancel]))
-
   return (
     <div
       className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-[2px] animate-in fade-in-0 duration-200"
@@ -316,11 +456,11 @@ function ConfirmDeleteModal({
         onClick={e => e.stopPropagation()}
       >
         <div className="px-4 py-3 border-b border-black/[.06] dark:border-white/[.08]">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">Delete Product</div>
+          <div className="text-sm font-semibold text-slate-900 dark:text-white">Delete catalog item</div>
         </div>
         <div className="p-4 flex flex-col gap-4">
           <p className="text-xs text-slate-600 dark:text-slate-400">
-            Delete <span className="font-medium text-slate-900 dark:text-white">{product.name}</span>? This cannot be undone.
+            Delete <span className="font-medium text-slate-900 dark:text-white">{item.name}</span>? This cannot be undone.
           </p>
           <div className="flex gap-2">
             <button

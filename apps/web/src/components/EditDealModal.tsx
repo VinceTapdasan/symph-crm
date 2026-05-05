@@ -17,10 +17,10 @@ import { useGetCompanies, useGetUsers, useGetInternalProducts } from '@/lib/hook
 import { queryKeys } from '@/lib/query-keys'
 import { useEscapeKey } from '@/lib/hooks/use-escape-key'
 import {
-  STAGE_OPTIONS, OUTREACH_OPTIONS, SERVICE_TYPES, SYSTEM_TYPES,
+  STAGE_OPTIONS, OUTREACH_OPTIONS, SYSTEM_TYPES,
 } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import type { ApiDealDetail } from '@/lib/types'
+import type { ApiDealDetail, ApiInternalProduct } from '@/lib/types'
 
 type Props = {
   deal: ApiDealDetail
@@ -93,8 +93,17 @@ function DealNameInput({ value, onChange }: { value: string; onChange: (v: strin
   )
 }
 
-/** Flatten SERVICE_TYPES for display in grouped select */
+/** DB-driven catalog grouped by product type. Value = row's slug. */
 function ServiceSelect({ value, onValueChange }: { value: string; onValueChange: (v: string) => void }) {
+  const { data: catalog = [] } = useGetInternalProducts(true)
+  const groups = useMemo(() => {
+    const sortByName = (a: ApiInternalProduct, b: ApiInternalProduct) => a.name.localeCompare(b.name)
+    return {
+      services: catalog.filter(c => c.productType === 'service').sort(sortByName),
+      products: catalog.filter(c => c.productType === 'internal').sort(sortByName),
+      resellers: catalog.filter(c => c.productType === 'reseller').sort(sortByName),
+    }
+  }, [catalog])
   return (
     <Select value={value || '__none__'} onValueChange={v => onValueChange(v === '__none__' ? '' : v)}>
       <SelectTrigger className="h-9 text-ssm">
@@ -102,26 +111,46 @@ function ServiceSelect({ value, onValueChange }: { value: string; onValueChange:
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="__none__" className="text-ssm text-slate-400">No service</SelectItem>
-        {SERVICE_TYPES.map(svc => (
-          svc.children ? (
-            <div key={svc.value}>
-              <div className="px-2 pt-2 pb-1 text-atom font-semibold text-slate-400 uppercase tracking-wider">
-                {svc.label}
-              </div>
-              {svc.children.map(child => (
-                <SelectItem key={child.value} value={child.value} className="text-ssm pl-5">
-                  {child.label}
-                </SelectItem>
-              ))}
-            </div>
-          ) : (
-            <SelectItem key={svc.value} value={svc.value} className="text-ssm">
-              {svc.label}
+        {groups.services.length > 0 && <>
+          <div className="px-2 pt-2 pb-1 text-atom font-semibold text-slate-400 uppercase tracking-wider">Services</div>
+          {groups.services.map(s => (
+            <SelectItem key={s.id} value={s.slug ?? s.id} className="text-ssm">
+              <CatalogRowLabel item={s} />
             </SelectItem>
-          )
-        ))}
+          ))}
+        </>}
+        {groups.products.length > 0 && <>
+          <div className="px-2 pt-2 pb-1 text-atom font-semibold text-slate-400 uppercase tracking-wider">Internal Products</div>
+          {groups.products.map(p => (
+            <SelectItem key={p.id} value={p.slug ?? p.id} className="text-ssm">
+              <CatalogRowLabel item={p} />
+            </SelectItem>
+          ))}
+        </>}
+        {groups.resellers.length > 0 && <>
+          <div className="px-2 pt-2 pb-1 text-atom font-semibold text-slate-400 uppercase tracking-wider">Resellers</div>
+          {groups.resellers.map(r => (
+            <SelectItem key={r.id} value={r.slug ?? r.id} className="text-ssm">
+              <CatalogRowLabel item={r} />
+            </SelectItem>
+          ))}
+        </>}
       </SelectContent>
     </Select>
+  )
+}
+
+function CatalogRowLabel({ item }: { item: ApiInternalProduct }) {
+  return (
+    <div className="flex items-center gap-2 min-w-0">
+      {item.iconUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={item.iconUrl} alt="" width={16} height={16} className="rounded-sm object-contain shrink-0" style={{ width: 16, height: 16 }} />
+      ) : (
+        <span className="w-4 h-4 rounded-sm bg-slate-200 dark:bg-white/[.08] shrink-0" />
+      )}
+      <span className="truncate">{item.name}</span>
+    </div>
   )
 }
 

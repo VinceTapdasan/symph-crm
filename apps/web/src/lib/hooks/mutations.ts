@@ -525,8 +525,12 @@ export function useDeleteChatSession(
 // ─── Internal Product mutations ───────────────────────────────────────────────
 
 export type CreateInternalProductInput = {
+  productType?: 'internal' | 'service' | 'reseller'
+  slug?: string | null
   name: string
   industry?: string | null
+  landingPageLink?: string | null
+  iconUrl?: string | null
   isActive?: boolean
 }
 
@@ -556,5 +560,18 @@ export function useDeleteInternalProduct(
   return useMutation<void, Error, string>({
     mutationFn: (id: string) => api.delete(`/internal-products/${id}`),
     ...withToast('Product deleted', options),
+  })
+}
+
+export function useUploadInternalProductIcon(
+  options?: UseMutationOptions<ApiInternalProduct, Error, { id: string; file: File }>,
+) {
+  return useMutation<ApiInternalProduct, Error, { id: string; file: File }>({
+    mutationFn: async ({ id, file }) => {
+      const fd = new FormData()
+      fd.append('icon', file)
+      return api.upload<ApiInternalProduct>(`/internal-products/${id}/icon`, fd)
+    },
+    ...withToast('Icon uploaded', options),
   })
 }

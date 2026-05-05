@@ -1,15 +1,33 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common'
-import { InternalProductsService } from './internal-products.service'
+import {
+  Controller, Get, Post, Patch, Delete, Param, Body, Query,
+  UploadedFile, UseInterceptors, BadRequestException,
+} from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { memoryStorage } from 'multer'
+import { InternalProductsService, type ProductType } from './internal-products.service'
 import { CreateInternalProductDto } from './dto/create-internal-product.dto'
 import { UpdateInternalProductDto } from './dto/update-internal-product.dto'
+import { StorageService } from '../storage/storage.service'
+
+const ALLOWED_ICON_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'image/gif'])
+const MAX_ICON_BYTES = 512 * 1024 // 512 KB — logos are tiny
 
 @Controller('internal-products')
 export class InternalProductsController {
-  constructor(private readonly service: InternalProductsService) {}
+  constructor(
+    private readonly service: InternalProductsService,
+    private readonly storage: StorageService,
+  ) {}
 
   @Get()
-  findAll(@Query('active') active?: string) {
-    return this.service.findAll(active === 'true')
+  findAll(
+    @Query('active') active?: string,
+    @Query('type') type?: ProductType,
+  ) {
+    return this.service.findAll({
+      activeOnly: active === 'true',
+      type: type && ['internal', 'service', 'reseller'].includes(type) ? type : undefined,
+    })
   }
 
   @Get(':id')
@@ -30,5 +48,34 @@ export class InternalProductsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(id)
+  }
+
+  /**
+   * POST /api/internal-products/:id/icon
+   * Multipart upload field name: `icon`. Accepts common image MIME types up to 512KB.
+   * Uploads to Supabase Storage (public catalog-icons bucket), patches the row's
+   * icon_url, and returns the updated row.
+   */
+  @Post(':id/icon')
+  @UseInterceptors(
+    FileInterceptor('icon', {
+      storage: memoryStorage(),
+      limits: { fileSize: MAX_ICON_BYTES },
+    }),
+  )
+  async uploadIcon(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ) {
+    if (!file) throw new BadRequestException('icon file is required (multipart field "icon")')
+    if (!ALLOWED_ICON_MIME.has(file.mimetype)) {
+      throw new BadRequestException(`unsupported mime type: ${file.mimetype}`)
+    }
+    // Verify the catalog item exists before doing the upload
+    const existing = await this.service.findOne(id)
+    const ext = file.originalname.includes('.') ? file.originalname.split('.').pop()!.toLowerCase() : 'png'
+    const storagePath = `${id}/icon-${Date.now()}.${ext}`
+    const publicUrl = await this.storage.uploadCatalogIcon(storagePath, file.buffer, file.mimetype)
+    return this.service.update(existing.id, { iconUrl: publicUrl })
   }
 }

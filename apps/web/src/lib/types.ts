@@ -84,10 +84,16 @@ export type ApiUser = {
 
 // ── Internal Products ────────────────────────────────────────────────────────
 
+export type ProductType = 'internal' | 'service' | 'reseller'
+
 export type ApiInternalProduct = {
   id: string
+  productType: ProductType
+  slug: string | null
   name: string
   industry: string | null
+  landingPageLink: string | null
+  iconUrl: string | null
   isActive: boolean
   createdAt: string
   updatedAt: string

@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 export const ATTACHMENTS_BUCKET = 'attachments'
+export const CATALOG_ICONS_BUCKET = 'catalog-icons'
 
 /**
  * StorageService — NFS-primary document storage.
@@ -183,6 +184,31 @@ export class StorageService implements OnModuleInit {
   async deleteVoiceRecording(storagePath: string): Promise<void> {
     const { error } = await this.supabaseClient.storage.from(ATTACHMENTS_BUCKET).remove([storagePath])
     if (error) this.logger.warn(`Voice recording delete failed [${storagePath}]: ${error.message}`)
+  }
+
+  // ── Catalog icons (Supabase Storage, public bucket) ──────────────────────
+  //
+  // Catalog icons (product / service / reseller logos) are public assets so
+  // we use a dedicated public bucket and return the public URL — no signing
+  // needed, no expiry. Bucket must be created with `public = true` in the
+  // Supabase dashboard or via SQL.
+
+  /** Upload a catalog icon and return its public URL. */
+  async uploadCatalogIcon(storagePath: string, buffer: Buffer, mimeType: string): Promise<string> {
+    const { error } = await this.supabaseClient.storage.from(CATALOG_ICONS_BUCKET).upload(storagePath, buffer, {
+      upsert: true,
+      contentType: mimeType,
+      cacheControl: '31536000',
+    })
+    if (error) throw new Error(`Catalog icon upload failed [${storagePath}]: ${error.message}`)
+    const { data } = this.supabaseClient.storage.from(CATALOG_ICONS_BUCKET).getPublicUrl(storagePath)
+    return data.publicUrl
+  }
+
+  /** Delete a catalog icon. Best-effort. */
+  async deleteCatalogIcon(storagePath: string): Promise<void> {
+    const { error } = await this.supabaseClient.storage.from(CATALOG_ICONS_BUCKET).remove([storagePath])
+    if (error) this.logger.warn(`Catalog icon delete failed [${storagePath}]: ${error.message}`)
   }
 
   // ── Legacy compat (kept for existing callers during transition) ───────────

@@ -13,7 +13,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { useQueryClient } from '@tanstack/react-query'
-import { useGetDeals, useGetCompanies, useGetUsers } from '@/lib/hooks/queries'
+import { useGetDeals, useGetCompanies, useGetUsers, useGetInternalProducts } from '@/lib/hooks/queries'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { cn, formatPeso, formatServiceType, getAdvanceTargets, getMoveBackTargets, toPascalCase } from '@/lib/utils'
 import { formatDealName } from '@/lib/format-deal-name'
@@ -679,7 +679,20 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   const { data: deals = [], isLoading: dealsLoading } = useGetDeals()
   const { data: companies = [], isLoading: companiesLoading } = useGetCompanies()
   const { data: users = [], isLoading: usersLoading } = useGetUsers()
+  const { data: catalog = [] } = useGetInternalProducts()
   const isLoading = dealsLoading || companiesLoading || usersLoading
+
+  // slug -> display name map for matching service tags by their friendly label
+  const catalogNameBySlug = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const c of catalog) if (c.slug) m.set(c.slug, c.name)
+    return m
+  }, [catalog])
+  const catalogNameById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const c of catalog) m.set(c.id, c.name)
+    return m
+  }, [catalog])
 
   const companyMap = useMemo(() => {
     const m = new Map<string, string>()
@@ -738,10 +751,15 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
       const q = search.toLowerCase()
       result = result.filter(d => {
         const amLabel = amOptions.find(o => o.id === d.assignedTo)?.label ?? ''
+        // Match against service-tag display names (slug → catalog row name)
+        const tagDisplay = (d.servicesTags ?? []).map(s => catalogNameBySlug.get(s) ?? s)
+        const productName = d.internalProductId ? (catalogNameById.get(d.internalProductId) ?? '') : ''
         return (
           (d.title ?? '').toLowerCase().includes(q) ||
           (d.stage ?? '').toLowerCase().includes(q) ||
           (d.servicesTags ?? []).some(s => s.toLowerCase().includes(q)) ||
+          tagDisplay.some(name => name.toLowerCase().includes(q)) ||
+          productName.toLowerCase().includes(q) ||
           amLabel.toLowerCase().includes(q) ||
           (companyMap.get(d.companyId) || '').toLowerCase().includes(q)
         )
@@ -751,7 +769,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
       result = result.filter(d => d.assignedTo === amFilter)
     }
     return result
-  }, [deals, search, amFilter, amOptions, companyMap])
+  }, [deals, search, amFilter, amOptions, companyMap, catalogNameBySlug, catalogNameById])
 
   // Mobile: further filter by stage when a pill is selected
   const mobileFilteredDeals = useMemo(() => {

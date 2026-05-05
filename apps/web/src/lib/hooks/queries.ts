@@ -282,12 +282,20 @@ export function useGetProposals(
 // ─── Internal Products ────────────────────────────────────────────────────────
 
 export function useGetInternalProducts(
-  activeOnly = false,
+  opts: { activeOnly?: boolean; type?: 'internal' | 'service' | 'reseller' } | boolean = false,
   options?: Partial<UseQueryOptions<ApiInternalProduct[]>>,
 ) {
+  // Backwards-compat: callers passing `true` => activeOnly
+  const normalized = typeof opts === 'boolean' ? { activeOnly: opts } : opts
+  const { activeOnly, type } = normalized
+  const params: Record<string, string> = {}
+  if (activeOnly) params.active = 'true'
+  if (type) params.type = type
   return useQuery<ApiInternalProduct[]>({
-    queryKey: activeOnly ? queryKeys.internalProducts.activeOnly : queryKeys.internalProducts.all,
-    queryFn: () => api.get<ApiInternalProduct[]>('/internal-products', activeOnly ? { active: true } : undefined),
+    queryKey: type
+      ? [...queryKeys.internalProducts.all, { type, activeOnly: !!activeOnly }] as const
+      : (activeOnly ? queryKeys.internalProducts.activeOnly : queryKeys.internalProducts.all),
+    queryFn: () => api.get<ApiInternalProduct[]>('/internal-products', Object.keys(params).length ? params : undefined),
     retry: false,
     ...options,
   })
