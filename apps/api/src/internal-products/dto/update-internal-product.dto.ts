@@ -1,4 +1,5 @@
-import { PartialType } from '@nestjs/mapped-types'
-import { CreateInternalProductDto } from './create-internal-product.dto'
-
-export class UpdateInternalProductDto extends PartialType(CreateInternalProductDto) {}
+export class UpdateInternalProductDto {
+  name?: string
+  industry?: string | null
+  isActive?: boolean
+}
