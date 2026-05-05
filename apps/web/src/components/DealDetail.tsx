@@ -9,6 +9,7 @@ import { useGetDeal, useGetCompany, useGetActivitiesByDeal, useGetDealNotesFlat,
 import { useUser } from '@/lib/hooks/use-user'
 import { EmptyState } from './EmptyState'
 import { Avatar } from './Avatar'
+import { UserOption } from './UserOption'
 import {
   Select,
   SelectContent,
@@ -2320,8 +2321,7 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                                   : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.06]'
                               )}
                             >
-                              <Avatar name={u.name || u.email} email={u.email ?? undefined} src={u.image ?? undefined} size={18} />
-                              <span className="truncate">{u.name || u.email}</span>
+                              <UserOption user={u} />
                               {u.id === deal.assignedTo && (
                                 <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="ml-auto shrink-0"><polyline points="20 6 9 17 4 12" /></svg>
                               )}
@@ -2356,7 +2356,9 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
               <SelectContent className="max-h-[280px]">
                 <SelectItem value="__none__" className="text-ssm text-slate-400">Unassigned</SelectItem>
                 {users.filter(u => u.role === 'SALES').map(u => (
-                  <SelectItem key={u.id} value={u.id} className="text-ssm">{u.name || u.email}</SelectItem>
+                  <SelectItem key={u.id} value={u.id} className="text-ssm">
+                    <UserOption user={u} />
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -2419,7 +2421,9 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                   {users
                     .filter(u => !(deal.builders ?? []).includes(u.id))
                     .map(u => (
-                      <SelectItem key={u.id} value={u.id} className="text-ssm">{u.name || u.email}</SelectItem>
+                      <SelectItem key={u.id} value={u.id} className="text-ssm">
+                        <UserOption user={u} />
+                      </SelectItem>
                     ))}
                 </SelectContent>
               </Select>

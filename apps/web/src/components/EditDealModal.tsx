@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Combobox } from '@/components/ui/combobox'
+import { UserOption } from '@/components/UserOption'
 import { useUpdateDeal, useAssignDealBrand, useCreateCompany } from '@/lib/hooks/mutations'
 import { useGetCompanies, useGetUsers, useGetInternalProducts } from '@/lib/hooks/queries'
 import { queryKeys } from '@/lib/query-keys'
@@ -410,7 +411,9 @@ export function EditDealModal({ deal, onClose }: Props) {
               <SelectContent className="max-h-[280px]">
                 <SelectItem value="__none__" className="text-ssm text-slate-400">Unassigned</SelectItem>
                 {salesUsers.map(u => (
-                  <SelectItem key={u.id} value={u.id} className="text-ssm">{u.name || u.email}</SelectItem>
+                  <SelectItem key={u.id} value={u.id} className="text-ssm">
+                    <UserOption user={u} />
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -450,7 +453,9 @@ export function EditDealModal({ deal, onClose }: Props) {
               </SelectTrigger>
               <SelectContent className="max-h-[280px]">
                 {allUsers.filter(u => !builders.includes(u.id)).map(u => (
-                  <SelectItem key={u.id} value={u.id} className="text-ssm">{u.name || u.email}</SelectItem>
+                  <SelectItem key={u.id} value={u.id} className="text-ssm">
+                    <UserOption user={u} />
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>

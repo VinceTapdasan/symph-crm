@@ -15,6 +15,7 @@ import {
 import { Combobox } from '@/components/ui/combobox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { UserOption } from '@/components/UserOption'
 import { useCreateDeal, useUploadDocumentFile, useCreateCompany } from '@/lib/hooks/mutations'
 import { useGetUsers, useGetInternalProducts } from '@/lib/hooks/queries'
 import { useUser } from '@/lib/hooks/use-user'
@@ -223,7 +224,7 @@ function BuilderMultiSelect({
                     onSelect={() => toggle(u.id)}
                   >
                     <Check className={cn('mr-2 h-3.5 w-3.5 shrink-0', isSelected ? 'opacity-100' : 'opacity-0')} />
-                    <span className="truncate">{u.name || u.email}</span>
+                    <UserOption user={u} />
                   </CommandItem>
                 )
               })}
@@ -416,7 +417,9 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
                 </SelectTrigger>
                 <SelectContent className="max-h-[280px]">
                   {salesUsers.map(u => (
-                    <SelectItem key={u.id} value={u.id} className="text-ssm">{u.name}</SelectItem>
+                    <SelectItem key={u.id} value={u.id} className="text-ssm">
+                      <UserOption user={u} />
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
