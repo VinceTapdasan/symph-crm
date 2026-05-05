@@ -101,7 +101,7 @@ function DealNotesFlat({
 
   if (isLoading) {
     return (
-      <div className="ml-[22px] border-l border-black/[.12] dark:border-white/[.15] py-1">
+      <div className="ml-[22px] border-l border-black/[.22] dark:border-white/[.28] py-1">
         <div className="flex items-center gap-2 px-2 py-1 pl-8">
           <div className="w-3 h-3 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
           <span className="text-[10px] text-slate-400">Loading...</span>
@@ -112,14 +112,14 @@ function DealNotesFlat({
 
   if (noteRows.length === 0 && resourceDocs.length === 0) {
     return (
-      <div className="ml-[22px] border-l border-black/[.12] dark:border-white/[.15] py-1">
+      <div className="ml-[22px] border-l border-black/[.22] dark:border-white/[.28] py-1">
         <div className="pl-8 pr-2 py-1 text-[10px] text-slate-400 italic">No notes yet</div>
       </div>
     )
   }
 
   return (
-    <div className="ml-[22px] border-l border-black/[.12] dark:border-white/[.15]">
+    <div className="ml-[22px] border-l border-black/[.22] dark:border-white/[.28]">
       {noteRows.map((row) => {
         if (row.kind === 'log') {
           const isActive = isSelectedDeal && activeCat === 'log'
@@ -431,7 +431,7 @@ export function WikiSidebar({
                     >
                       <button
                         onClick={e => { e.stopPropagation(); toggleExpandBrand(id) }}
-                        className="w-4 h-4 flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 shrink-0 transition-colors"
+                        className="w-4 h-4 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 shrink-0 transition-colors"
                       >
                         <svg
                           width={10} height={10} viewBox="0 0 24 24"
@@ -465,7 +465,7 @@ export function WikiSidebar({
 
                     {/* Deals — click toggles tree, no nav */}
                     {isBrandOpen && groupDeals.length > 0 && (
-                      <div className="ml-[22px] border-l border-black/[.12] dark:border-white/[.15]">
+                      <div className="ml-[22px] border-l border-black/[.22] dark:border-white/[.28]">
                         {groupDeals
                           .slice()
                           .sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''))
@@ -487,7 +487,7 @@ export function WikiSidebar({
                                 >
                                   <button
                                     onClick={e => { e.stopPropagation(); toggleExpandDeal(deal.id) }}
-                                    className="w-3 h-3 flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 shrink-0 transition-colors"
+                                    className="w-3 h-3 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 shrink-0 transition-colors"
                                   >
                                     <svg
                                       width={8} height={8} viewBox="0 0 24 24"
