@@ -8,7 +8,7 @@ import { cn, getInitials, getBrandColor, formatDealValue, formatServiceType, tot
 import { STAGE_DISPLAY, STAGE_COLORS, STAGE_LABELS, CLOSED_STAGE_IDS } from '@/lib/constants'
 import type { ApiCompanyDetail, ApiDeal } from '@/lib/types'
 import type { ColumnDef } from '@tanstack/react-table'
-import { DataTable, SortableHeader } from './ui/data-table'
+import { DataTable, SortableHeader, DataTableSkeleton } from './ui/data-table'
 import { Avatar } from './Avatar'
 import { EmptyState } from './EmptyState'
 import { CreateBrandModal } from './CreateBrandModal'
@@ -842,11 +842,8 @@ export function Deals({ onOpenDeal }: DealsProps) {
 
         {/* Loading */}
         {isLoading && (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-6 h-6 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-              <p className="text-xs text-slate-400">Loading deals…</p>
-            </div>
+          <div className="flex-1 bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+            <DataTableSkeleton />
           </div>
         )}
 

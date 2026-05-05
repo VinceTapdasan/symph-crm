@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useGetAuditLogs, useGetUsers } from '@/lib/hooks/queries'
 import { type ColumnDef } from '@tanstack/react-table'
-import { DataTable, SortableHeader } from './ui/data-table'
+import { DataTable, SortableHeader, DataTableSkeleton } from './ui/data-table'
 import { Avatar } from './Avatar'
 import { Search, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import {
@@ -250,9 +250,7 @@ export function AuditLogs() {
       {/* DataTable */}
       <div className="flex-1 overflow-y-auto bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
         {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="w-6 h-6 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-          </div>
+          <DataTableSkeleton />
         ) : (
           <DataTable
             columns={columns}

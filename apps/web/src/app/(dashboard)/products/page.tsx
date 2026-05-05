@@ -9,10 +9,9 @@ import { useCreateInternalProduct, useUpdateInternalProduct, useDeleteInternalPr
 import { queryKeys } from '@/lib/query-keys'
 import { cn } from '@/lib/utils'
 import { INDUSTRY_OPTIONS } from '@/lib/constants'
-import { DataTable, SortableHeader } from '@/components/ui/data-table'
+import { DataTable, SortableHeader, DataTableSkeleton } from '@/components/ui/data-table'
 import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useEscapeKey } from '@/lib/hooks/use-escape-key'
 import type { ApiInternalProduct } from '@/lib/types'
 
@@ -139,7 +138,7 @@ export default function ProductsPage() {
 
       <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-md shadow-[var(--shadow-card)]">
         {isLoading ? (
-          <ProductsTableSkeleton />
+          <DataTableSkeleton />
         ) : (
           <DataTable
             columns={columns}
@@ -168,18 +167,6 @@ export default function ProductsPage() {
           onConfirm={() => deleteProduct.mutate(deleting.id)}
         />
       )}
-    </div>
-  )
-}
-
-// ─── Skeleton loader — Supabase-style: a few horizontal bars, no table chrome ─
-
-function ProductsTableSkeleton() {
-  return (
-    <div className="p-4 space-y-2.5">
-      <Skeleton className="h-9 w-full" />
-      <Skeleton className="h-9 w-[88%]" />
-      <Skeleton className="h-9 w-[55%]" />
     </div>
   )
 }

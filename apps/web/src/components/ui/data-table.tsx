@@ -12,8 +12,26 @@ import {
 } from '@tanstack/react-table'
 import { useState } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table'
+import { Skeleton } from './skeleton'
 import { cn } from '@/lib/utils'
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
+
+// ── DataTable skeleton ──────────────────────────────────────────────────────
+//
+// Use this anywhere a DataTable would render but data is still loading.
+// Three horizontal bars at descending widths — Supabase-style. Single render,
+// no staircase, no layout shift with the real table because it's rendered in
+// the parent surface, not inside the table itself.
+
+export function DataTableSkeleton({ className }: { className?: string }) {
+  return (
+    <div className={cn('p-4 space-y-2.5', className)}>
+      <Skeleton className="h-9 w-full" />
+      <Skeleton className="h-9 w-[88%]" />
+      <Skeleton className="h-9 w-[55%]" />
+    </div>
+  )
+}
 
 // ── Sort header helper ──────────────────────────────────────────────────────
 
