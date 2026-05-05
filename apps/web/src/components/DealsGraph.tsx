@@ -71,6 +71,8 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
   const companiesRef = useRef(companies)
   const onOpenDealRef = useRef(onOpenDeal)
   const onOpenBrandRef = useRef(onOpenBrand)
+  // Adjacency map for hover dimming (rebuilt with graph)
+  const adjacencyRef = useRef<Map<string, Set<string>>>(new Map())
   const [tooltip, setTooltip] = useState<Tooltip>(null)
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
 
@@ -192,6 +194,57 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
 
     if (nodes.length === 0) return
 
+    // Build adjacency map for hover dimming
+    const adjacency = new Map<string, Set<string>>()
+    for (const node of nodes) adjacency.set(node.id, new Set())
+    for (const link of links) {
+      const src = typeof link.source === 'string' ? link.source : (link.source as GraphNode).id
+      const tgt = typeof link.target === 'string' ? link.target : (link.target as GraphNode).id
+      adjacency.get(src)?.add(tgt)
+      adjacency.get(tgt)?.add(src)
+    }
+    adjacencyRef.current = adjacency
+
+    // applyHL — dims unrelated nodes/edges for the given active node id.
+    // Pass null to restore full opacity. Hover-only — no click focus state.
+    function applyHL(activeId: string | null, fast = false) {
+      const svgSel = d3.select(svgRef.current!)
+      const nodesGroup = svgSel.select<SVGGElement>('g.root g.nodes')
+      const linksGroup = svgSel.select('g.root g.links')
+      if (nodesGroup.empty()) return
+
+      const dur = fast ? 80 : 160
+
+      if (!activeId) {
+        nodesGroup.selectAll<SVGGElement, GraphNode>('g')
+          .transition().duration(dur).attr('opacity', 1)
+        linksGroup.selectAll<SVGLineElement, GraphLink>('line')
+          .transition().duration(dur)
+          .attr('stroke', 'rgba(255,255,255,0.12)')
+          .attr('stroke-width', 0.5)
+        return
+      }
+
+      const neighbors = adjacencyRef.current.get(activeId) ?? new Set<string>()
+
+      nodesGroup.selectAll<SVGGElement, GraphNode>('g')
+        .transition().duration(dur)
+        .attr('opacity', d => d.id === activeId || neighbors.has(d.id) ? 1 : 0.22)
+
+      linksGroup.selectAll<SVGLineElement, GraphLink>('line')
+        .transition().duration(dur)
+        .attr('stroke', d => {
+          const src = (d.source as GraphNode).id
+          const tgt = (d.target as GraphNode).id
+          return src === activeId || tgt === activeId ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.12)'
+        })
+        .attr('stroke-width', d => {
+          const src = (d.source as GraphNode).id
+          const tgt = (d.target as GraphNode).id
+          return src === activeId || tgt === activeId ? 1 : 0.5
+        })
+    }
+
     svg.attr('width', W).attr('height', H)
 
     const root = svg.append('g').attr('class', 'root')
@@ -277,11 +330,26 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
     nodeSel
       .on('mouseenter', (event: MouseEvent, d) => {
         setTooltip({ x: event.clientX, y: event.clientY, node: d })
+        applyHL(d.id, true)
+        // Slight grow on hover
+        d3.select(event.currentTarget as SVGGElement)
+          .select('circle')
+          .transition().duration(80)
+          .attr('r', d.r * 1.35)
+          .attr('stroke-width', d.kind === 'brand' ? 8 : 4)
       })
       .on('mousemove', (event: MouseEvent, d) => {
         setTooltip({ x: event.clientX, y: event.clientY, node: d })
       })
-      .on('mouseleave', () => setTooltip(null))
+      .on('mouseleave', (event: MouseEvent, d) => {
+        setTooltip(null)
+        d3.select(event.currentTarget as SVGGElement)
+          .select('circle')
+          .transition().duration(120)
+          .attr('r', d.r)
+          .attr('stroke-width', d.kind === 'brand' ? 6 : 3)
+        applyHL(null, false)
+      })
 
     nodeSel.on('click', (_event, d) => {
       if (d.kind === 'deal' && d.dealId) {
