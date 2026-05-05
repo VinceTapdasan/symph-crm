@@ -23,8 +23,9 @@ export type ApiDeal = {
   builders: string[] | null
   /** Internal product reference (set when servicesTags includes 'internal_products') */
   internalProductId: string | null
+  /** Internal product name (joined in by deals.service findAll/findOne) */
+  internalProductName: string | null
   lastActivityAt: string | null
-  productId: string | null
   tierId: string | null
   closedAt: string | null
   closedReason: string | null
@@ -124,7 +125,7 @@ export type ApiDocument = {
 
 // ── Products & Tiers ─────────────────────────────────────────────────────────
 
-export type ApiProduct = { id: string; name: string; slug: string }
+export type ApiProduct = { id: string; name: string; industry?: string | null; isActive?: boolean }
 export type ApiTier = { id: string; name: string; slug: string }
 
 // ── Pipeline Summary ─────────────────────────────────────────────────────────

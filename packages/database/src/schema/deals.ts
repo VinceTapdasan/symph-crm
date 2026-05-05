@@ -1,6 +1,5 @@
 import { pgTable, uuid, text, numeric, integer, date, boolean, timestamp } from 'drizzle-orm/pg-core'
 import { companies } from './companies'
-import { products } from './products'
 import { tiers } from './products'
 import { internalProducts } from './internal-products'
 import { users } from './users'
@@ -10,7 +9,7 @@ import { pipelineStages, amRoster } from './pipeline'
 export const deals = pgTable('deals', {
   id: uuid('id').defaultRandom().primaryKey(),
   companyId: uuid('company_id').references(() => companies.id),
-  productId: uuid('product_id').references(() => products.id),
+  internalProductId: uuid('internal_product_id').references(() => internalProducts.id),
   tierId: uuid('tier_id').references(() => tiers.id),
   title: text('title').notNull(),
 
@@ -36,9 +35,6 @@ export const deals = pgTable('deals', {
 
   // Build assignment — FK to users (legacy single-builder field)
   buildAssignedTo: text('build_assigned_to').references(() => users.id),
-
-  // Internal product reference — populated when servicesTags includes 'internal_products'
-  internalProductId: uuid('internal_product_id').references(() => internalProducts.id),
 
   outreachCategory: text('outreach_category', { enum: ['inbound', 'outbound'] }),
   dateCaptured: timestamp('date_captured', { withTimezone: true }).defaultNow(),

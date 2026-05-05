@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { eq, desc, and, ilike, gte, lte, inArray, isNull, count, sql } from 'drizzle-orm'
-import { deals, documents, users, amRoster, pipelineStages } from '@symph-crm/database'
+import { deals, documents, users, amRoster, pipelineStages, internalProducts } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
 import { AuditLogsService } from '../audit-logs/audit-logs.service'
@@ -59,8 +59,10 @@ export class DealsService {
 
     const dealIds = rawDeals.map(d => d.id)
 
-    // Batch-fetch document counts, user names, and stage slugs in parallel
-    const [docCounts, userRows, stageMap] = await Promise.all([
+    // Batch-fetch document counts, user names, stage slugs, and internal product names
+    const productIds = [...new Set(rawDeals.map(d => d.internalProductId).filter((id): id is string => !!id))]
+
+    const [docCounts, userRows, stageMap, productRows] = await Promise.all([
       this.db
         .select({ dealId: documents.dealId, cnt: count() })
         .from(documents)
@@ -81,10 +83,17 @@ export class DealsService {
         this.db,
         [...new Set(rawDeals.map(d => d.stageId).filter((id): id is string => !!id))],
       ),
+
+      productIds.length > 0
+        ? this.db.select({ id: internalProducts.id, name: internalProducts.name })
+            .from(internalProducts)
+            .where(inArray(internalProducts.id, productIds as [string, ...string[]]))
+        : Promise.resolve([]),
     ])
 
     const docCountMap = new Map(docCounts.map(r => [r.dealId, r.cnt]))
     const userNameMap = new Map(userRows.map(u => [u.id, u.name]))
+    const productNameMap = new Map(productRows.map(p => [p.id, p.name]))
 
     return rawDeals.map(d => {
       const stageMeta = d.stageId ? stageMap.get(d.stageId) : undefined
@@ -96,6 +105,7 @@ export class DealsService {
         stageColor: stageMeta?.color ?? null,
         documentCount: docCountMap.get(d.id) ?? 0,
         createdByName: d.createdBy ? (userNameMap.get(d.createdBy) ?? null) : null,
+        internalProductName: d.internalProductId ? (productNameMap.get(d.internalProductId) ?? null) : null,
       }
     })
   }
@@ -111,16 +121,22 @@ export class DealsService {
   async findOne(id: string) {
     const [deal] = await this.db.select().from(deals).where(eq(deals.id, id))
     if (!deal) return undefined
-    const stageMap = await resolveStages(
-      this.db,
-      deal.stageId ? [deal.stageId] : [],
-    )
+    const [stageMap, productRows] = await Promise.all([
+      resolveStages(this.db, deal.stageId ? [deal.stageId] : []),
+      deal.internalProductId
+        ? this.db.select({ id: internalProducts.id, name: internalProducts.name })
+            .from(internalProducts)
+            .where(eq(internalProducts.id, deal.internalProductId))
+            .limit(1)
+        : Promise.resolve([]),
+    ])
     const stageMeta = deal.stageId ? stageMap.get(deal.stageId) : undefined
     return {
       ...deal,
       stage: stageMeta?.slug ?? null,
       stageLabel: stageMeta?.label ?? null,
       stageColor: stageMeta?.color ?? null,
+      internalProductName: productRows[0]?.name ?? null,
     }
   }
 
@@ -167,13 +183,12 @@ export class DealsService {
       stage?: string | null
       stageId?: string | null
       pricingModel?: unknown
-      productId?: unknown
       tierId?: unknown
     },
     performedBy?: string,
   ) {
     // Strip fields that no longer exist in the schema
-    const { stage, pricingModel, productId, tierId, ...cleanData } = data as any
+    const { stage, pricingModel, tierId, ...cleanData } = data as any
 
     // Resolve stage slug → stageId UUID if a slug was passed
     let stageId: string | null = cleanData.stageId ?? null
