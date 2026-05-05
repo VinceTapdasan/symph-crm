@@ -355,7 +355,7 @@ function DealCard({
 
       {/* Services tags */}
       {services.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-2.5">
+        <div className="flex flex-wrap gap-1.5 mb-2.5 items-center">
           {services.slice(0, 3).map(s => (
             <span
               key={s}
@@ -365,6 +365,11 @@ function DealCard({
               {formatServiceType(s)}
             </span>
           ))}
+          {services.includes('internal_products') && deal.internalProductName && (
+            <span className="text-atom font-semibold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-500 dark:text-violet-400">
+              {deal.internalProductName}
+            </span>
+          )}
           {services.length > 3 && (
             <span className="text-atom text-slate-400">+{services.length - 3}</span>
           )}
@@ -1347,7 +1352,7 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
 
                     {/* Service tag */}
                     {services.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-2.5">
+                      <div className="flex flex-wrap gap-1.5 mb-2.5 items-center">
                         {services.slice(0, 2).map(s => (
                           <span
                             key={s}
@@ -1357,6 +1362,11 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
                             {formatServiceType(s)}
                           </span>
                         ))}
+                        {services.includes('internal_products') && d.internalProductName && (
+                          <span className="text-atom font-semibold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-500 dark:text-violet-400">
+                            {d.internalProductName}
+                          </span>
+                        )}
                         {services.length > 2 && (
                           <span className="text-atom text-slate-400">+{services.length - 2}</span>
                         )}

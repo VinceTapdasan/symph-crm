@@ -153,12 +153,17 @@ function BrandDetailModal({
                       {formatDealTitle(deal.title)}
                     </div>
                     {tags.length > 0 && (
-                      <div className="flex gap-1 mt-0.5 flex-wrap">
+                      <div className="flex gap-1 mt-0.5 flex-wrap items-center">
                         {tags.slice(0, 3).map(s => (
                           <span key={s} className="text-atom font-medium px-1.5 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[.06] text-slate-500 whitespace-nowrap">
                             {formatServiceType(s)}
                           </span>
                         ))}
+                        {tags.includes('internal_products') && deal.internalProductName && (
+                          <span className="text-atom font-semibold px-1.5 py-0.5 rounded-lg bg-violet-500/10 text-violet-500 dark:text-violet-400 whitespace-nowrap">
+                            {deal.internalProductName}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>

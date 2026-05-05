@@ -19,6 +19,7 @@ export type ApiDeal = {
   assignedTo: string | null
   lastActivityAt: string | null
   internalProductId: string | null
+  internalProductName: string | null
   tierId: string | null
   closedAt: string | null
   closedReason: string | null
@@ -106,7 +107,7 @@ export type ApiDocument = {
 
 // ── Products & Tiers ─────────────────────────────────────────────────────────
 
-export type ApiProduct = { id: string; name: string; slug: string }
+export type ApiProduct = { id: string; name: string; industry?: string | null; isActive?: boolean }
 export type ApiTier = { id: string; name: string; slug: string }
 
 // ── Pipeline Summary ─────────────────────────────────────────────────────────
