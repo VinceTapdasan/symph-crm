@@ -77,7 +77,7 @@ function DealNameInput({ value, onChange }: { value: string; onChange: (v: strin
           required
         />
         {showSuggestions && (
-          <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg border border-black/[.08] dark:border-white/[.1] bg-white dark:bg-[#1e1e21] shadow-lg py-1 max-h-[200px] overflow-y-auto">
+          <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg border border-black/[.08] dark:border-white/[.1] bg-white dark:bg-[#1e1e21] shadow-lg py-1 max-h-[280px] overflow-y-auto">
             {suggestions.map((s, i) => (
               <button
                 key={`${s.acronym}-${s.category}-${i}`}
@@ -146,9 +146,12 @@ function BrandInput({ companies, inputValue, selectedId, onInputChange, onSelect
   const [open, setOpen] = useState(false)
 
   const suggestions = useMemo(() => {
+    const sorted = [...companies].sort((a, b) =>
+      (a.name ?? '').localeCompare(b.name ?? ''),
+    )
     const q = inputValue.trim().toLowerCase()
-    if (!q) return companies.slice(0, 8)
-    return companies.filter(c => c.name.toLowerCase().includes(q)).slice(0, 8)
+    if (!q) return sorted
+    return sorted.filter(c => c.name.toLowerCase().includes(q))
   }, [inputValue, companies])
 
   function handleSelect(c: ApiCompanyDetail) {
@@ -187,7 +190,7 @@ function BrandInput({ companies, inputValue, selectedId, onInputChange, onSelect
       </div>
 
       {open && suggestions.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg border border-black/[.08] dark:border-white/[.1] bg-white dark:bg-[#1e1e21] shadow-lg py-1 max-h-[200px] overflow-y-auto">
+        <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg border border-black/[.08] dark:border-white/[.1] bg-white dark:bg-[#1e1e21] shadow-lg py-1 max-h-[280px] overflow-y-auto">
           {suggestions.map(c => (
             <button
               key={c.id}

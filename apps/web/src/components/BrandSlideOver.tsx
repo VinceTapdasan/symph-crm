@@ -96,24 +96,30 @@ function AssignBrandSelect({
     },
   })
 
-  function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const companyId = e.target.value || null
+  const sorted = useMemo(
+    () => [...companies].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '')),
+    [companies],
+  )
+
+  function handleChange(companyId: string) {
     if (companyId) assign.mutate({ id: dealId, companyId })
   }
 
   return (
-    <select
-      defaultValue=""
-      onChange={handleChange}
-      disabled={assign.isPending}
-      onClick={e => e.stopPropagation()}
-      className="text-xxs border border-black/[.08] dark:border-white/[.08] rounded-md px-2 py-0.5 bg-white dark:bg-[#2a2d31] text-slate-600 dark:text-slate-300 cursor-pointer hover:border-primary/40 transition-colors disabled:opacity-50 max-w-[130px]"
-    >
-      <option value="" disabled>Assign brand…</option>
-      {companies.map(c => (
-        <option key={c.id} value={c.id}>{c.name}</option>
-      ))}
-    </select>
+    <div onClick={e => e.stopPropagation()}>
+      <Select onValueChange={handleChange} disabled={assign.isPending}>
+        <SelectTrigger className="h-7 w-[180px] text-xxs">
+          <SelectValue placeholder="Assign brand…" />
+        </SelectTrigger>
+        <SelectContent className="max-h-[280px]">
+          {sorted.map(c => (
+            <SelectItem key={c.id} value={c.id} className="text-xxs">
+              {c.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   )
 }
 

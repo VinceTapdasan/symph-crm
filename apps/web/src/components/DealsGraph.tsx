@@ -109,7 +109,6 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
       ) {
         matched.add(`d-${deal.id}`)
         if (deal.companyId) matched.add(`c-${deal.companyId}`)
-        else matched.add('c-unassigned')
       }
     }
 
@@ -155,9 +154,6 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
     const nodes: GraphNode[] = []
     const links: GraphLink[] = []
 
-    const dealsWithCompany = deals.filter(d => d.companyId && companyMap.has(d.companyId))
-    const dealsWithoutCompany = deals.filter(d => !d.companyId || !companyMap.has(d.companyId))
-
     for (const c of companies) {
       nodes.push({
         id: `c-${c.id}`,
@@ -170,18 +166,10 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
       })
     }
 
-    if (dealsWithoutCompany.length > 0) {
-      nodes.push({
-        id: 'c-unassigned',
-        kind: 'brand',
-        label: 'No Brand',
-        sublabel: `${dealsWithoutCompany.length} deal${dealsWithoutCompany.length !== 1 ? 's' : ''}`,
-        color: '#475569',
-        r: 6,
-      })
-    }
-
-    for (const deal of dealsWithCompany) {
+    // Branded deals link to their brand. Unbranded deals render as standalone
+    // nodes — no "No Brand" cluster, no link.
+    for (const deal of deals) {
+      const hasBrand = !!(deal.companyId && companyMap.has(deal.companyId))
       nodes.push({
         id: `d-${deal.id}`,
         kind: 'deal',
@@ -193,30 +181,13 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
         stage: deal.stage,
         value: deal.value,
       })
-      links.push({
-        id: `e-${deal.id}`,
-        source: `c-${deal.companyId}`,
-        target: `d-${deal.id}`,
-      })
-    }
-
-    for (const deal of dealsWithoutCompany) {
-      nodes.push({
-        id: `d-${deal.id}`,
-        kind: 'deal',
-        label: deal.title ?? '(untitled)',
-        sublabel: STAGE_LABEL[deal.stage] || deal.stage,
-        color: DEAL_COLOR,
-        r: 4,
-        dealId: deal.id,
-        stage: deal.stage,
-        value: deal.value,
-      })
-      links.push({
-        id: `e-${deal.id}`,
-        source: 'c-unassigned',
-        target: `d-${deal.id}`,
-      })
+      if (hasBrand) {
+        links.push({
+          id: `e-${deal.id}`,
+          source: `c-${deal.companyId}`,
+          target: `d-${deal.id}`,
+        })
+      }
     }
 
     if (nodes.length === 0) return
@@ -388,7 +359,6 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
       ) {
         ids.add(`d-${deal.id}`)
         if (deal.companyId) ids.add(`c-${deal.companyId}`)
-        else ids.add('c-unassigned')
       }
     }
 
