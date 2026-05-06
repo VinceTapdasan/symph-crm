@@ -2,11 +2,14 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
+import { useQueries } from '@tanstack/react-query'
 import { cn, getBrandColor, getInitials } from '@/lib/utils'
 import { STAGE_COLORS } from '@/lib/constants'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useGetDealNotes, useGetDocumentsByDeal } from '@/lib/hooks/queries'
-import type { ApiCompanyDetail, ApiDeal, DealNoteFile } from '@/lib/types'
+import { queryKeys } from '@/lib/query-keys'
+import { api } from '@/lib/api'
+import type { ApiCompanyDetail, ApiDeal, ApiDocument, DealNoteFile, DealNotesResponse } from '@/lib/types'
 
 export type WikiView = 'list' | 'graph'
 
@@ -80,22 +83,39 @@ function DealNotesFlat({
   activeCat,
   activeFile,
   activeDocId,
+  searchQuery = '',
 }: {
   dealId: string
   isSelectedDeal: boolean
   activeCat: string | null
   activeFile: string | null
   activeDocId: string | null
+  /** When non-empty, filter notes + resources to those matching the query */
+  searchQuery?: string
 }) {
   const router = useRouter()
   const { data: notesData, isLoading: loadingNotes } = useGetDealNotes(dealId)
   const { data: docs = [], isLoading: loadingDocs } = useGetDocumentsByDeal(dealId)
 
-  const noteRows = useMemo(() => flattenNotes(notesData), [notesData])
-  const resourceDocs = useMemo(
-    () => docs.filter(d => d.storagePath?.includes('/resources/')),
-    [docs],
-  )
+  const noteRows = useMemo(() => {
+    const all = flattenNotes(notesData)
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return all
+    return all.filter(r => {
+      if (r.kind === 'log') return 'log'.includes(q)
+      return r.title.toLowerCase().includes(q) || r.filename.toLowerCase().includes(q)
+    })
+  }, [notesData, searchQuery])
+
+  const resourceDocs = useMemo(() => {
+    const all = docs.filter(d => d.storagePath?.includes('/resources/'))
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return all
+    return all.filter(r =>
+      (r.title ?? '').toLowerCase().includes(q) ||
+      (r.storagePath?.split('/').pop() ?? '').toLowerCase().includes(q),
+    )
+  }, [docs, searchQuery])
 
   const isLoading = loadingNotes || loadingDocs
 
@@ -244,9 +264,73 @@ export function WikiSidebar({
   const activeFile = searchParams?.get('file') ?? null
   const activeDocId = searchParams?.get('docId') ?? null
 
-  const groups = useMemo(() => {
-    const q = search.trim().toLowerCase()
+  const searchQ = search.trim().toLowerCase()
+  const searchActive = searchQ.length > 0
 
+  // ── Cross-tree search index ─────────────────────────────────────────────
+  // When the user types in the filter, we fetch every deal's notes + docs
+  // (idempotent — React Query caches and reuses these per-deal queries used
+  // by DealNotesFlat). We then build a Set<dealId> of deals whose own title
+  // OR notes/resources match the query, plus a Set<brandId> of brands whose
+  // own name/industry OR any descendant matches.
+
+  const noteQueries = useQueries({
+    queries: deals.map(d => ({
+      queryKey: queryKeys.deals.notes(d.id),
+      queryFn: () => api.get<DealNotesResponse>(`/deals/${d.id}/notes`),
+      enabled: searchActive,
+      staleTime: 60_000,
+    })),
+  })
+  const docQueries = useQueries({
+    queries: deals.map(d => ({
+      queryKey: queryKeys.documents.byDeal(d.id),
+      queryFn: () => api.get<ApiDocument[]>('/documents', { dealId: d.id }),
+      enabled: searchActive,
+      staleTime: 60_000,
+    })),
+  })
+
+  const matchedDealIds = useMemo(() => {
+    if (!searchActive) return null
+    const matched = new Set<string>()
+    deals.forEach((deal, i) => {
+      // Deal title hit
+      if ((deal.title ?? '').toLowerCase().includes(searchQ)) {
+        matched.add(deal.id)
+        return
+      }
+      // Notes hit (any category, any title or filename)
+      const notes = noteQueries[i]?.data
+      if (notes) {
+        for (const cat of NOTE_CATEGORY_ORDER) {
+          const files = (notes.categories[cat] ?? []) as DealNoteFile[]
+          if (files.some(f =>
+            extractNoteTitle(f.filename, f.content).toLowerCase().includes(searchQ) ||
+            f.filename.toLowerCase().includes(searchQ),
+          )) {
+            matched.add(deal.id)
+            return
+          }
+        }
+      }
+      // Resources hit (filename or title)
+      const docs = docQueries[i]?.data
+      if (docs) {
+        const resources = docs.filter(d => d.storagePath?.includes('/resources/'))
+        if (resources.some(r =>
+          (r.title ?? '').toLowerCase().includes(searchQ) ||
+          (r.storagePath?.split('/').pop() ?? '').toLowerCase().includes(searchQ),
+        )) {
+          matched.add(deal.id)
+          return
+        }
+      }
+    })
+    return matched
+  }, [deals, noteQueries, docQueries, searchActive, searchQ])
+
+  const groups = useMemo(() => {
     const map = new Map<string, ApiDeal[]>()
     for (const deal of deals) {
       const key = deal.companyId ?? '__none__'
@@ -264,30 +348,45 @@ export function WikiSidebar({
       (a.name ?? '').localeCompare(b.name ?? '')
     )) {
       const companyDeals = map.get(company.id) ?? []
-      const matchesCompany = !q || (company.name ?? '').toLowerCase().includes(q) ||
-        (company.industry ?? '').toLowerCase().includes(q)
-      const matchingDeals = companyDeals.filter(
-        d => !q || (d.title ?? '').toLowerCase().includes(q)
-      )
-
-      if (!q || matchesCompany || matchingDeals.length > 0) {
+      if (!searchActive) {
+        result.push({ company, id: company.id, deals: companyDeals })
+        continue
+      }
+      const matchesCompany =
+        (company.name ?? '').toLowerCase().includes(searchQ) ||
+        (company.industry ?? '').toLowerCase().includes(searchQ)
+      const matchingDeals = companyDeals.filter(d => matchedDealIds?.has(d.id))
+      if (matchesCompany || matchingDeals.length > 0) {
         result.push({
           company,
           id: company.id,
+          // If the brand itself matched, show all its deals; otherwise only matching ones
           deals: matchesCompany ? companyDeals : matchingDeals,
         })
       }
     }
 
-    const orphans = (map.get('__none__') ?? []).filter(
-      d => !q || (d.title ?? '').toLowerCase().includes(q)
+    const orphans = (map.get('__none__') ?? []).filter(d =>
+      !searchActive ? true : matchedDealIds?.has(d.id),
     )
     if (orphans.length > 0) {
       result.push({ company: null, id: '__none__', deals: orphans })
     }
 
     return result
-  }, [companies, deals, search])
+  }, [companies, deals, searchActive, searchQ, matchedDealIds])
+
+  // While searching, force every visible brand + every visible deal open
+  // so matching notes/resources are immediately reachable.
+  const effectiveExpandedBrands = useMemo(() => {
+    if (!searchActive) return expandedBrands
+    return new Set(groups.map(g => g.id))
+  }, [searchActive, expandedBrands, groups])
+
+  const effectiveExpandedDeals = useMemo(() => {
+    if (!searchActive) return expandedDeals
+    return new Set(groups.flatMap(g => g.deals.map(d => d.id)))
+  }, [searchActive, expandedDeals, groups])
 
   // Auto-expand the brand and deal that match the URL so the open note is visible.
   // Triggered only by URL changes, not by tree clicks.
@@ -417,7 +516,7 @@ export function WikiSidebar({
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Filter..."
+                placeholder="Search brands, deals, notes, files..."
                 className="w-full h-7 pl-7 pr-3 text-xs rounded-md border border-black/[.08] dark:border-white/[.08] bg-slate-50 dark:bg-white/[.04] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-colors"
               />
             </div>
@@ -437,7 +536,7 @@ export function WikiSidebar({
             ) : (
               groups.map((group) => {
                 const { company, id, deals: groupDeals } = group
-                const isBrandOpen = expandedBrands.has(id)
+                const isBrandOpen = effectiveExpandedBrands.has(id)
                 const color = company ? getBrandColor(company.name) : '#64748b'
                 const isSelectedBrand = selectedCompanyId === id
                 const label = company?.name ?? 'No Brand'
@@ -498,7 +597,7 @@ export function WikiSidebar({
                           .map(deal => {
                             const stageColor = STAGE_COLORS[deal.stage] ?? '#94a3b8'
                             const isThisDealSelected = selectedDealId === deal.id
-                            const isDealExpanded = expandedDeals.has(deal.id)
+                            const isDealExpanded = effectiveExpandedDeals.has(deal.id)
 
                             return (
                               <div key={deal.id}>
@@ -545,6 +644,7 @@ export function WikiSidebar({
                                     activeCat={activeCat}
                                     activeFile={activeFile}
                                     activeDocId={activeDocId}
+                                    searchQuery={searchActive ? searchQ : ''}
                                   />
                                 )}
                               </div>
