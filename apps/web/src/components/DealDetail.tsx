@@ -440,6 +440,7 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
   const [editingContact, setEditingContact] = useState<ApiContact | null>(null)
   const [deletingContact, setDeletingContact] = useState<ApiContact | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [removingBuilderId, setRemovingBuilderId] = useState<string | null>(null)
   const [editingBrandColor, setEditingBrandColor] = useState(false)
   const [brandColorDraft, setBrandColorDraft] = useState('')
   const [editingProposalLink, setEditingProposalLink] = useState(false)
@@ -1083,6 +1084,54 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
           </div>
         </div>
       )}
+
+      {/* Remove builder confirm */}
+      {removingBuilderId && (() => {
+        const u = users.find(x => x.id === removingBuilderId)
+        const label = u?.name || u?.email || removingBuilderId
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+            onClick={() => setRemovingBuilderId(null)}
+          >
+            <div
+              className="w-full max-w-sm bg-white dark:bg-[#1e1e21] rounded-xl border border-black/[.06] dark:border-white/[.08] shadow-2xl p-4 animate-in zoom-in-95 fade-in-0 duration-300"
+              onClick={e => e.stopPropagation()}
+            >
+              <p className="text-sbase font-bold text-slate-900 dark:text-white mb-1">Remove builder?</p>
+              <p className="text-ssm text-slate-600 dark:text-slate-400 leading-relaxed">
+                Remove <span className="font-medium text-slate-700 dark:text-slate-200">{label}</span> from this deal&apos;s builders list.
+              </p>
+              <div className="flex gap-2.5 mt-4">
+                <button
+                  onClick={() => setRemovingBuilderId(null)}
+                  className="flex-1 h-8 rounded-lg text-xs font-semibold border border-black/[.08] dark:border-white/[.1] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[.04] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    const next = (deal.builders ?? []).filter(b => b !== removingBuilderId)
+                    updateDeal.mutate({ id: dealId, data: { builders: next } }, {
+                      onSettled: () => {
+                        queryClient.invalidateQueries({ queryKey: queryKeys.deals.detail(dealId) })
+                        queryClient.invalidateQueries({ queryKey: queryKeys.deals.all })
+                        setRemovingBuilderId(null)
+                      },
+                    })
+                  }}
+                  disabled={updateDeal.isPending}
+                  className="flex-1 h-8 rounded-lg text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 transition-colors"
+                >
+                  {updateDeal.isPending ? (
+                    <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin mx-auto" />
+                  ) : 'Remove'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Back */}
       <button
@@ -2465,44 +2514,50 @@ export function DealDetail({ dealId, backLabel = 'Back to Pipeline', onBack }: D
                     return (
                       <span
                         key={uid}
-                        className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded text-xxs font-medium bg-slate-100 dark:bg-white/[.06] text-slate-700 dark:text-slate-200"
+                        className="inline-flex items-center gap-1.5 pl-1 pr-1 py-0.5 rounded-full text-xxs font-medium bg-slate-100 dark:bg-white/[.06] text-slate-700 dark:text-slate-200"
                       >
-                        {u?.name || u?.email || uid}
-                        <button
-                          onClick={() => {
-                            const next = (deal.builders ?? []).filter(b => b !== uid)
-                            updateDeal.mutate({ id: dealId, data: { builders: next } }, {
-                              onSettled: () => {
-                                queryClient.invalidateQueries({ queryKey: queryKeys.deals.detail(dealId) })
-                                queryClient.invalidateQueries({ queryKey: queryKeys.deals.all })
-                              },
-                            })
-                          }}
-                          className="ml-0.5 rounded hover:bg-slate-200 dark:hover:bg-white/[.08] p-0.5"
-                          title="Remove"
-                        >
-                          <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                          </svg>
-                        </button>
+                        {u ? (
+                          <Avatar
+                            name={u.name ?? undefined}
+                            email={u.email ?? undefined}
+                            src={u.image ?? undefined}
+                            size={18}
+                          />
+                        ) : (
+                          <span className="w-[18px] h-[18px] rounded-full bg-slate-200 dark:bg-white/[.08]" />
+                        )}
+                        <span className="pr-1">{u?.name || u?.email || uid}</span>
+                        {isSales && (
+                          <button
+                            onClick={() => setRemovingBuilderId(uid)}
+                            className="rounded-full hover:bg-slate-200 dark:hover:bg-white/[.08] p-0.5 text-slate-400 hover:text-red-500 transition-colors"
+                            title="Remove builder"
+                          >
+                            <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+                              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                          </button>
+                        )}
                       </span>
                     )
                   })}
                 </div>
               )}
-              <BuilderPicker
-                users={users}
-                selected={deal.builders ?? []}
-                onAdd={(uid) => {
-                  const next = [...(deal.builders ?? []), uid]
-                  updateDeal.mutate({ id: dealId, data: { builders: next } }, {
-                    onSettled: () => {
-                      queryClient.invalidateQueries({ queryKey: queryKeys.deals.detail(dealId) })
-                      queryClient.invalidateQueries({ queryKey: queryKeys.deals.all })
-                    },
-                  })
-                }}
-              />
+              {isSales && (
+                <BuilderPicker
+                  users={users}
+                  selected={deal.builders ?? []}
+                  onAdd={(uid) => {
+                    const next = [...(deal.builders ?? []), uid]
+                    updateDeal.mutate({ id: dealId, data: { builders: next } }, {
+                      onSettled: () => {
+                        queryClient.invalidateQueries({ queryKey: queryKeys.deals.detail(dealId) })
+                        queryClient.invalidateQueries({ queryKey: queryKeys.deals.all })
+                      },
+                    })
+                  }}
+                />
+              )}
             </div>
           </SidebarSection>
 
