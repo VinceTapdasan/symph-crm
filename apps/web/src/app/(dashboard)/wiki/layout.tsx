@@ -262,11 +262,9 @@ function WikiLayoutInner({ children }: { children: React.ReactNode }) {
                 deals={deals}
                 searchQuery={graphSearch}
                 onOpenDeal={(id) => {
-                  const deal = deals.find(d => d.id === id)
-                  if (deal) {
-                    router.push(`/wiki/deal/${deal.id}`)
-                    handleViewChange('list')
-                  }
+                  // Jump straight to the full deal detail page — not the wiki
+                  // brand-fallback view, which only shows the brand summary.
+                  router.push(`/deals/${id}?from=wiki`)
                 }}
                 onOpenBrand={(companyId) => {
                   const company = companyMap.get(companyId)
