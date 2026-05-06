@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useCallback, useEffect, Suspense } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useGetCompanies, useGetDeals } from '@/lib/hooks/queries'
 import { WikiSidebar } from '@/components/WikiSidebar'
 import { DealsGraph } from '@/components/DealsGraph'
@@ -41,12 +41,16 @@ type MobilePane = 'sidebar' | 'content'
 function WikiLayoutInner({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   const { data: companies = [], isLoading: loadingCompanies } = useGetCompanies()
   const { data: deals = [], isLoading: loadingDeals } = useGetDeals()
 
+  // View is URL-driven: `?view=graph` shows graph; anything else (or absent)
+  // shows list. This makes browser back/forward preserve the view state.
+  const view: WikiView = searchParams?.get('view') === 'graph' ? 'graph' : 'list'
+
   const [mobilePane, setMobilePane] = useState<MobilePane>('sidebar')
-  const [view, setView] = useState<WikiView>('list')
   const { width: sidebarWidth, setWidth: setSidebarWidth } = useSidebarWidth()
   const [isDragging, setIsDragging] = useState(false)
   const dragRef = useRef<{ startX: number; startW: number } | null>(null)
@@ -111,15 +115,6 @@ function WikiLayoutInner({ children }: { children: React.ReactNode }) {
 
   const isLoading = loadingCompanies || loadingDeals
 
-  // When the URL navigates to a specific deal/brand page (e.g. via graph click),
-  // force list view so the content is visible. Toggling back to graph from the
-  // list view is unaffected because pathname doesn't change.
-  useEffect(() => {
-    if (/\/wiki\/(deal|brand)\//.test(pathname ?? '')) {
-      setView('list')
-    }
-  }, [pathname])
-
   const companyMap = useMemo(() => {
     const m = new Map<string, ApiCompanyDetail>()
     for (const c of companies) m.set(c.id, c)
@@ -172,8 +167,13 @@ function WikiLayoutInner({ children }: { children: React.ReactNode }) {
   }
 
   function handleViewChange(v: WikiView) {
-    setView(v)
     if (v === 'list') setGraphSearch('')
+    // Write the view into the URL so browser back/forward preserves it.
+    const sp = new URLSearchParams(searchParams?.toString() || '')
+    if (v === 'graph') sp.set('view', 'graph')
+    else sp.delete('view')
+    const qs = sp.toString()
+    router.push(`${pathname}${qs ? `?${qs}` : ''}`)
   }
 
   // Unified layout: sidebar always visible, content pane switches between list children and graph
@@ -277,12 +277,14 @@ function WikiLayoutInner({ children }: { children: React.ReactNode }) {
                     .filter(d => d.companyId === company.id)
                     .slice()
                     .sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''))
+                  // Navigate without ?view= so the user lands in list view
+                  // and the graph state is dropped from the URL.
                   if (brandDeals.length > 0) {
                     router.push(`/wiki/deal/${brandDeals[0].id}`)
                   } else {
                     router.push(`/wiki/brand/${company.id}`)
                   }
-                  handleViewChange('list')
+                  setGraphSearch('')
                 }}
               />
             </div>

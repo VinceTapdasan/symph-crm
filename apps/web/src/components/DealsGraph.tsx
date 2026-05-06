@@ -220,8 +220,8 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
           .transition().duration(dur).attr('opacity', 1)
         linksGroup.selectAll<SVGLineElement, GraphLink>('line')
           .transition().duration(dur)
-          .attr('stroke', 'rgba(255,255,255,0.12)')
-          .attr('stroke-width', 0.5)
+          .attr('stroke', 'rgba(255,255,255,0.42)')
+          .attr('stroke-width', 1)
         return
       }
 
@@ -236,12 +236,12 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
         .attr('stroke', d => {
           const src = (d.source as GraphNode).id
           const tgt = (d.target as GraphNode).id
-          return src === activeId || tgt === activeId ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.12)'
+          return src === activeId || tgt === activeId ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.18)'
         })
         .attr('stroke-width', d => {
           const src = (d.source as GraphNode).id
           const tgt = (d.target as GraphNode).id
-          return src === activeId || tgt === activeId ? 1 : 0.5
+          return src === activeId || tgt === activeId ? 1.6 : 1
         })
     }
 
@@ -325,7 +325,8 @@ export function DealsGraph({ companies, deals, onOpenDeal, onOpenBrand, searchQu
       .attr('font-weight', d => d.kind === 'brand' ? 500 : 400)
       .attr('fill', d => d.kind === 'brand' ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.55)')
       .attr('font-family', 'system-ui, sans-serif')
-      .style('pointer-events', 'none')
+      // No pointer-events: none — label is part of the click hit area for
+      // better UX. Click bubbles up to the parent <g>.
 
     nodeSel
       .on('mouseenter', (event: MouseEvent, d) => {
