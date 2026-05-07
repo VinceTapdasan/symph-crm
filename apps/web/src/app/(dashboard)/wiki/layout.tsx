@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect, Suspense } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useGetCompanies, useGetDeals } from '@/lib/hooks/queries'
+import { useSearchHotkey } from '@/lib/hooks/use-search-hotkey'
 import { WikiSidebar } from '@/components/WikiSidebar'
 import { DealsGraph } from '@/components/DealsGraph'
 import { cn } from '@/lib/utils'
@@ -60,24 +61,17 @@ function WikiLayoutInner({ children }: { children: React.ReactNode }) {
   const graphSearchRef = useRef<HTMLInputElement>(null)
   const [graphSearch, setGraphSearch] = useState('')
 
-  // Cmd+F / Ctrl+F — focus the appropriate search input
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-        e.preventDefault()
-        if (view === 'list') {
-          sidebarSearchRef.current?.focus()
-        } else {
-          graphSearchRef.current?.focus()
-        }
-      }
-      if (e.key === 'Escape' && view === 'graph' && graphSearch) {
-        setGraphSearch('')
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [view, graphSearch])
+  // Cmd+F / Ctrl+F — focus the appropriate search input for the current view.
+  // Two hook instances; only one is enabled at a time based on `view`.
+  useSearchHotkey({
+    inputRef: sidebarSearchRef,
+    enabled: view === 'list',
+  })
+  useSearchHotkey({
+    inputRef: graphSearchRef,
+    enabled: view === 'graph',
+    onClear: graphSearch ? () => setGraphSearch('') : undefined,
+  })
 
   // Resize drag handlers
   const onDragStart = useCallback((e: React.MouseEvent) => {

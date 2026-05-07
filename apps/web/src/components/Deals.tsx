@@ -20,6 +20,7 @@ import { Combobox } from '@/components/ui/combobox'
 import { INDUSTRY_OPTIONS } from '@/lib/constants'
 import { queryKeys } from '@/lib/query-keys'
 import { useUser } from '@/lib/hooks/use-user'
+import { useSearchHotkey } from '@/lib/hooks/use-search-hotkey'
 import { useEscapeKey } from '@/lib/hooks/use-escape-key'
 // ── DataTable brand row type ──────────────────────────────────────────────────
 
@@ -425,17 +426,8 @@ export function Deals({ onOpenDeal }: DealsProps) {
   const [editForm, setEditForm] = useState({ name: '', industry: '', domain: '', website: '', hqLocation: '' })
   const { isSales } = useUser()
 
-  // Ctrl+F / Cmd+F focuses search bar (matches Pipeline behavior)
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-        e.preventDefault()
-        searchInputRef.current?.focus()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  // Cmd/Ctrl+F focuses the search input (matches Pipeline behavior).
+  useSearchHotkey({ inputRef: searchInputRef })
 
   const qc = useQueryClient()
 

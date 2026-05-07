@@ -30,6 +30,7 @@ import { EditDealModal } from './EditDealModal'
 import { queryKeys } from '@/lib/query-keys'
 import { usePatchDealStage, useDeleteDeal, useUpdateDeal } from '@/lib/hooks/mutations'
 import { useUser } from '@/lib/hooks/use-user'
+import { useSearchHotkey } from '@/lib/hooks/use-search-hotkey'
 import {
   MoreHorizontal, Search, X, Trash2, ExternalLink,
   ChevronDown, ChevronRight, User as UserIcon, Paperclip,
@@ -704,22 +705,14 @@ export function Pipeline({ onOpenDeal }: PipelineProps) {
   const patchStage = usePatchDealStage()
   const updateDeal = useUpdateDeal()
 
-  // Ctrl+F to open search
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-        e.preventDefault()
-        setSearchOpen(true)
-        setTimeout(() => searchInputRef.current?.focus(), 50)
-      }
-      if (e.key === 'Escape' && searchOpen) {
-        setSearchOpen(false)
-        setSearch('')
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [searchOpen])
+  // Cmd/Ctrl+F opens the search panel + focuses; Escape closes + clears.
+  // Panel mounts the input lazily, so we need a small focus delay.
+  useSearchHotkey({
+    inputRef: searchInputRef,
+    onTrigger: () => setSearchOpen(true),
+    onClear: searchOpen ? () => { setSearchOpen(false); setSearch('') } : undefined,
+    focusDelay: 50,
+  })
 
   // Close AM dropdown on outside click
   useEffect(() => {
