@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider, useTheme } from 'next-themes'
 import { Toaster } from 'sonner'
 import { useState } from 'react'
-import { TopLoader } from '@/components/TopLoader'
+import { ProgressProvider } from '@bprogress/next/app'
 import { PostHogProvider } from '@/components/PostHogProvider'
 
 function ThemedToaster() {
@@ -47,11 +47,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <PostHogProvider>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <TopLoader />
-        <QueryClientProvider client={queryClient}>
-          {children}
-          <ThemedToaster />
-        </QueryClientProvider>
+        <ProgressProvider
+          height="2px"
+          color="#1547e6"
+          options={{ showSpinner: false }}
+          shallowRouting
+        >
+          <QueryClientProvider client={queryClient}>
+            {children}
+            <ThemedToaster />
+          </QueryClientProvider>
+        </ProgressProvider>
       </ThemeProvider>
     </PostHogProvider>
   )

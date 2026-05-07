@@ -1,7 +1,16 @@
-import { auth } from '@/auth'
-import { SessionProvider } from 'next-auth/react'
+'use client'
 
-export default async function AuthLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth()
-  return <SessionProvider session={session}>{children}</SessionProvider>
+import { SessionProvider } from 'next-auth/react'
+import { AuthUserProvider } from '@/lib/auth-context'
+
+/**
+ * Auth layout — purely client-side, mirrors (dashboard)/layout.tsx.
+ * Login/onboarding pages also benefit from synchronous `useUser()` reads.
+ */
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SessionProvider>
+      <AuthUserProvider>{children}</AuthUserProvider>
+    </SessionProvider>
+  )
 }
