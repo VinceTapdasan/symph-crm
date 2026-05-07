@@ -11,6 +11,7 @@ import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { queryKeys } from '@/lib/query-keys'
 import type { ApiRecording } from '@/lib/types'
+import { DataTableSkeleton } from '@/components/ui/data-table'
 
 function fmtDuration(s: number): string {
   const m = Math.floor(s / 60)
@@ -178,8 +179,8 @@ export default function RecordingsPage() {
       )}
 
       {isLoading ? (
-        <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-xl px-4 py-6 flex justify-center">
-          <Loader2 size={16} className="animate-spin text-slate-400" />
+        <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] overflow-hidden">
+          <DataTableSkeleton />
         </div>
       ) : recordings.length === 0 ? (
         <div className="bg-white dark:bg-[#1e1e21] border border-black/[.06] dark:border-white/[.08] rounded-xl px-6 py-10 text-center">
