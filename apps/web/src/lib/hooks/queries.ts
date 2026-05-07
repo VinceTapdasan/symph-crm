@@ -35,6 +35,10 @@ import type {
   ContactNotesResponse,
   NfsDealNote,
   ApiInternalProduct,
+  ApiProposalListItem,
+  ApiProposalHead,
+  ApiProposalVersion,
+  ApiProposalShareLink,
 } from '@/lib/types'
 
 // ─── Companies ────────────────────────────────────────────────────────────────
@@ -499,6 +503,69 @@ export function useGetChatHistory(
     queryKey: queryKeys.chatSessions.history(sessionId ?? ''),
     queryFn: () => api.get<ApiChatMessage[]>(`/chat/sessions/${sessionId}/history`),
     enabled: !!sessionId,
+    ...options,
+  })
+}
+
+// ─── Proposals ───────────────────────────────────────────────────────────────
+
+export function useGetProposalsByDeal(
+  dealId: string | undefined,
+  options?: Partial<UseQueryOptions<ApiProposalListItem[]>>,
+) {
+  return useQuery<ApiProposalListItem[]>({
+    queryKey: queryKeys.proposals.byDeal(dealId ?? ""),
+    queryFn: () => api.get<ApiProposalListItem[]>(`/deals/${dealId}/proposals`),
+    enabled: !!dealId,
+    ...options,
+  })
+}
+
+export function useGetProposalHead(
+  proposalId: string | undefined,
+  options?: Partial<UseQueryOptions<ApiProposalHead>>,
+) {
+  return useQuery<ApiProposalHead>({
+    queryKey: queryKeys.proposals.detail(proposalId ?? ""),
+    queryFn: () => api.get<ApiProposalHead>(`/proposals/${proposalId}`),
+    enabled: !!proposalId,
+    ...options,
+  })
+}
+
+export function useGetProposalVersions(
+  proposalId: string | undefined,
+  options?: Partial<UseQueryOptions<ApiProposalVersion[]>>,
+) {
+  return useQuery<ApiProposalVersion[]>({
+    queryKey: queryKeys.proposals.versions(proposalId ?? ""),
+    queryFn: () => api.get<ApiProposalVersion[]>(`/proposals/${proposalId}/versions`),
+    enabled: !!proposalId,
+    ...options,
+  })
+}
+
+export function useGetProposalVersion(
+  proposalId: string | undefined,
+  versionId: string | undefined,
+  options?: Partial<UseQueryOptions<ApiProposalVersion>>,
+) {
+  return useQuery<ApiProposalVersion>({
+    queryKey: queryKeys.proposals.version(proposalId ?? "", versionId ?? ""),
+    queryFn: () => api.get<ApiProposalVersion>(`/proposals/${proposalId}/versions/${versionId}`),
+    enabled: !!proposalId && !!versionId,
+    ...options,
+  })
+}
+
+export function useGetProposalShares(
+  proposalId: string | undefined,
+  options?: Partial<UseQueryOptions<ApiProposalShareLink[]>>,
+) {
+  return useQuery<ApiProposalShareLink[]>({
+    queryKey: queryKeys.proposals.shares(proposalId ?? ""),
+    queryFn: () => api.get<ApiProposalShareLink[]>(`/proposals/${proposalId}/shares`),
+    enabled: !!proposalId,
     ...options,
   })
 }

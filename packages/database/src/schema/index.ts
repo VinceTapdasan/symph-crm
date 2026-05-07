@@ -8,6 +8,9 @@ export * from './internal-products'
 export * from './deals'
 export * from './deal-contacts'
 export * from './documents'   // replaces notes — content lives in NFS (storage_path), metadata only in DB
+export * from './proposals'           // proposal chain identity (title, deal, pin, soft-delete)
+export * from './proposal-versions'   // versioned HTML — inline text column
+export * from './proposal-share-links' // public share tokens, version-pinned
 export * from './activities'
 export * from './files'
 export * from './pipeline'

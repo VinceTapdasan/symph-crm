@@ -58,7 +58,8 @@ export const documents = pgTable('documents', {
   // UNIQUE: one DB row per file.
   storagePath: text('storage_path').notNull().unique(),
 
-  // Versioning — for proposals that go through v1, v2, v3 iterations
+  // Versioning — kept for legacy markdown document types (transcripts, etc).
+  // Proposals do NOT use this table — see packages/database/src/schema/proposals.ts.
   version: integer('version').default(1),
   parentId: uuid('parent_id'), // self-reference; Drizzle doesn't support inline self-refs
 

@@ -45,8 +45,10 @@ export class RolesGuard implements CanActivate {
 
     // Internal routes (/api/internal/*) have their own InternalGuard (X-Internal-Secret).
     // Owner routes (/api/owner/*) have their own OwnerGuard (x-api-key).
-    // Skip RolesGuard for both, they are not user-session-scoped.
-    if (url.includes('/internal/') || url.includes('/owner/')) return true
+    // Public routes (/api/public/*) authenticate via opaque token in the URL
+    // (validated in the service layer, e.g. proposal share-link tokens).
+    // Skip RolesGuard for all three; they are not user-session-scoped.
+    if (url.includes('/internal/') || url.includes('/owner/') || url.includes('/public/')) return true
 
     // Check for explicit @Roles() decorator
     const requiredRoles = this.reflector.getAllAndOverride<string[] | undefined>(ROLES_KEY, [

@@ -253,4 +253,25 @@ export class StorageService implements OnModuleInit {
     const wordCount = content.split(/\s+/).filter(Boolean).length
     return { excerpt, wordCount }
   }
+
+  /**
+   * Extract a ~500-char excerpt and word count from HTML proposal content.
+   * Strips <script> and <style> blocks first (their text would dominate),
+   * then drops all remaining tags and collapses whitespace.
+   */
+  static extractHtmlExcerpt(html: string): { excerpt: string; wordCount: number } {
+    const text = html
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/\s+/g, ' ')
+      .trim()
+    const excerpt = text.slice(0, 500)
+    const wordCount = text.split(/\s+/).filter(Boolean).length
+    return { excerpt, wordCount }
+  }
 }

@@ -129,6 +129,60 @@ export type ApiDocument = {
   tags?: string[] | null
 }
 
+// ── Proposals ────────────────────────────────────────────────────────────────
+
+export type ApiProposalListItem = {
+  id: string
+  title: string
+  dealId: string | null
+  isPinned: boolean
+  currentVersion: number
+  currentVersionId: string | null
+  changeNote: string | null
+  excerpt: string | null
+  wordCount: number | null
+  authorId: string | null
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type ApiProposalVersion = {
+  id: string
+  version: number
+  changeNote: string | null
+  excerpt: string | null
+  wordCount: number | null
+  authorId: string
+  createdAt: string
+  /** Present only when fetched as a detail/single-version endpoint. */
+  html?: string
+}
+
+export type ApiProposalHead = {
+  id: string
+  title: string
+  dealId: string | null
+  isPinned: boolean
+  currentVersion: number
+  versionCount: number
+  createdAt: string
+  updatedAt: string
+  version: ApiProposalVersion & { html: string }
+}
+
+export type ApiProposalShareLink = {
+  id: string
+  token: string
+  proposalVersionId: string
+  version: number
+  expiresAt: string | null
+  viewCount: number
+  lastViewedAt: string | null
+  createdBy: string | null
+  createdAt: string
+}
+
 // ── Products & Tiers ─────────────────────────────────────────────────────────
 
 export type ApiProduct = { id: string; name: string; industry?: string | null; isActive?: boolean }

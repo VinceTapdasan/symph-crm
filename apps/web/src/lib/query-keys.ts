@@ -95,6 +95,14 @@ export const queryKeys = {
     content: (id: string) => ['document-content', id] as const,
     preview: (id: string) => ['document-preview', id] as const,
   },
+  proposals: {
+    all: ['proposals'] as const,
+    byDeal: (dealId: string) => ['proposals', 'deal', dealId] as const,
+    detail: (id: string) => ['proposals', id] as const,
+    versions: (id: string) => ['proposals', id, 'versions'] as const,
+    version: (id: string, vid: string) => ['proposals', id, 'versions', vid] as const,
+    shares: (id: string) => ['proposals', id, 'shares'] as const,
+  },
   notifications: {
     all: ['notifications'] as const,
   },

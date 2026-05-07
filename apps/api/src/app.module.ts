@@ -8,6 +8,7 @@ import { DealsModule } from './deals/deals.module'
 import { CompaniesModule } from './companies/companies.module'
 import { ContactsModule } from './contacts/contacts.module'
 import { DocumentsModule } from './documents/documents.module'
+import { ProposalsModule } from './proposals/proposals.module'
 import { ActivitiesModule } from './activities/activities.module'
 import { FileParserModule } from './file-parser/file-parser.module'
 import { VoiceModule } from './voice/voice.module'
@@ -37,6 +38,7 @@ import { NotificationsModule } from './notifications/notifications.module'
     CompaniesModule,
     ContactsModule,
     DocumentsModule,
+    ProposalsModule,
     ActivitiesModule,
     FileParserModule,
     VoiceModule,

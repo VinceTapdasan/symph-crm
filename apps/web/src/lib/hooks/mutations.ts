@@ -11,7 +11,7 @@ import { useMutation, useQueryClient, type UseMutationOptions } from '@tanstack/
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
-import type { CreateEventForm, ApiDocument, ApiBilling, ApiBillingMilestone, ApiCompany, ApiInternalProduct } from '@/lib/types'
+import type { CreateEventForm, ApiDocument, ApiBilling, ApiBillingMilestone, ApiCompany, ApiInternalProduct, ApiProposalHead, ApiProposalVersion, ApiProposalShareLink } from '@/lib/types'
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
@@ -573,5 +573,135 @@ export function useUploadInternalProductIcon(
       return api.upload<ApiInternalProduct>(`/internal-products/${id}/icon`, fd)
     },
     ...withToast('Icon uploaded', options),
+  })
+}
+
+// ─── Proposals ───────────────────────────────────────────────────────────────
+
+export type CreateProposalInput = {
+  dealId: string
+  title: string
+  html: string
+  changeNote?: string
+}
+
+export function useCreateProposal(
+  options?: UseMutationOptions<ApiProposalHead, Error, CreateProposalInput>,
+) {
+  const qc = useQueryClient()
+  return useMutation<ApiProposalHead, Error, CreateProposalInput>({
+    mutationFn: ({ dealId, ...body }) => api.post<ApiProposalHead>(`/deals/${dealId}/proposals`, body),
+    ...withToast('Proposal created', {
+      ...options,
+      onSuccess: (data, vars, ctx) => {
+        qc.invalidateQueries({ queryKey: queryKeys.proposals.byDeal(vars.dealId) })
+        ;(options?.onSuccess as any)?.(data, vars, ctx)
+      },
+    }),
+  })
+}
+
+export type SaveVersionInput = {
+  proposalId: string
+  html: string
+  changeNote?: string
+}
+
+export function useSaveProposalVersion(
+  options?: UseMutationOptions<ApiProposalVersion, Error, SaveVersionInput>,
+) {
+  const qc = useQueryClient()
+  return useMutation<ApiProposalVersion, Error, SaveVersionInput>({
+    mutationFn: ({ proposalId, ...body }) =>
+      api.post<ApiProposalVersion>(`/proposals/${proposalId}/versions`, body),
+    ...withToast('Version saved', {
+      ...options,
+      onSuccess: (data, vars, ctx) => {
+        qc.invalidateQueries({ queryKey: queryKeys.proposals.detail(vars.proposalId) })
+        qc.invalidateQueries({ queryKey: queryKeys.proposals.versions(vars.proposalId) })
+        qc.invalidateQueries({ queryKey: queryKeys.proposals.all })
+        ;(options?.onSuccess as any)?.(data, vars, ctx)
+      },
+    }),
+  })
+}
+
+export type UpdateProposalMetaInput = {
+  proposalId: string
+  title?: string
+  isPinned?: boolean
+}
+
+export function useUpdateProposalMeta(
+  options?: UseMutationOptions<ApiProposalHead, Error, UpdateProposalMetaInput>,
+) {
+  const qc = useQueryClient()
+  return useMutation<ApiProposalHead, Error, UpdateProposalMetaInput>({
+    mutationFn: ({ proposalId, ...body }) =>
+      api.put<ApiProposalHead>(`/proposals/${proposalId}`, body),
+    ...withToast('Proposal updated', {
+      ...options,
+      onSuccess: (data, vars, ctx) => {
+        qc.invalidateQueries({ queryKey: queryKeys.proposals.detail(vars.proposalId) })
+        qc.invalidateQueries({ queryKey: queryKeys.proposals.all })
+        ;(options?.onSuccess as any)?.(data, vars, ctx)
+      },
+    }),
+  })
+}
+
+export function useDeleteProposal(
+  options?: UseMutationOptions<void, Error, { proposalId: string; dealId?: string }>,
+) {
+  const qc = useQueryClient()
+  return useMutation<void, Error, { proposalId: string; dealId?: string }>({
+    mutationFn: ({ proposalId }) => api.delete(`/proposals/${proposalId}`),
+    ...withToast('Proposal deleted', {
+      ...options,
+      onSuccess: (data, vars, ctx) => {
+        if (vars.dealId) qc.invalidateQueries({ queryKey: queryKeys.proposals.byDeal(vars.dealId) })
+        qc.invalidateQueries({ queryKey: queryKeys.proposals.all })
+        ;(options?.onSuccess as any)?.(data, vars, ctx)
+      },
+    }),
+  })
+}
+
+export type CreateShareLinkInput = {
+  proposalId: string
+  versionId?: string
+  expiresAt?: string
+}
+
+export function useCreateProposalShareLink(
+  options?: UseMutationOptions<ApiProposalShareLink, Error, CreateShareLinkInput>,
+) {
+  const qc = useQueryClient()
+  return useMutation<ApiProposalShareLink, Error, CreateShareLinkInput>({
+    mutationFn: ({ proposalId, ...body }) =>
+      api.post<ApiProposalShareLink>(`/proposals/${proposalId}/share`, body),
+    ...withToast('Share link created', {
+      ...options,
+      onSuccess: (data, vars, ctx) => {
+        qc.invalidateQueries({ queryKey: queryKeys.proposals.shares(vars.proposalId) })
+        ;(options?.onSuccess as any)?.(data, vars, ctx)
+      },
+    }),
+  })
+}
+
+export function useRevokeProposalShareLink(
+  options?: UseMutationOptions<void, Error, { linkId: string; proposalId?: string }>,
+) {
+  const qc = useQueryClient()
+  return useMutation<void, Error, { linkId: string; proposalId?: string }>({
+    mutationFn: ({ linkId }) => api.delete(`/share-links/${linkId}`),
+    ...withToast('Share link revoked', {
+      ...options,
+      onSuccess: (data, vars, ctx) => {
+        if (vars.proposalId) qc.invalidateQueries({ queryKey: queryKeys.proposals.shares(vars.proposalId) })
+        ;(options?.onSuccess as any)?.(data, vars, ctx)
+      },
+    }),
   })
 }

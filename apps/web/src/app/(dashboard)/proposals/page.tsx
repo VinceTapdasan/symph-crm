@@ -1,5 +1,10 @@
-import { ProposalBuilder } from '@/components/ProposalBuilder'
+import { Suspense } from 'react'
+import { Proposals } from '@/components/Proposals'
 
 export default function ProposalsPage() {
-  return <ProposalBuilder />
+  return (
+    <Suspense>
+      <Proposals />
+    </Suspense>
+  )
 }
