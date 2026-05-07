@@ -201,6 +201,27 @@ export class DealsService {
       stageId = ps?.id ?? null
     }
 
+    // CRITICAL: deals.stage_id is NOT NULL at the DB level. Every creation
+    // path (controller, internal API, owner API, AI tool calls) routes through
+    // this service. If no stage was supplied — or the slug didn't resolve —
+    // default to 'lead' so the insert never violates the constraint.
+    // If 'lead' itself isn't configured, fail loud with a clear error rather
+    // than surfacing a generic Postgres constraint violation.
+    if (!stageId) {
+      const [lead] = await this.db
+        .select({ id: pipelineStages.id })
+        .from(pipelineStages)
+        .where(eq(pipelineStages.slug, 'lead'))
+        .limit(1)
+      if (!lead) {
+        throw new Error(
+          "Cannot create deal: pipeline_stages has no row with slug='lead'. " +
+          'Seed the Lead stage before creating deals.',
+        )
+      }
+      stageId = lead.id
+    }
+
     const [deal] = await this.db.insert(deals).values({ ...cleanData, stageId }).returning()
 
     // Auto-add assigned user to AM roster
