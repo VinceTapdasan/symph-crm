@@ -127,5 +127,6 @@ export function useRecorder() {
     setError(null)
   }, [stopTimer])
 
-  return { state, duration, error, start, pause, resume, finalize, cancel }
+  const reset = useCallback(() => setState('idle'), [])
+  return { state, duration, error, start, pause, resume, finalize, cancel, reset }
 }

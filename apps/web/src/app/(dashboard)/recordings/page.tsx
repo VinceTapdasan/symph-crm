@@ -53,6 +53,7 @@ export default function RecordingsPage() {
         throw new Error(err.message || `Upload failed: ${res.status}`)
       }
       await qc.invalidateQueries({ queryKey: queryKeys.recordings.all })
+      recorder.reset()
       setTitle('')
       frozenDuration.current = 0
     } catch (err: unknown) {
@@ -214,7 +215,7 @@ function RecordingRow({ recording, pendingDelete, onDelete }: {
       </div>
       <div className="hidden sm:flex flex-1 max-w-[400px] min-w-[180px]">
         {recording.playbackUrl
-          ? <audio controls src={recording.playbackUrl} className="w-full h-8" preload="none" />
+          ? <audio controls src={recording.playbackUrl} className="w-full h-8" preload="metadata" />
           : <span className="text-[11px] text-slate-400 italic">Audio unavailable</span>}
       </div>
       <button onClick={onDelete}
