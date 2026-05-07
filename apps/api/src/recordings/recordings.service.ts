@@ -1,18 +1,9 @@
-import { Injectable, Inject, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common'
+import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common'
 import { eq, desc, and } from 'drizzle-orm'
 import { recordings } from '@symph-crm/database'
 import { DB } from '../database/database.module'
 import type { Database } from '../database/database.types'
 import { StorageService } from '../storage/storage.service'
-
-export type CreateRecordingDto = {
-  title: string
-  duration: number | null
-  storageKey: string
-  mimeType: string
-  sizeBytes: number | null
-  workspaceId: string
-}
 
 @Injectable()
 export class RecordingsService {
@@ -22,28 +13,23 @@ export class RecordingsService {
   ) {}
 
   /**
-   * Generate a signed upload URL the browser can PUT directly to.
-   * The storage path is namespaced by user to avoid collisions and to give
-   * us a clean ownership boundary.
+   * Upload a recording: server receives the audio blob as multipart/form-data,
+   * uploads to Supabase via the service-role key (bypasses bucket RLS), then
+   * saves the metadata row to the DB.
    */
-  async presign(userId: string, filename: string, mimeType: string) {
+  async upload(
+    userId: string,
+    file: Express.Multer.File,
+    dto: { title: string; duration: number | null; workspaceId: string },
+  ) {
     if (!userId) throw new ForbiddenException('Missing user id')
-    if (!filename) throw new BadRequestException('filename is required')
-    if (!mimeType) throw new BadRequestException('mimeType is required')
 
-    const safeName = filename.replace(/[^\w.\-]+/g, '_')
-    const storageKey = `recordings/${userId}/${Date.now()}-${safeName}`
-    const { signedUrl, token } = await this.storage.createSignedUploadUrl(storageKey)
-    return { uploadUrl: signedUrl, token, storageKey }
-  }
+    const ext = file.mimetype.includes('mp4') ? 'm4a'
+      : file.mimetype.includes('ogg') ? 'ogg'
+      : 'webm'
+    const storageKey = `recordings/${userId}/${Date.now()}.${ext}`
 
-  /** Insert a recording row after the browser has uploaded the audio bytes. */
-  async create(userId: string, dto: CreateRecordingDto) {
-    if (!userId) throw new ForbiddenException('Missing user id')
-    if (!dto.title) throw new BadRequestException('title is required')
-    if (!dto.storageKey) throw new BadRequestException('storageKey is required')
-    if (!dto.mimeType) throw new BadRequestException('mimeType is required')
-    if (!dto.workspaceId) throw new BadRequestException('workspaceId is required')
+    await this.storage.uploadVoiceRecording(storageKey, file.buffer, file.mimetype)
 
     const [row] = await this.db
       .insert(recordings)
@@ -51,13 +37,15 @@ export class RecordingsService {
         userId,
         workspaceId: dto.workspaceId,
         title: dto.title,
-        duration: dto.duration ?? null,
-        storageKey: dto.storageKey,
-        mimeType: dto.mimeType,
-        sizeBytes: dto.sizeBytes ?? null,
+        duration: dto.duration,
+        storageKey,
+        mimeType: file.mimetype,
+        sizeBytes: file.size,
       })
       .returning()
-    return row
+
+    const playbackUrl = await this.storage.voiceRecordingSignedUrl(storageKey).catch(() => '')
+    return { ...row, playbackUrl }
   }
 
   /**

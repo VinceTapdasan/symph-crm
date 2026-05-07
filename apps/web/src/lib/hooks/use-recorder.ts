@@ -2,80 +2,130 @@
 
 import { useRef, useState, useCallback } from 'react'
 
-export type RecorderState = 'idle' | 'recording' | 'uploading'
+export type RecorderState = 'idle' | 'recording' | 'paused' | 'uploading'
+
+export type RecordingResult = { blob: Blob; mimeType: string }
+
+function pickMimeType(): string {
+  if (typeof MediaRecorder === 'undefined') return 'audio/webm'
+  const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus']
+  return candidates.find((t) => MediaRecorder.isTypeSupported(t)) ?? 'audio/webm'
+}
 
 /**
  * useRecorder, in-browser audio capture via MediaRecorder.
  *
- * start() requests mic access, picks the best supported mime type, and
- * starts a 1-second collection interval. duration is tracked in state
- * so the page can render a live timer.
- *
- * stop() flushes the MediaRecorder, tears down the mic stream, and
- * resolves with the assembled Blob and chosen mimeType. The caller
- * is responsible for capturing duration from state before calling
- * stop() (since the timer is cleared synchronously here).
+ * Flow:
+ *   start()   → 'recording'
+ *   pause()   → 'paused'   (stream stays open, Resume/Done buttons appear)
+ *   resume()  → 'recording' (continues from where it left off)
+ *   finalize() → 'uploading' (collects all chunks, returns blob, closes stream)
+ *   cancel()  → 'idle'     (discards everything)
  */
 export function useRecorder() {
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const mrRef = useRef<MediaRecorder | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const mimeTypeRef = useRef('audio/webm')
+
   const [state, setState] = useState<RecorderState>('idle')
   const [duration, setDuration] = useState(0)
   const [error, setError] = useState<string | null>(null)
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+  }, [])
+
+  const startTimer = useCallback(() => {
+    timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000)
+  }, [])
 
   const start = useCallback(async () => {
     setError(null)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/mp4')
-        ? 'audio/mp4'
-        : 'audio/webm'
-
+      streamRef.current = stream
+      const mimeType = pickMimeType()
+      mimeTypeRef.current = mimeType
       const mr = new MediaRecorder(stream, { mimeType })
-      mediaRecorderRef.current = mr
+      mrRef.current = mr
       chunksRef.current = []
-
-      mr.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data)
-      }
-      mr.start(1000)
-
+      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
+      mr.start(500)
       setState('recording')
       setDuration(0)
-      timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000)
+      startTimer()
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Microphone access denied'
-      setError(message)
+      setError(err instanceof Error ? err.message : 'Microphone access denied')
     }
-  }, [])
+  }, [startTimer])
 
-  const stop = useCallback((): Promise<{ blob: Blob; mimeType: string; duration: number }> => {
+  /** Pause, keeps the stream open so Resume works. */
+  const pause = useCallback(() => {
+    const mr = mrRef.current
+    if (!mr || mr.state !== 'recording') return
+    mr.pause()
+    stopTimer()
+    setState('paused')
+  }, [stopTimer])
+
+  /** Resume from paused state. */
+  const resume = useCallback(() => {
+    const mr = mrRef.current
+    if (!mr || mr.state !== 'paused') return
+    mr.resume()
+    setState('recording')
+    startTimer()
+  }, [startTimer])
+
+  /**
+   * Finalize, stop the MediaRecorder, collect all chunks, return blob.
+   * Pass the current `duration` value from the caller (captured before calling).
+   */
+  const finalize = useCallback((): Promise<RecordingResult> => {
     return new Promise((resolve, reject) => {
-      const mr = mediaRecorderRef.current
-      if (!mr) {
-        reject(new Error('Recorder not started'))
-        return
-      }
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-        timerRef.current = null
-      }
+      const mr = mrRef.current
+      if (!mr) { reject(new Error('No active recording')); return }
+
+      stopTimer()
+      setState('uploading')
 
       mr.onstop = () => {
-        const mimeType = mr.mimeType || 'audio/webm'
+        const mimeType = mimeTypeRef.current
         const blob = new Blob(chunksRef.current, { type: mimeType })
-        mr.stream.getTracks().forEach((t) => t.stop())
-        mediaRecorderRef.current = null
-        resolve({ blob, mimeType, duration: 0 })
+        streamRef.current?.getTracks().forEach((t) => t.stop())
+        streamRef.current = null
+        mrRef.current = null
+        chunksRef.current = []
+        resolve({ blob, mimeType })
       }
 
-      setState('uploading')
-      mr.stop()
-    })
-  }, [])
+      mr.onerror = () => reject(new Error('MediaRecorder error during finalization'))
 
-  return { state, duration, error, start, stop, setState }
+      // Stop from either 'recording' or 'paused' state
+      if (mr.state !== 'inactive') mr.stop()
+      else reject(new Error('MediaRecorder already stopped'))
+    })
+  }, [stopTimer])
+
+  /** Cancel, discard everything, go back to idle. */
+  const cancel = useCallback(() => {
+    stopTimer()
+    const mr = mrRef.current
+    if (mr && mr.state !== 'inactive') {
+      mr.ondataavailable = null
+      mr.onstop = null
+      mr.stop()
+    }
+    streamRef.current?.getTracks().forEach((t) => t.stop())
+    streamRef.current = null
+    mrRef.current = null
+    chunksRef.current = []
+    setState('idle')
+    setDuration(0)
+    setError(null)
+  }, [stopTimer])
+
+  return { state, duration, error, start, pause, resume, finalize, cancel }
 }

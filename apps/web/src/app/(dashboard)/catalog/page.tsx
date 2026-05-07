@@ -180,7 +180,7 @@ export default function CatalogPage() {
   ], [updateProduct, tab])
 
   return (
-    <div className="p-4 md:px-6 pb-6 max-w-[1200px]">
+    <div className="p-4 md:px-6 pb-6 w-full">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-base font-semibold text-slate-900 dark:text-white">Catalog</h1>
