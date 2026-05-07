@@ -39,6 +39,7 @@ import type {
   ApiProposalHead,
   ApiProposalVersion,
   ApiProposalShareLink,
+  ApiRecording,
 } from '@/lib/types'
 
 // ─── Companies ────────────────────────────────────────────────────────────────
@@ -567,5 +568,15 @@ export function useGetProposalShares(
     queryFn: () => api.get<ApiProposalShareLink[]>(`/proposals/${proposalId}/shares`),
     enabled: !!proposalId,
     ...options,
+  })
+}
+
+// ─── Recordings ───────────────────────────────────────────────────────────────
+
+export function useGetRecordings() {
+  return useQuery<ApiRecording[]>({
+    queryKey: queryKeys.recordings.all,
+    queryFn: () => api.get<ApiRecording[]>('/recordings'),
+    staleTime: 30_000,
   })
 }
