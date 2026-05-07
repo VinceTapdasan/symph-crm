@@ -304,6 +304,7 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
   const [outreachCategory, setOutreachCategory] = useState('')
   const [pricingModel, setPricingModel] = useState('')
   const [serviceType, setServiceType] = useState('')
+  const [assignedToId, setAssignedToId] = useState('')
   const [subAccountManagerId, setSubAccountManagerId] = useState('')
   const [builders, setBuilders] = useState<string[]>([])
   const [internalProductId, setInternalProductId] = useState('')
@@ -371,7 +372,7 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
       pricingModel: pricingModel || null,
       servicesTags: tags,
       createdBy: userId,
-      assignedTo: userId,
+      assignedTo: assignedToId || userId,
       subAccountManagerId: subAccountManagerId || null,
       builders: builders.length > 0 ? builders : undefined,
       internalProductId: serviceType === 'internal_products' ? (internalProductId || null) : null,
@@ -464,13 +465,30 @@ export function CreateDealModal({ companies, onClose, onCreated }: Props) {
             </div>
           )}
 
+          {/* Account Manager */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">Account Manager</label>
+            <Select value={assignedToId} onValueChange={setAssignedToId}>
+              <SelectTrigger className="h-9 text-ssm">
+                <SelectValue placeholder="Assign to me (default)" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[280px]">
+                {salesUsers.map(u => (
+                  <SelectItem key={u.id} value={u.id} className="text-ssm">
+                    <UserOption user={u} />
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Sub Account Manager + Builders */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-xxs font-medium text-slate-500 uppercase tracking-[0.05em]">Sub AM <span className="text-slate-400">(optional)</span></label>
               <Select value={subAccountManagerId} onValueChange={setSubAccountManagerId}>
                 <SelectTrigger className="h-9 text-ssm">
-                  <SelectValue placeholder="—" />
+                  <SelectValue placeholder=", " />
                 </SelectTrigger>
                 <SelectContent className="max-h-[280px]">
                   {salesUsers.map(u => (

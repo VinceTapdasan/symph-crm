@@ -130,7 +130,7 @@ export const OUTREACH_OPTIONS = [
 
 export const PRICING_OPTIONS = [
   { value: 'project_based', label: 'Project-Based' },
-  { value: 'monthly',       label: 'Monthly Retainer' },
+  { value: 'monthly',       label: 'Monthly Subscription' },
   { value: 'hourly',        label: 'Hourly' },
   { value: 'tbd',           label: 'TBD' },
 ]
